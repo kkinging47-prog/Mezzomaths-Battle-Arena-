@@ -13,7 +13,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { count, class_level, curriculum, topic, difficulty } = await req.json()
+    const { count, class_level, curriculum, topic, topic_area, topic_sublevel, difficulty } = await req.json()
     const apiKey = Deno.env.get('AI_API_KEY')
 
     if (!apiKey) {
@@ -23,7 +23,7 @@ serve(async (req) => {
       })
     }
 
-    const prompt = `Generate ${count} multiple-choice maths questions for ${class_level}, curriculum ${curriculum}, topic ${topic}, difficulty ${difficulty}. Return ONLY JSON in this shape: {"questions":[{"question_text":"","option_a":"","option_b":"","option_c":"","option_d":"","correct_answer":"A","explanation":""}]}`
+    const prompt = `Generate ${count} multiple-choice maths questions for ${class_level}, curriculum ${curriculum}. Topic from the Mezzo Maths topic book: ${topic}. 1v1 battle topic area: ${topic_area || topic}. Skill/sublevel: ${topic_sublevel || 'class topic'}. Difficulty ${difficulty}. Make the questions conform strictly to the named class topic and the selected skill level. Allow normal maths symbols such as ×, ÷, ², √, fractions and algebra notation. Return ONLY JSON in this shape: {"questions":[{"question_text":"","option_a":"","option_b":"","option_c":"","option_d":"","correct_answer":"A","explanation":""}]}`
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -34,7 +34,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
+        temperature: 0.65,
       }),
     })
 
@@ -45,8 +45,11 @@ serve(async (req) => {
       class_level,
       curriculum,
       topic,
+      topic_area: topic_area || topic,
+      topic_sublevel: topic_sublevel || 'Class topic',
       difficulty: Number(difficulty || 1),
       ai_generated: true,
+      ai_prompt: prompt,
       question_text: q.question_text,
       option_a: q.option_a,
       option_b: q.option_b,
