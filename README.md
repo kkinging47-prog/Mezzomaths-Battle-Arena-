@@ -6,31 +6,27 @@ The app is designed for competitive mathematics learning: students practise math
 
 ## Current Screens
 
-1. Dashboard Home
-2. Student/Admin Sign Up
-3. Student/Admin Login
+1. Homepage
+2. Personal User Dashboard
+3. Combined Login / Sign Up page
 4. Solo Practice
-5. Game Zone
-6. Admin Question Bank
+5. Battle Modes
+6. Admin Settings / AI Question Generator
 7. Leaderboard
 8. Settings
 
 ## Latest Additions
 
-- Landing screen changed to **Dashboard**.
-- Supabase-ready sign up and login flow for students and admins.
-- Sign up form captures full name, email, password, date of birth, auto age, school name, location, class/year, curriculum type and account type.
-- Supabase database schema added at `supabase/schema.sql`.
-- Tables include profiles, question bank, practice sessions, session answers, leaderboard entries, daily challenges and student progress.
-- Admin page for saving questions by class level, curriculum, topic, difficulty and answer options.
-- Question generation size selector: **10, 20, 30, 40, 50**.
-- Solo Practice page started with class, curriculum, topic, timer and level selection.
-- Solo Practice now supports a **100-level system**.
-- Every level uses a 15-question set.
-- Pass mark is **13/15**.
-- Difficulty increases every 5 levels.
-- Power levels appear every 10 levels with higher point multipliers.
-- Questions are selected randomly from Supabase `question_bank` when Supabase keys are configured; otherwise, demo questions are used.
+- Added a separate **Homepage** with Daily Practice, 1 vs 1, Compete with Bot, Compete Online and Solo Practice.
+- Changed Dashboard into a **personal user page** with AI-style summary, progress report, points, topics, streak, ranking, attempted topics and level progress.
+- Removed the question-bank card from the user Dashboard.
+- Combined Sign Up and Login into one **Login / Sign Up** page where users choose the mode.
+- Added Mezzo Maths social media footer links for WhatsApp, Facebook, TikTok, YouTube, X, Instagram and Telegram.
+- Added general basic practice topics for all levels: Addition, Subtraction, Multiplication, Division, Squaring and Squares.
+- Expanded Admin Settings with AI question generation controls: number of questions, topic, class level, curriculum and difficulty.
+- Admin can save, edit and delete questions from the question bank.
+- Admin question form supports maths symbols and image URLs for question images and option images.
+- Questions are selected randomly from Supabase `question_bank` when Supabase keys are configured; otherwise, demo/local questions are used.
 
 ## Supabase Setup
 
@@ -42,14 +38,30 @@ The app is designed for competitive mathematics learning: students practise math
 supabase/schema.sql
 ```
 
-4. In Vercel, add these Environment Variables:
+4. Also run the migration for image options and AI-generation tracking:
+
+```bash
+supabase/migrations/002_admin_ai_question_tools.sql
+```
+
+5. In Vercel, add these Environment Variables:
 
 ```bash
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-public-anon-key
 ```
 
-5. Redeploy the latest commit.
+6. Redeploy the latest commit.
+
+## Optional AI Edge Function
+
+A Supabase Edge Function scaffold is included at:
+
+```bash
+supabase/functions/generate-questions/index.ts
+```
+
+Deploy it with Supabase CLI and set `AI_API_KEY` as a Supabase secret. If the function is not deployed, the app falls back to a local demo generator so the interface still works.
 
 ## Tech Stack
 
@@ -89,7 +101,9 @@ Output Directory: dist
 
 - Main app file: `src/main.jsx`
 - Main styling file: `src/index.css`
-- New feature styling file: `src/upgrade.css`
+- New feature styling files: `src/upgrade.css`, `src/home-admin.css`
 - Supabase client: `src/supabaseClient.js`
 - Supabase schema: `supabase/schema.sql`
+- Supabase migration: `supabase/migrations/002_admin_ai_question_tools.sql`
+- Optional AI function: `supabase/functions/generate-questions/index.ts`
 - Environment example: `.env.example`
