@@ -7,27 +7,29 @@ The app is designed for competitive mathematics learning: students practise math
 ## Current Screens
 
 1. Homepage
-2. Personal User Dashboard
-3. Combined Login / Sign Up page
-4. Solo Practice
-5. Dedicated 1 vs 1 Battle page
-6. Unified Admin page with Admin Settings and AI Question Generator
-7. Leaderboard
+2. Smart Board 1 vs 1 Contest Studio
+3. Online 1 vs 1 Battle page
+4. Personal User Dashboard
+5. Combined Login / Sign Up page
+6. Solo Practice
+7. Unified Admin page with Admin Settings and AI Question Generator
+8. Weekly / Monthly / Yearly Leaderboards
 
 ## Latest Additions
 
-- The app now opens directly on the **1 vs 1 Battle** page for the current update cycle.
-- Added a dedicated 1 vs 1 setup page where users select class, curriculum, topic area, skill level and opponent.
-- 1 vs 1 topic areas now include **Addition, Subtraction, Multiplication and Division**.
-- 1 vs 1 skill levels now include **1 digit × 1 digit**, **2 digit × 1 digit**, and **2 digit × 2 digit**.
-- Added topics from the uploaded Mezzo Maths topic file into the class topic map, including Grade 1 to Grade 8/JHS topic progressions.
-- Merged Admin Settings and Admin Question Bank into one **Admin** page.
-- The Admin page is restricted to accounts with role `admin`.
-- Admin can generate AI questions by question count, class, curriculum, Mezzo book topic, topic area, skill level and difficulty.
-- Admin can save, edit and delete questions.
-- Admin forms support maths symbols, question images and option images.
-- Supabase migration updated to store `topic_area`, `topic_sublevel`, image URLs and AI-generation metadata.
-- Optional AI Edge Function updated so generated questions conform to selected class topic and 1 vs 1 skill level.
+- Added a full **Smart Board 1 vs 1 Contest Studio** for two students standing in front of a classroom smart board.
+- Before the contest starts, Student A and Student B enter name, school and class.
+- Contest setup includes duration options from **30 seconds to 360 seconds** in 30-second steps.
+- Contest setup includes class level, curriculum and a topic selector using the uploaded Mezzo Maths topic list.
+- A **5-second countdown** starts before the contest begins.
+- The question appears at the top/centre of the screen for both participants to see at the same time.
+- Each student has a number keypad on the same page.
+- The first student to submit the correct numeric answer receives the points for that round.
+- Winner screen shows trophy, points, congratulations animation and a clapping-sound button.
+- The runner-up appears below with an AI-style motivational message.
+- Winners are added to local **weekly, monthly and yearly leaderboards**.
+- Added Supabase migration for smart board contests, numeric answers and smart board leaderboard records.
+- The Admin page remains merged into one sizeable page for admin-only editing, AI generation, question editing and deletion.
 
 ## Supabase Setup
 
@@ -45,14 +47,20 @@ supabase/schema.sql
 supabase/migrations/002_admin_ai_question_tools.sql
 ```
 
-5. In Vercel, add these Environment Variables:
+5. Also run the smart board contest migration:
+
+```bash
+supabase/migrations/003_smart_board_contests.sql
+```
+
+6. In Vercel, add these Environment Variables:
 
 ```bash
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-public-anon-key
 ```
 
-6. Redeploy the latest commit.
+7. Redeploy the latest commit.
 
 ## Optional AI Edge Function
 
@@ -102,9 +110,9 @@ Output Directory: dist
 
 - Main app file: `src/main.jsx`
 - Main styling file: `src/index.css`
-- New feature styling files: `src/upgrade.css`, `src/home-admin.css`
+- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`
 - Supabase client: `src/supabaseClient.js`
 - Supabase schema: `supabase/schema.sql`
-- Supabase migration: `supabase/migrations/002_admin_ai_question_tools.sql`
+- Supabase migrations: `supabase/migrations/002_admin_ai_question_tools.sql`, `supabase/migrations/003_smart_board_contests.sql`
 - Optional AI function: `supabase/functions/generate-questions/index.ts`
 - Environment example: `.env.example`
