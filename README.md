@@ -10,23 +10,24 @@ The app is designed for competitive mathematics learning: students practise math
 2. Personal User Dashboard
 3. Combined Login / Sign Up page
 4. Solo Practice
-5. Battle Modes
-6. Admin Settings / AI Question Generator
+5. Dedicated 1 vs 1 Battle page
+6. Unified Admin page with Admin Settings and AI Question Generator
 7. Leaderboard
-8. Settings
 
 ## Latest Additions
 
-- Added a separate **Homepage** with Daily Practice, 1 vs 1, Compete with Bot, Compete Online and Solo Practice.
-- Changed Dashboard into a **personal user page** with AI-style summary, progress report, points, topics, streak, ranking, attempted topics and level progress.
-- Removed the question-bank card from the user Dashboard.
-- Combined Sign Up and Login into one **Login / Sign Up** page where users choose the mode.
-- Added Mezzo Maths social media footer links for WhatsApp, Facebook, TikTok, YouTube, X, Instagram and Telegram.
-- Added general basic practice topics for all levels: Addition, Subtraction, Multiplication, Division, Squaring and Squares.
-- Expanded Admin Settings with AI question generation controls: number of questions, topic, class level, curriculum and difficulty.
-- Admin can save, edit and delete questions from the question bank.
-- Admin question form supports maths symbols and image URLs for question images and option images.
-- Questions are selected randomly from Supabase `question_bank` when Supabase keys are configured; otherwise, demo/local questions are used.
+- The app now opens directly on the **1 vs 1 Battle** page for the current update cycle.
+- Added a dedicated 1 vs 1 setup page where users select class, curriculum, topic area, skill level and opponent.
+- 1 vs 1 topic areas now include **Addition, Subtraction, Multiplication and Division**.
+- 1 vs 1 skill levels now include **1 digit × 1 digit**, **2 digit × 1 digit**, and **2 digit × 2 digit**.
+- Added topics from the uploaded Mezzo Maths topic file into the class topic map, including Grade 1 to Grade 8/JHS topic progressions.
+- Merged Admin Settings and Admin Question Bank into one **Admin** page.
+- The Admin page is restricted to accounts with role `admin`.
+- Admin can generate AI questions by question count, class, curriculum, Mezzo book topic, topic area, skill level and difficulty.
+- Admin can save, edit and delete questions.
+- Admin forms support maths symbols, question images and option images.
+- Supabase migration updated to store `topic_area`, `topic_sublevel`, image URLs and AI-generation metadata.
+- Optional AI Edge Function updated so generated questions conform to selected class topic and 1 vs 1 skill level.
 
 ## Supabase Setup
 
@@ -38,7 +39,7 @@ The app is designed for competitive mathematics learning: students practise math
 supabase/schema.sql
 ```
 
-4. Also run the migration for image options and AI-generation tracking:
+4. Also run the migration for 1 vs 1 topic areas, image options and AI-generation tracking:
 
 ```bash
 supabase/migrations/002_admin_ai_question_tools.sql
