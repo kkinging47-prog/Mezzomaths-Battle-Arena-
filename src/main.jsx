@@ -1,153 +1,169 @@
 import './index.css'
+import './upgrade.css'
+import { supabase } from './supabaseClient.js'
 
-const screens = [
-  ['landing', 'Landing', '🏠'],
-  ['lobby', 'Student Lobby', '🎮'],
-  ['gamezone', 'Game Zone', '🗺️'],
-  ['quiz', 'Solo Quiz', '🧠'],
-  ['battle', '1v1 Arena', '⚔️'],
-  ['leaderboard', 'Leaderboard', '🏆'],
-  ['studio', 'Smart Board Studio', '📺'],
-  ['system', 'Design System', '🎨']
-]
-
-const topics = ['Algebra', 'Geometry', 'Statistics', 'Aptitude & Mental Reasoning', 'Fractions', 'Speed Maths']
 const levels = ['Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','JHS 1','JHS 2','JHS 3','SHS 1','SHS 2','SHS 3']
 const curricula = ['GES', 'Cambridge', 'Pearson Edexcel']
-
-const tabMarkup = screens.map(([id, label, icon]) => `
-  <button type="button" class="screen-tab ${id === 'landing' ? 'active' : ''}" data-target="${id}">
-    <span>${icon}</span>${label}
-  </button>
-`).join('')
-
-const featureCards = [
-  ['🎯','Solo Practice','Sharpen skills with 15-question adaptive sets.','emerald'],
-  ['⚔️','1v1 Battle','Challenge classmates or AI opponents in real time.','rose'],
-  ['🛡️','School vs School','Represent your school in weekly battles.','blue'],
-  ['📅','Daily Challenge','Complete daily missions and collect rewards.','orange'],
-  ['📘','Mezzopedia Mode','Prepare for national mathematics contests.','gold']
-].map(([icon,title,desc,accent]) => `
-  <article class="feature-card glass-card accent-${accent}"><span class="feature-icon">${icon}</span><h3>${title}</h3><p>${desc}</p></article>
-`).join('')
-
-const modeCards = [
-  ['🎯','Solo Practice','Improve your skills','quiz','mode-green'],
-  ['🗺️','Game Zone','Level, topic & trophy map','gamezone','mode-cyan'],
-  ['⚔️','1v1 Battle','Challenge now','battle','mode-red'],
-  ['🗓️','Daily Challenge','Ends in 08:45:12','quiz','mode-purple'],
-  ['🏆','Weekly Tournament','Starts in 2d 15h','leaderboard','mode-orange'],
-  ['🎓','Exam Practice','BECE, WASSCE & Olympiads','quiz','mode-blue'],
-  ['📚','Mezzopedia Mode','National Contest Prep','leaderboard','mode-gold']
-].map(([icon,title,sub,target,cls]) => `
-  <button type="button" class="game-mode-card ${cls}" data-target="${target}"><span>${icon}</span><div><strong>${title}</strong><small>${sub}</small></div></button>
-`).join('')
-
-const levelOptions = levels.map(level => `<option ${level === 'JHS 2' ? 'selected' : ''}>${level}</option>`).join('')
-const curriculumOptions = curricula.map(curriculum => `<option>${curriculum}</option>`).join('')
-const topicChips = topics.map((topic, index) => `<button type="button" class="topic-chip ${index < 3 ? 'active' : ''}">${index < 3 ? '✓' : '+'} ${topic}</button>`).join('')
-
-const leaderboardRows = [
-  [4,'👧🏾','Ananya Iyer','St. Joseph School','Western','9,870',211,'88%'],
-  [5,'👧🏽','Adwoa Nair','Deli Public School','Eastern','9,210',204,'86%'],
-  [6,'👦🏽','Kabir Singh','Ryan International','Northern','8,760',193,'84%'],
-  [7,'👧🏾','Myra Kulkarni','Podar International','Greater Accra','8,430',181,'85%']
-].map(row => `
-  <tr><td>${row[0]}</td><td><span class="student-cell"><span>${row[1]}</span>${row[2]}</span></td><td>${row[3]}</td><td>${row[4]}</td><td>${row[5]}</td><td>${row[6]}</td><td>${row[7]}</td></tr>
-`).join('')
-
-const root = document.getElementById('root')
-
-root.innerHTML = `
-  <main class="app-shell">
-    <div class="orb orb-one"></div><div class="orb orb-two"></div><div class="orb orb-three"></div>
-    <section class="app-frame">
-      <nav class="screen-tabs" aria-label="Screen navigation">
-        <div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>Maths Battle Arena</small></div></div>
-        <div class="tab-scroll">${tabMarkup}</div>
-      </nav>
-
-      <section class="screen landing-screen app-screen" data-screen="landing">
-        <header class="top-nav glass-card"><div class="logo-lockup"><span>♛</span><div><strong>MEZZO</strong><small>Maths Battle Arena</small></div></div><div class="desktop-links"><a>Features</a><a>Contests</a><a>Schools</a><button class="btn btn-ghost">Login</button></div></header>
-        <section class="hero-grid"><div class="hero-copy"><div class="pill">🏆 Mezzopedia National Contest Prep</div><h1>Turn Mathematics Into an Exciting Battle</h1><p>Practice, compete, earn rewards, and rise to the top of the national leaderboard.</p><div class="cta-row"><button class="btn btn-gold" data-target="battle">⚡ Start Battle</button><button class="btn btn-primary" data-target="lobby">👤 Join as Student</button><button class="btn btn-blue">🏫 Register Your School</button></div></div><div class="hero-visual glass-card"><div class="math-float f1">π</div><div class="math-float f2">√x</div><div class="math-float f3">a²+b²</div><div class="math-float f4">%</div><div class="arena-ring"><div class="student student-left">👦🏽</div><div class="trophy-tower">🏆</div><div class="student student-right">👧🏾</div></div><div class="coins-row"><span>🪙</span><span>🪙</span><span>💎</span><span>⭐</span></div></div></section>
-        <section class="feature-section"><div class="section-heading"><span>Choose your battle mode</span><h2>One app for practice, contests, and school competitions.</h2></div><div class="feature-grid five-grid">${featureCards}</div></section>
-        <section class="stats-strip glass-card"><div class="stat"><span>👥</span><strong>120K+</strong><small>Students</small></div><div class="stat"><span>🌍</span><strong>600+</strong><small>Schools</small></div><div class="stat"><span>🛡️</span><strong>50+</strong><small>Cities</small></div><div class="stat"><span>🏅</span><strong>Mezzopedia</strong><small>National Maths Contest</small></div></section>
-      </section>
-
-      <section class="screen lobby-screen app-screen" data-screen="lobby" hidden>
-        <section class="lobby-header glass-card"><div class="profile-block"><div class="avatar avatar-large glow">👦🏽</div><div class="profile-meta"><h2>Arjun Sharma</h2><p>JHS 2 • Meridian Public School</p><div class="xp-line"><span>Lv. 23</span><div class="progress-track"><i style="width:76%"></i></div><small>7,650 / 10,000 XP</small></div></div></div><div class="wallet-row"><div class="wallet"><span>🪙</span><strong>12,450</strong><small>Coins</small></div><div class="wallet"><span>💎</span><strong>320</strong><small>Gems</small></div><div class="wallet"><span>🔥</span><strong>12</strong><small>Day Streak</small></div></div></section>
-        <section class="stats-grid"><article class="mini-stat glass-card"><span>⭐</span><strong>7,650</strong><small>Total XP</small></article><article class="mini-stat glass-card"><span>🏆</span><strong>186</strong><small>Wins</small></article><article class="mini-stat glass-card"><span>⚔️</span><strong>352</strong><small>Battles</small></article><article class="mini-stat glass-card"><span>🎯</span><strong>87%</strong><small>Accuracy</small></article></section>
-        <section class="rank-grid"><article class="rank-card glass-card"><span>🛡️</span><div><small>School Rank</small><strong>#3</strong><p>Out of 250</p></div></article><article class="rank-card glass-card featured"><span>💜</span><div><small>Regional Rank</small><strong>#12</strong><p>Out of 2,450</p></div></article><article class="rank-card glass-card gold"><span>🏆</span><div><small>National Rank</small><strong>#89</strong><p>Out of 120,000</p></div></article></section>
-        <section class="game-mode-section"><div class="section-row"><h3>Choose your mode</h3><span>Gaming lobby</span></div><div class="game-mode-grid">${modeCards}</div></section>
-        <section class="lobby-additions-grid"><section class="setup-panel glass-card compact"><div class="section-row setup-heading"><h3>Student Learning Setup</h3><span>Class • Curriculum • Topics</span></div><div class="setup-grid"><label class="field-group"><span>Class Level</span><select>${levelOptions}</select></label><label class="field-group"><span>Curriculum</span><select>${curriculumOptions}</select></label></div><div class="topic-area-block"><div class="topic-title-row"><strong>Specific Topic Areas</strong><small>3 selected</small></div><div class="topic-chip-grid">${topicChips}</div></div></section><section class="map-card glass-card compact"><div class="section-row setup-heading"><h3>JHS 2 Trophy Map</h3><span>15 questions per stage</span></div><div class="map-rule-row"><span class="badge badge-green">Pass: 13/15+</span><span class="badge badge-gold">Ultimate Trophy</span></div><div class="stage-map"><div class="stage-node done"><span>✓</span><strong>Training Camp</strong><small>Set 1</small><i></i></div><div class="stage-node done"><span>✓</span><strong>Number Fortress</strong><small>Set 2</small><i></i></div><div class="stage-node active"><span>⚡</span><strong>Logic Bridge</strong><small>Set 3</small><i></i></div><div class="stage-node locked"><span>🔒</span><strong>Arena Semi-Final</strong><small>Set 4</small><i></i></div><div class="stage-node locked"><span>🔒</span><strong>Ultimate Trophy</strong><small>Final Set</small></div></div></section></section>
-      </section>
-
-      <section class="screen gamezone-screen app-screen" data-screen="gamezone" hidden>
-        <section class="session-hero glass-card"><div><div class="pill">🗺️ Game Zone Session Builder</div><h1>Pick your class, curriculum and topic path.</h1><p>Every stage contains a 15-question set. A score above 12 unlocks the next stage on the map until the student reaches the ultimate trophy for that class level.</p><div class="cta-row"><button class="btn btn-gold" data-target="quiz">▶ Start 15-Question Set</button><button class="btn btn-primary" data-target="battle">⚔️ Battle from This Topic</button></div></div><div class="session-summary-grid"><article class="session-card"><span>🧩</span><strong>15</strong><small>Questions per set</small></article><article class="session-card"><span>✅</span><strong>13 / 15</strong><small>Progress pass mark</small></article><article class="session-card"><span>⭐</span><strong>+250 XP</strong><small>Stage reward</small></article><article class="session-card"><span>🏆</span><strong>5 stages</strong><small>Trophy path</small></article></div></section>
-        <section class="gamezone-grid"><section class="setup-panel glass-card"><div class="section-row setup-heading"><h3>Student Learning Setup</h3><span>Grade 1 to SHS 3</span></div><div class="setup-grid"><label class="field-group"><span>Class Level</span><select>${levelOptions}</select></label><label class="field-group"><span>Curriculum</span><select>${curriculumOptions}</select></label></div><div class="topic-area-block"><div class="topic-title-row"><strong>Specific Topic Areas</strong><small>Select one or more</small></div><div class="topic-chip-grid">${topicChips}</div></div></section><section class="map-card glass-card"><div class="section-row setup-heading"><h3>Trophy Map</h3><span>15 questions per stage</span></div><div class="map-rule-row"><span class="badge badge-green">Pass: 13/15+</span><span class="badge badge-gold">Ultimate Trophy</span></div><div class="stage-map"><div class="stage-node done"><span>✓</span><strong>Training Camp</strong><small>Set 1</small><i></i></div><div class="stage-node done"><span>✓</span><strong>Number Fortress</strong><small>Set 2</small><i></i></div><div class="stage-node active"><span>⚡</span><strong>Logic Bridge</strong><small>Set 3</small><i></i></div><div class="stage-node locked"><span>🔒</span><strong>Arena Semi-Final</strong><small>Set 4</small><i></i></div><div class="stage-node locked"><span>🔒</span><strong>Ultimate Trophy</strong><small>Final Set</small></div></div></section></section>
-      </section>
-
-      <section class="screen quiz-screen app-screen" data-screen="quiz" hidden>
-        <section class="quiz-top glass-card"><button class="btn btn-ghost" data-target="lobby">← Quit</button><div class="quiz-progress-wrap"><span>Question 7 / 15 • Pass mark 13/15</span><div class="progress-track"><i style="width:68%"></i></div></div><div class="timer danger">⏱ 00:18</div></section>
-        <section class="quiz-rule-strip glass-card"><span>🎯 Each practice set has 15 questions</span><span>✅ Score above 12 to unlock the next map stage</span><span>🏆 Current goal: Ultimate Trophy</span></section>
-        <section class="quiz-layout"><article class="question-card light-card"><div class="question-meta"><span>JHS 2 • GES</span><span class="difficulty">Algebra</span></div><h2>2x² + 5x − 3 = 0</h2><div class="answer-grid"><button class="answer-card"><span>A</span><strong>x = 1, -3/2</strong></button><button class="answer-card"><span>B</span><strong>x = -1, 3/2</strong></button><button class="answer-card" data-correct="true"><span>C</span><strong>x = 1/2, -3</strong></button><button class="answer-card"><span>D</span><strong>x = -1/2, 3</strong></button></div></article><aside class="score-panel glass-card"><div class="panel-metric"><span>⭐</span><small>XP</small><strong>1,250</strong></div><div class="panel-metric"><span>🪙</span><small>Coins</small><strong>210</strong></div><div class="panel-metric"><span>🔥</span><small>Streak</small><strong>12 days</strong></div><div class="panel-metric"><span>🎯</span><small>Score</small><strong>420</strong></div></aside></section>
-        <section class="explanation-card light-card"><div class="result-banner"><strong>Correct! 🎉</strong><div><span>+20 XP</span><span>+10 coins</span></div></div><div class="explanation-content"><div><h3>Step-by-step explanation</h3><p>Using the quadratic formula, x = (-b ± √(b² − 4ac)) / 2a.</p><p>For a = 2, b = 5, c = −3: x = (-5 ± √49) / 4 = (-5 ± 7) / 4.</p><p>Therefore, x = 1/2 or x = -3.</p></div><div class="clipboard">✅</div></div></section>
-      </section>
-
-      <section class="screen battle-screen app-screen" data-screen="battle" hidden>
-        <section class="arena-scoreboard glass-card"><div class="player-bar left"><div class="avatar avatar-small">👦🏽</div><div><strong>Arjun</strong><small>Lv. 23</small><div class="progress-track success"><i style="width:65%"></i></div></div><span class="score-badge">420</span></div><div class="round-clock"><span>Round 2 / 5</span><strong>00:12</strong></div><div class="player-bar right"><div class="avatar avatar-small">🤖</div><div><strong>MathBot Pro</strong><small>Lv. 20</small><div class="progress-track"><i style="width:76%"></i></div></div><span class="score-badge">360</span></div></section>
-        <section class="battle-context glass-card"><span>🗺️ Game Zone Battle</span><strong>JHS 2</strong><span>GES</span><span>Algebra + Geometry</span><span>15 questions • pass 13/15</span></section>
-        <section class="arena-stage glass-card"><div class="bonus-stack"><span class="badge badge-green">✓ Correct!</span><span class="badge badge-blue">⚡ Speed Bonus +15</span><span class="badge badge-orange">🔥 Streak Bonus ×3</span></div><div class="vs-row"><div class="fighter fighter-left"><div class="avatar avatar-battle glow">👦🏽</div><span>Student</span></div><div class="vs-badge">VS</div><div class="fighter fighter-right"><div class="avatar avatar-battle glow">🤖</div><span>AI Bot</span></div></div><article class="battle-question"><span>Simplify:</span><h2>(3x² − 2x + 1) + (2x² + 5x − 4)</h2></article><div class="battle-answer-grid"><button class="battle-answer"><span>A</span><strong>5x² − 7x − 3</strong></button><button class="battle-answer correct"><span>B</span><strong>5x² + 3x − 3</strong></button><button class="battle-answer"><span>C</span><strong>x² + 3x − 5</strong></button><button class="battle-answer"><span>D</span><strong>5x² + 7x − 3</strong></button></div><div class="battle-progress"><span>Battle progress</span><div><i class="active">1</i><i class="active">2</i><i>3</i><i>4</i><i>5</i></div></div></section>
-      </section>
-
-      <section class="screen leaderboard-screen app-screen" data-screen="leaderboard" hidden>
-        <section class="leader-tabs glass-card"><button>School</button><button>Region</button><button class="active">National</button><button>Weekly Tournament</button></section>
-        <section class="podium-grid"><article class="podium-card rank-2"><span class="medal">🥈</span><div class="avatar avatar-medium">👦🏽</div><h3>Arjun Sharma</h3><p>Meridian Public School</p><strong>11,250 XP</strong></article><article class="podium-card rank-1"><span class="medal">🥇</span><div class="avatar avatar-medium">👧🏽</div><h3>Riya Patel</h3><p>Bright Future School</p><strong>12,950 XP</strong></article><article class="podium-card rank-3"><span class="medal">🥉</span><div class="avatar avatar-medium">👦🏾</div><h3>Vivaan Mensah</h3><p>Sunrise School</p><strong>10,480 XP</strong></article></section>
-        <section class="table-card glass-card"><div class="table-header"><h2>National Leaderboard</h2><span>Updates every 15 minutes</span></div><div class="responsive-table"><table><thead><tr><th>#</th><th>Student</th><th>School</th><th>Region</th><th>XP</th><th>Wins</th><th>Accuracy</th></tr></thead><tbody>${leaderboardRows}</tbody></table></div></section>
-      </section>
-
-      <section class="screen studio-screen app-screen" data-screen="studio" hidden>
-        <section class="studio-board"><aside class="contestant-card student-a"><div class="contest-label">Student A</div><div class="avatar avatar-medium">👦🏽</div><h3>Arjun Sharma</h3><p>Meridian Public School</p><strong class="contest-score blue">650</strong><div class="progress-track"><i style="width:76%"></i></div><div class="round-dots"><span class="active">✓</span><span class="active">✓</span><span class="active">✓</span><span class="active">✓</span><span></span><span></span><span></span><span></span></div><div class="answer-status correct">Current Answer: B ✓ Correct</div></aside><main class="smart-question-card light-card"><div class="studio-meta"><strong>Round 3 / 10</strong><span>00:18</span></div><p>Factorise:</p><h1>x² − 5x + 6</h1><div class="studio-options"><span>A. (x − 2)(x − 3)</span><span>B. (x − 2)(x + 3)</span><span>C. (x + 2)(x − 3)</span><span>D. (x − 1)(x − 6)</span></div></main><aside class="contestant-card student-b"><div class="contest-label">Student B</div><div class="avatar avatar-medium">👧🏾</div><h3>Myra Kulkarni</h3><p>Podar International School</p><strong class="contest-score red">550</strong><div class="progress-track"><i style="width:65%"></i></div><div class="round-dots"><span class="active">✓</span><span class="wrong">×</span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="answer-status wrong">Current Answer: A ✕ Wrong</div></aside></section>
-        <section class="teacher-controls glass-card"><button class="btn btn-success">▶ Start Contest</button><button class="btn btn-blue">↪ Next Question</button><button class="btn btn-gold">Ⅱ Pause</button><button class="btn btn-danger">■ End Contest</button><button class="btn btn-ghost">⚙ Settings</button></section>
-      </section>
-
-      <section class="screen system-screen app-screen" data-screen="system" hidden>
-        <section class="system-grid"><article class="system-panel light-card"><h2>Color palette</h2><div class="palette-grid"><div class="color-swatch"><span style="background:#7C3AED"></span><strong>Primary</strong><small>#7C3AED</small></div><div class="color-swatch"><span style="background:#22D3EE"></span><strong>Secondary</strong><small>#22D3EE</small></div><div class="color-swatch"><span style="background:#F59E0B"></span><strong>Gold</strong><small>#F59E0B</small></div><div class="color-swatch"><span style="background:#22C55E"></span><strong>Success</strong><small>#22C55E</small></div></div></article><article class="system-panel light-card"><h2>Typography styles</h2><div class="type-list"><div><h1>H1 Heading</h1><span>Rajdhani / Bold</span></div><div><p>Body text for instructions and dashboard labels.</p><span>Nunito / Regular</span></div><div><code>STAT 12,450 XP</code><span>JetBrains Mono</span></div></div></article><article class="system-panel light-card"><h2>Button styles</h2><div class="button-demo-grid"><button class="btn btn-primary">Primary</button><button class="btn btn-blue">Secondary</button><button class="btn btn-gold">Accent</button><button class="btn btn-success">Success</button><button class="btn btn-ghost">Ghost</button><button class="btn btn-danger">Danger</button></div></article><article class="system-panel light-card"><h2>Academic game rules</h2><div class="rules-demo-grid"><div><strong>Levels</strong><span>Grade 1 to SHS 3</span></div><div><strong>Question Set</strong><span>15 questions</span></div><div><strong>Pass Mark</strong><span>Above 12 = progress</span></div><div><strong>Curricula</strong><span>GES, Cambridge, Pearson Edexcel</span></div></div></article></section>
-      </section>
-    </section>
-  </main>
-`
-
-function activateScreen(target) {
-  document.querySelectorAll('.app-screen').forEach((screen) => {
-    screen.hidden = screen.dataset.screen !== target
-  })
-  document.querySelectorAll('.screen-tab').forEach((tab) => {
-    tab.classList.toggle('active', tab.dataset.target === target)
-  })
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+const topicsByLevel = {
+  'Grade 1': ['Counting & Number Sense', 'Basic Addition', 'Basic Subtraction', 'Shapes & Patterns', 'Time & Money'],
+  'Grade 2': ['Place Value', 'Addition & Subtraction', 'Multiplication Foundations', 'Measurement', 'Patterns'],
+  'Grade 3': ['Multiplication Strategies', 'Division Techniques', 'Fractions Introduction', 'Graphs & Charts', 'Logical Reasoning'],
+  'Grade 4': ['Fractions & Decimals', 'Geometry Basics', 'Data Handling', 'Number Puzzles', 'Speed Maths'],
+  'Grade 5': ['Number Operations', 'Fractions, Decimals & Percentages', 'Geometry', 'Statistics', 'Aptitude & Mental Reasoning'],
+  'Grade 6': ['Pre-Algebra', 'Ratio & Proportion', 'Angles, Area & Volume', 'Statistics', 'Mezzopedia Prep'],
+  'JHS 1': ['Integers & Number Systems', 'Algebraic Expressions', 'Geometry', 'Data Handling', 'Problem Solving'],
+  'JHS 2': ['Linear Equations', 'Ratios & Percentages', 'Pythagoras & Geometry', 'Probability & Statistics', 'Speed Maths'],
+  'JHS 3': ['BECE Exam Practice', 'Algebra', 'Geometry', 'Statistics', 'Aptitude & Mental Reasoning'],
+  'SHS 1': ['Surds & Indices', 'Sets & Logic', 'Linear & Quadratic Equations', 'Coordinate Geometry', 'Statistics'],
+  'SHS 2': ['Functions & Graphs', 'Trigonometry', 'Sequences & Series', 'Probability', 'Vectors & Mensuration'],
+  'SHS 3': ['WASSCE Practice', 'Advanced Algebra', 'Calculus Foundations', 'Statistics', 'Vectors & Trigonometry']
 }
 
-document.addEventListener('click', (event) => {
-  const targetButton = event.target.closest('[data-target]')
-  if (targetButton) {
-    activateScreen(targetButton.dataset.target)
-    return
-  }
+const sampleQuestions = [
+  { class_level: 'JHS 2', curriculum: 'GES', topic: 'Linear Equations', difficulty: 1, question: 'Solve: 3x + 7 = 22', options: ['x = 3','x = 4','x = 5','x = 6'], answer: 'C', explanation: 'Subtract 7 from both sides to get 3x = 15, then divide by 3.' },
+  { class_level: 'JHS 2', curriculum: 'GES', topic: 'Ratios & Percentages', difficulty: 1, question: 'Find 25% of 240.', options: ['40','50','60','70'], answer: 'C', explanation: '25% is one quarter. 240 divided by 4 equals 60.' },
+  { class_level: 'JHS 3', curriculum: 'GES', topic: 'Algebra', difficulty: 2, question: 'Factorise: x² - 5x + 6', options: ['(x - 2)(x - 3)','(x + 2)(x - 3)','(x - 1)(x - 6)','(x + 2)(x + 3)'], answer: 'A', explanation: 'The two numbers that multiply to 6 and add to -5 are -2 and -3.' },
+  { class_level: 'SHS 1', curriculum: 'GES', topic: 'Linear & Quadratic Equations', difficulty: 3, question: 'Solve: 2x² + 5x - 3 = 0', options: ['x = 1, -3/2','x = -1, 3/2','x = 1/2, -3','x = -1/2, 3'], answer: 'C', explanation: 'Using the quadratic formula gives x = 1/2 or x = -3.' },
+  { class_level: 'Grade 6', curriculum: 'GES', topic: 'Ratio & Proportion', difficulty: 1, question: 'A ratio is 2:3. If the total is 50, what is the larger share?', options: ['20','25','30','35'], answer: 'C', explanation: 'There are 5 total parts. 50 divided by 5 is 10. Larger share is 3 × 10 = 30.' }
+]
 
-  const topicChip = event.target.closest('.topic-chip')
-  if (topicChip) {
-    topicChip.classList.toggle('active')
-    const active = topicChip.classList.contains('active')
-    topicChip.textContent = `${active ? '✓' : '+'} ${topicChip.textContent.replace(/^✓\s|^\+\s/, '')}`
-    return
-  }
+const state = {
+  view: 'dashboard',
+  message: '',
+  user: JSON.parse(localStorage.getItem('mezzo_profile') || 'null'),
+  solo: { classLevel: 'JHS 2', curriculum: 'GES', topic: 'Linear Equations', time: '10 minutes', level: 1, questions: [], index: 0, score: 0, selected: '', finished: false }
+}
 
-  const answer = event.target.closest('.answer-card')
-  if (answer) {
-    document.querySelectorAll('.answer-card').forEach((card) => card.classList.remove('correct', 'wrong'))
-    answer.classList.add(answer.dataset.correct ? 'correct' : 'wrong')
+const tabs = [
+  ['dashboard','Dashboard','🏠'], ['signup','Sign Up','📝'], ['login','Login','🔐'], ['solo','Solo Practice','🧠'],
+  ['gamezone','Game Zone','🗺️'], ['admin','Admin','🛠️'], ['leaderboard','Leaderboard','🏆'], ['settings','Settings','⚙️']
+]
+
+const opt = (list, selected) => list.map(item => `<option value="${item}" ${item === selected ? 'selected' : ''}>${item}</option>`).join('')
+const ageFromDob = (dob) => {
+  if (!dob) return ''
+  const today = new Date(); const born = new Date(dob)
+  let age = today.getFullYear() - born.getFullYear()
+  const m = today.getMonth() - born.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < born.getDate())) age--
+  return Number.isFinite(age) ? age : ''
+}
+const difficultyFor = (level) => level % 10 === 0 ? ['Power Level', '5× points', 'gold'] : level % 5 === 0 ? ['Boss Level', '3× points', 'orange'] : [`Difficulty ${Math.ceil(level / 5)}`, `${Math.max(1, Math.ceil(level / 5))}× points`, 'blue']
+
+function render() {
+  const active = tabs.find(([id]) => id === state.view)
+  document.getElementById('root').innerHTML = `
+    <main class="app-shell">
+      <div class="orb orb-one"></div><div class="orb orb-two"></div><div class="orb orb-three"></div>
+      <section class="app-frame">
+        <nav class="screen-tabs" aria-label="Main navigation">
+          <div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>Maths Battle Arena</small></div></div>
+          <div class="tab-scroll">${tabs.map(([id,label,icon]) => `<button type="button" class="screen-tab ${state.view === id ? 'active' : ''}" data-target="${id}"><span>${icon}</span>${label}</button>`).join('')}</div>
+        </nav>
+        <div class="active-title"><span>${active?.[2] || '🏠'}</span><p>${active?.[1] || 'Dashboard'}</p></div>
+        ${state.message ? `<div class="status-banner glass-card">${state.message}</div>` : ''}
+        ${viewHtml()}
+      </section>
+    </main>`
+}
+
+function viewHtml() {
+  if (state.view === 'signup') return signupHtml()
+  if (state.view === 'login') return loginHtml()
+  if (state.view === 'solo') return soloHtml()
+  if (state.view === 'gamezone') return gamezoneHtml()
+  if (state.view === 'admin') return adminHtml()
+  if (state.view === 'leaderboard') return leaderboardHtml()
+  if (state.view === 'settings') return settingsHtml()
+  return dashboardHtml()
+}
+
+function dashboardHtml() {
+  const name = state.user?.full_name || 'Student Champion'
+  return `<section class="screen dashboard-screen">
+    <section class="dashboard-hero glass-card">
+      <div><div class="pill">🎮 Dashboard Home</div><h1>Welcome back, ${name}</h1><p>Practice, battle, complete daily challenges, and climb the Mezzopedia leaderboard.</p><div class="cta-row"><button class="btn btn-gold" data-target="solo">▶ Start Solo Practice</button><button class="btn btn-primary" data-target="gamezone">🗺️ Open Game Zone</button><button class="btn btn-blue" data-target="signup">👤 Create Account</button></div></div>
+      <div class="dashboard-profile-card"><div class="avatar avatar-large glow">👦🏽</div><h3>${name}</h3><p>${state.user?.class_level || 'JHS 2'} • ${state.user?.school_name || 'Meridian Public School'}</p><div class="progress-track gradient"><i style="width:76%"></i></div><small>Lv. 23 • 7,650 XP • 12-day streak</small></div>
+    </section>
+    <section class="stats-grid"><article class="mini-stat glass-card"><span>🪙</span><strong>12,450</strong><small>Coins</small></article><article class="mini-stat glass-card"><span>🔥</span><strong>12</strong><small>Streak</small></article><article class="mini-stat glass-card"><span>🎯</span><strong>87%</strong><small>Accuracy</small></article><article class="mini-stat glass-card"><span>🏆</span><strong>#89</strong><small>National Rank</small></article></section>
+    <section class="dashboard-grid"><article class="mission-card glass-card"><span>📅</span><h3>Daily Challenge</h3><p>15 random questions from the database.</p><strong>+250 XP + 50 coins</strong><small>Ends in 08:45:12</small></article><article class="mission-card glass-card"><span>🧠</span><h3>Solo Practice</h3><p>100-level system, 13/15 pass mark, difficulty rises every 5 levels.</p><strong>Current Level: ${state.solo.level}</strong><small>Power levels give very high points.</small></article><article class="mission-card glass-card"><span>🛠️</span><h3>Admin Bank</h3><p>Save questions per class, curriculum and topic.</p><strong>Generate 10, 20, 30, 40, 50</strong><small>Supabase schema included.</small></article></section>
+  </section>`
+}
+
+function signupHtml() {
+  return `<section class="screen auth-screen"><form class="auth-card glass-card" id="signupForm"><div class="section-heading compact-heading"><span>Create account</span><h2>Student / Admin Sign Up</h2></div><div class="form-grid"><label class="field-group"><span>Full Name</span><input name="full_name" required></label><label class="field-group"><span>Email</span><input name="email" type="email" required></label><label class="field-group"><span>Password</span><input name="password" type="password" required></label><label class="field-group"><span>Date of Birth</span><input id="dobInput" name="date_of_birth" type="date" required></label><label class="field-group"><span>Age</span><input id="ageOutput" name="age" readonly placeholder="Auto calculated"></label><label class="field-group"><span>Name of School</span><input name="school_name" required></label><label class="field-group"><span>Location</span><input name="location" required></label><label class="field-group"><span>Class or Year</span><select name="class_level">${opt(levels, 'JHS 2')}</select></label><label class="field-group"><span>Curriculum Type</span><select name="curriculum">${opt(curricula, 'GES')}</select></label><label class="field-group"><span>Account Type</span><select name="role"><option value="student">Student</option><option value="admin">Admin</option></select></label></div><button class="btn btn-gold auth-submit" type="submit">Create Account</button><p class="auth-note">With Supabase keys, this creates the auth user and profile. Without keys, it stores a local demo profile.</p></form></section>`
+}
+
+function loginHtml() {
+  return `<section class="screen auth-screen"><form class="auth-card glass-card" id="loginForm"><div class="section-heading compact-heading"><span>Secure login</span><h2>Login as Student or Admin</h2></div><label class="field-group"><span>Email</span><input name="email" type="email" required></label><label class="field-group"><span>Password</span><input name="password" type="password" required></label><label class="field-group"><span>Login Type</span><select name="role"><option value="student">Student</option><option value="admin">Admin</option></select></label><button class="btn btn-primary auth-submit" type="submit">Login</button><p class="auth-note">Admins can manage questions, daily challenges and settings.</p></form></section>`
+}
+
+function soloHtml() {
+  const solo = state.solo; const [difficulty, multiplier, tone] = difficultyFor(Number(solo.level)); const current = solo.questions[solo.index]; const progress = solo.questions.length ? Math.round(((solo.index + 1) / 15) * 100) : 0
+  return `<section class="screen solo-screen"><section class="solo-setup glass-card"><div><div class="pill">🧠 Solo Practice</div><h1>100-Level Solo Practice System</h1><p>Select class, topic, timed practice and level. Score 13/15 or higher to move forward.</p></div><div class="solo-level-card"><span class="badge badge-${tone}">${difficulty}</span><strong>Level ${solo.level} / 100</strong><small>${multiplier} • Difficulty rises every 5 levels</small></div></section><section class="solo-builder glass-card"><label class="field-group"><span>Select Class</span><select id="soloClass">${opt(levels, solo.classLevel)}</select></label><label class="field-group"><span>Select Curriculum</span><select id="soloCurriculum">${opt(curricula, solo.curriculum)}</select></label><label class="field-group"><span>Select Topic</span><select id="soloTopic">${opt(topicsByLevel[solo.classLevel] || [], solo.topic)}</select></label><label class="field-group"><span>Timed Practice</span><select id="soloTime">${opt(['5 minutes','10 minutes','15 minutes','20 minutes','30 minutes'], solo.time)}</select></label><label class="field-group"><span>Level</span><input id="soloLevel" type="number" min="1" max="100" value="${solo.level}"></label><button class="btn btn-gold" id="startSolo">Start 15-Question Set</button></section><section class="quiz-top glass-card"><div class="quiz-progress-wrap"><span>${solo.questions.length ? `Question ${solo.index + 1} / 15` : 'No active set'} • Pass mark 13/15</span><div class="progress-track gradient"><i style="width:${progress}%"></i></div></div><div class="timer danger">⏱ ${solo.time}</div><div class="timer">Score: ${solo.score}/15</div></section>${solo.finished ? soloResultHtml() : current ? soloQuestionHtml(current) : `<section class="empty-practice light-card"><h2>Ready to begin?</h2><p>Questions are selected randomly from the question bank. When Supabase is connected, they come from your database.</p></section>`}</section>`
+}
+
+function soloQuestionHtml(q) {
+  return `<section class="quiz-layout"><article class="question-card light-card"><div class="question-meta"><span>${q.class_level} • ${q.curriculum}</span><span class="difficulty">${q.topic}</span></div><h2>${q.question}</h2><div class="answer-grid">${q.options.map((option, index) => { const key = ['A','B','C','D'][index]; const cls = state.solo.selected === key ? (key === q.answer ? 'correct' : 'wrong') : ''; return `<button type="button" class="answer-card ${cls}" data-answer="${key}"><span>${key}</span><strong>${option}</strong></button>` }).join('')}</div></article><aside class="score-panel glass-card"><div class="panel-metric"><span>✅</span><small>Pass</small><strong>13/15</strong></div><div class="panel-metric"><span>🔥</span><small>Power</small><strong>10,20,30...</strong></div><div class="panel-metric"><span>🎯</span><small>Score</small><strong>${state.solo.score}</strong></div></aside></section>${state.solo.selected ? `<section class="explanation-card light-card"><div class="result-banner"><strong>${state.solo.selected === q.answer ? 'Correct! 🎉' : 'Not correct yet'}</strong><div><span>Answer: ${q.answer}</span></div></div><p>${q.explanation}</p><div class="quiz-actions"><button class="btn btn-primary" id="nextSolo">Next Question ▶</button></div></section>` : ''}`
+}
+
+function soloResultHtml() { const passed = state.solo.score >= 13; return `<section class="result-card light-card"><h2>${passed ? 'Level Passed! 🏆' : 'Revision Needed 📘'}</h2><p>You scored ${state.solo.score}/15. ${passed ? `You unlocked Level ${Math.min(Number(state.solo.level) + 1, 100)}.` : 'Score 13/15 or higher to unlock the next level.'}</p><div class="cta-row"><button class="btn btn-gold" id="${passed ? 'advanceSolo' : 'retrySolo'}">${passed ? 'Move to Next Level' : 'Repeat Level'}</button><button class="btn btn-primary" data-target="dashboard">Back to Dashboard</button></div></section>` }
+
+function gamezoneHtml() {
+  return `<section class="screen gamezone-screen"><section class="session-hero glass-card"><div><div class="pill">🗺️ Game Zone Session</div><h1>Trophy map per class level</h1><p>Each class level has 100 levels. Each level uses 15 random questions. Score above 12 to progress toward the Ultimate Trophy.</p><div class="cta-row"><button class="btn btn-gold" data-target="solo">Start Solo Level</button><button class="btn btn-primary" data-target="leaderboard">View Leaderboard</button></div></div><div class="session-summary-grid"><article class="session-card"><span>🧩</span><strong>15</strong><small>Questions</small></article><article class="session-card"><span>✅</span><strong>13/15</strong><small>Pass mark</small></article><article class="session-card"><span>⚡</span><strong>Every 5</strong><small>Difficulty increase</small></article><article class="session-card"><span>🔥</span><strong>Power</strong><small>Every 10 levels</small></article></div></section><section class="map-card glass-card"><div class="section-row setup-heading"><h3>100-Level Progression Preview</h3><span>Ultimate Trophy at Level 100</span></div><div class="level-road">${Array.from({length: 20}).map((_, i) => `<span class="${i < 4 ? 'done' : i === 4 ? 'active' : ''}">${(i + 1) * 5}</span>`).join('')}</div></section></section>`
+}
+
+function adminHtml() {
+  return `<section class="screen admin-screen"><section class="dashboard-hero glass-card"><div><div class="pill">🛠️ Admin Dashboard</div><h1>Question Bank & Challenge Control</h1><p>Save questions by class level, curriculum, topic and difficulty. Generate random practice sets of 10, 20, 30, 40 or 50 questions.</p></div><div class="session-summary-grid"><article class="session-card"><span>📚</span><strong>Bank</strong><small>Supabase</small></article><article class="session-card"><span>🎲</span><strong>Random</strong><small>Per user</small></article><article class="session-card"><span>📅</span><strong>Daily</strong><small>Challenge</small></article><article class="session-card"><span>🏆</span><strong>Progress</strong><small>Leaderboard</small></article></div></section><form class="admin-form glass-card" id="adminQuestionForm"><label class="field-group"><span>Class</span><select name="class_level">${opt(levels, 'JHS 2')}</select></label><label class="field-group"><span>Curriculum</span><select name="curriculum">${opt(curricula, 'GES')}</select></label><label class="field-group"><span>Topic</span><input name="topic" required placeholder="Algebra"></label><label class="field-group"><span>Difficulty</span><select name="difficulty">${opt(['1','2','3','4','5'], '1')}</select></label><label class="field-group wide"><span>Question</span><textarea name="question" required></textarea></label><label class="field-group"><span>Option A</span><input name="option_a" required></label><label class="field-group"><span>Option B</span><input name="option_b" required></label><label class="field-group"><span>Option C</span><input name="option_c" required></label><label class="field-group"><span>Option D</span><input name="option_d" required></label><label class="field-group"><span>Correct</span><select name="answer">${opt(['A','B','C','D'], 'A')}</select></label><label class="field-group"><span>Generate Set</span><select name="set_size">${opt(['10','20','30','40','50'], '10')}</select></label><label class="field-group wide"><span>Explanation</span><textarea name="explanation"></textarea></label><button class="btn btn-gold wide" type="submit">Save Question</button></form></section>`
+}
+
+function leaderboardHtml() { return `<section class="screen leaderboard-screen"><section class="leader-tabs glass-card"><button>School</button><button>Region</button><button class="active">National</button><button>Weekly Tournament</button></section><section class="podium-grid"><article class="podium-card rank-2"><span class="medal">🥈</span><div class="avatar avatar-medium">👦🏽</div><h3>Arjun Sharma</h3><p>Meridian Public School</p><strong>11,250 XP</strong></article><article class="podium-card rank-1"><span class="medal">🥇</span><div class="avatar avatar-medium">👧🏽</div><h3>Riya Patel</h3><p>Bright Future School</p><strong>12,950 XP</strong></article><article class="podium-card rank-3"><span class="medal">🥉</span><div class="avatar avatar-medium">👦🏾</div><h3>Vivaan Mensah</h3><p>Sunrise School</p><strong>10,480 XP</strong></article></section></section>` }
+function settingsHtml() { return `<section class="screen settings-screen"><section class="settings-grid"><article class="system-panel light-card"><h2>Profile Settings</h2><p>Update name, school, location, class level, curriculum and avatar.</p></article><article class="system-panel light-card"><h2>Game Settings</h2><p>Default timer, sound effects, animations, battle difficulty, reminders and leaderboard visibility.</p></article><article class="system-panel light-card"><h2>Question Generation</h2><p>Admin can generate sets of 10, 20, 30, 40 and 50 questions by class, curriculum, topic and difficulty.</p></article><article class="system-panel light-card"><h2>Solo Rules</h2><div class="rules-demo-grid"><div><strong>Levels</strong><span>1 to 100</span></div><div><strong>Pass Mark</strong><span>13/15</span></div><div><strong>Difficulty</strong><span>Every 5 levels</span></div><div><strong>Power</strong><span>Every 10 levels</span></div></div></article></section></section>` }
+
+async function startSolo() {
+  const classLevel = document.getElementById('soloClass').value, curriculum = document.getElementById('soloCurriculum').value, topic = document.getElementById('soloTopic').value, time = document.getElementById('soloTime').value, level = Math.max(1, Math.min(100, Number(document.getElementById('soloLevel').value || 1)))
+  let questions = []
+  if (supabase) {
+    const { data } = await supabase.from('question_bank').select('*').eq('class_level', classLevel).eq('curriculum', curriculum).eq('topic', topic).limit(50)
+    if (data?.length) questions = data.map(q => ({ class_level: q.class_level, curriculum: q.curriculum, topic: q.topic, difficulty: q.difficulty, question: q.question_text, options: [q.option_a, q.option_b, q.option_c, q.option_d], answer: q.correct_answer, explanation: q.explanation || 'Review the method and try again.' }))
   }
+  if (!questions.length) questions = sampleQuestions.filter(q => q.class_level === classLevel && q.curriculum === curriculum && q.topic === topic)
+  if (!questions.length) questions = sampleQuestions
+  const set = [...questions].sort(() => Math.random() - 0.5)
+  while (set.length < 15) set.push(...questions)
+  state.solo = { classLevel, curriculum, topic, time, level, questions: set.slice(0, 15), index: 0, score: 0, selected: '', finished: false }
+  render()
+}
+
+async function saveQuestion(form) {
+  const f = Object.fromEntries(new FormData(form).entries())
+  const payload = { class_level: f.class_level, curriculum: f.curriculum, topic: f.topic, difficulty: Number(f.difficulty), question_text: f.question, option_a: f.option_a, option_b: f.option_b, option_c: f.option_c, option_d: f.option_d, correct_answer: f.answer, explanation: f.explanation }
+  if (supabase) {
+    const { error } = await supabase.from('question_bank').insert(payload)
+    state.message = error ? error.message : 'Question saved to Supabase question bank.'
+  } else {
+    const local = JSON.parse(localStorage.getItem('mezzo_question_bank') || '[]'); local.push(payload); localStorage.setItem('mezzo_question_bank', JSON.stringify(local)); state.message = 'Question saved locally. Add Supabase keys to save to database.'
+  }
+  render()
+}
+
+async function signup(form) {
+  const profile = Object.fromEntries(new FormData(form).entries()); profile.age = ageFromDob(profile.date_of_birth); localStorage.setItem('mezzo_profile', JSON.stringify(profile)); state.user = profile
+  if (supabase) { const { data, error } = await supabase.auth.signUp({ email: profile.email, password: profile.password }); if (!error && data.user) { const { password, ...clean } = profile; await supabase.from('profiles').upsert({ id: data.user.id, ...clean }) } state.message = error ? error.message : 'Account created. Check email if confirmation is enabled.' } else state.message = 'Demo account created locally. Add Supabase keys for live authentication.'
+  state.view = 'dashboard'; render()
+}
+async function login(form) { const f = Object.fromEntries(new FormData(form).entries()); if (supabase) { const { error } = await supabase.auth.signInWithPassword({ email: f.email, password: f.password }); state.message = error ? error.message : 'Logged in successfully.' } else state.message = 'Demo login successful. Add Supabase keys for live authentication.'; state.view = 'dashboard'; render() }
+
+document.addEventListener('click', async (e) => {
+  const target = e.target.closest('[data-target]'); if (target) { state.view = target.dataset.target; state.message = ''; render(); return }
+  if (e.target.closest('#startSolo')) { await startSolo(); return }
+  const ans = e.target.closest('[data-answer]'); if (ans && !state.solo.selected) { const q = state.solo.questions[state.solo.index]; state.solo.selected = ans.dataset.answer; if (state.solo.selected === q.answer) state.solo.score += 1; render(); return }
+  if (e.target.closest('#nextSolo')) { if (state.solo.index >= 14) state.solo.finished = true; else { state.solo.index += 1; state.solo.selected = '' } render(); return }
+  if (e.target.closest('#advanceSolo')) { state.solo.level = Math.min(Number(state.solo.level) + 1, 100); state.solo.questions = []; state.solo.index = 0; state.solo.score = 0; state.solo.selected = ''; state.solo.finished = false; render(); return }
+  if (e.target.closest('#retrySolo')) { state.solo.questions = []; state.solo.index = 0; state.solo.score = 0; state.solo.selected = ''; state.solo.finished = false; render() }
 })
 
-activateScreen('landing')
+document.addEventListener('change', (e) => { if (e.target.id === 'dobInput') document.getElementById('ageOutput').value = ageFromDob(e.target.value); if (e.target.id === 'soloClass') { state.solo.classLevel = e.target.value; state.solo.topic = (topicsByLevel[e.target.value] || [])[0] || ''; render() } })
+document.addEventListener('submit', async (e) => { e.preventDefault(); if (e.target.id === 'signupForm') await signup(e.target); if (e.target.id === 'loginForm') await login(e.target); if (e.target.id === 'adminQuestionForm') await saveQuestion(e.target) })
+
+render()
