@@ -25,9 +25,12 @@ The app is designed for competitive mathematics learning: students practise math
 - The question appears at the top/centre of the screen for both participants to see at the same time.
 - Each student has a number keypad on the same page.
 - The first student to submit the correct numeric answer receives the points for that round.
+- Questions now continue showing until the selected contest time elapses; if the bank runs out during a contest, the app generates/loads more questions instead of ending early.
 - Winner screen shows trophy, points, congratulations animation and a clapping-sound button.
 - The runner-up appears below with an AI-style motivational message.
 - Winners are added to local **weekly, monthly and yearly leaderboards**.
+- The Admin page now shows a generated-question summary: total questions, total AI-generated questions, latest batch and recent generation batches.
+- The Admin question bank now shows **20 questions per page** with Previous/Next pagination.
 - Added Supabase migration for smart board contests, numeric answers and smart board leaderboard records.
 - The Admin page remains merged into one sizeable page for admin-only editing, AI generation, question editing and deletion.
 
