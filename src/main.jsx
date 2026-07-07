@@ -1,13 +1,15 @@
 import './index.css'
 import './upgrade.css'
 import './home-admin.css'
+import './smartboard.css'
 import { supabase } from './supabaseClient.js'
 
 const levels = ['Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','JHS 1','JHS 2','JHS 3','SHS 1','SHS 2','SHS 3']
 const curricula = ['GES', 'Cambridge', 'Pearson Edexcel']
-const basicTopics = ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Squaring', 'Squares']
+const durations = Array.from({ length: 12 }, (_, i) => String((i + 1) * 30))
 const battleTopicAreas = ['Addition', 'Subtraction', 'Multiplication', 'Division']
 const battleSkillLevels = ['1 digit × 1 digit', '2 digit × 1 digit', '2 digit × 2 digit']
+const basicTopics = ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Squaring', 'Squares']
 
 const mezzoBookTopics = {
   'Grade 1': ['Addition Worksheet', 'Addition Table (SD)', 'Multiplication Table (1–6)', 'Multiplication Circles', 'Multiplication Worksheet', 'Subtraction of numbers (SD)', 'Subtraction Worksheets', 'Subtraction Table (SD)', 'Multiplication table (1–12)', 'Addition of numbers (2d + 1)', 'Doubling (SD)', 'Maths Worksheets'],
@@ -24,6 +26,7 @@ const mezzoBookTopics = {
   'SHS 3': ['WASSCE Practice', 'Advanced Algebra', 'Calculus Foundations', 'Statistics', 'Vectors & Trigonometry']
 }
 const topicsByLevel = Object.fromEntries(levels.map(level => [level, [...new Set([...basicTopics, ...battleTopicAreas, ...battleSkillLevels, ...(mezzoBookTopics[level] || [])])]]))
+const allMezzoTopics = [...new Set(Object.values(topicsByLevel).flat())]
 
 const socialLinks = [
   ['WhatsApp Channel','💬','https://whatsapp.com/channel/0029VbBdLQT84OmIVySSaC1l'],
@@ -36,36 +39,60 @@ const socialLinks = [
 ]
 
 const seedQuestions = [
-  { class_level: 'JHS 2', curriculum: 'GES', topic: 'Multiplication', topic_area: 'Multiplication', topic_sublevel: '1 digit × 1 digit', difficulty: 1, question_text: 'What is 7 × 8?', option_a: '54', option_b: '56', option_c: '58', option_d: '64', correct_answer: 'B', explanation: '7 multiplied by 8 equals 56.' },
-  { class_level: 'JHS 2', curriculum: 'GES', topic: 'Addition', topic_area: 'Addition', topic_sublevel: '2 digit × 1 digit', difficulty: 1, question_text: 'Calculate 48 + 37.', option_a: '75', option_b: '85', option_c: '95', option_d: '65', correct_answer: 'B', explanation: '48 + 37 = 85.' },
-  { class_level: 'JHS 3', curriculum: 'GES', topic: 'Algebra', topic_area: 'Algebra', topic_sublevel: 'Class topic', difficulty: 2, question_text: 'Factorise: x² - 5x + 6', option_a: '(x - 2)(x - 3)', option_b: '(x + 2)(x - 3)', option_c: '(x - 1)(x - 6)', option_d: '(x + 2)(x + 3)', correct_answer: 'A', explanation: 'The two numbers that multiply to 6 and add to -5 are -2 and -3.' },
-  { class_level: 'Grade 6', curriculum: 'GES', topic: 'Squares', topic_area: 'Squaring', topic_sublevel: 'Class topic', difficulty: 1, question_text: 'What is 12²?', option_a: '124', option_b: '144', option_c: '132', option_d: '156', correct_answer: 'B', explanation: '12² means 12 × 12, which equals 144.' }
+  { class_level: 'Grade 4', curriculum: 'GES', topic: 'Multiplication by 4 (2 Digits)', topic_area: 'Multiplication', topic_sublevel: '1 digit × 1 digit', difficulty: 1, question_text: '7 × 8', numeric_answer: 56, option_a: '54', option_b: '56', option_c: '58', option_d: '64', correct_answer: 'B', explanation: '7 multiplied by 8 equals 56.' },
+  { class_level: 'Grade 4', curriculum: 'GES', topic: 'Addition & Subtraction of No’s', topic_area: 'Addition', topic_sublevel: '2 digit × 1 digit', difficulty: 1, question_text: '48 + 37', numeric_answer: 85, option_a: '75', option_b: '85', option_c: '95', option_d: '65', correct_answer: 'B', explanation: '48 + 37 = 85.' },
+  { class_level: 'Grade 5', curriculum: 'GES', topic: 'Sharing in twos (2)', topic_area: 'Division', topic_sublevel: '1 digit × 1 digit', difficulty: 1, question_text: '42 ÷ 6', numeric_answer: 7, option_a: '6', option_b: '7', option_c: '8', option_d: '9', correct_answer: 'B', explanation: '42 divided by 6 is 7.' },
+  { class_level: 'JHS 3', curriculum: 'GES', topic: 'Algebra', topic_area: 'Algebra', topic_sublevel: 'Class topic', difficulty: 2, question_text: 'Factorise: x² - 5x + 6', option_a: '(x - 2)(x - 3)', option_b: '(x + 2)(x - 3)', option_c: '(x - 1)(x - 6)', option_d: '(x + 2)(x + 3)', correct_answer: 'A', explanation: 'The two numbers that multiply to 6 and add to -5 are -2 and -3.' }
 ]
 
+const escapeText = (value = '') => String(value).replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
+const optionHtml = (list, selected) => list.map(item => `<option value="${escapeText(item)}" ${item === selected ? 'selected' : ''}>${escapeText(item)}</option>`).join('')
 const stored = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback))
 const save = (key, value) => localStorage.setItem(key, JSON.stringify(value))
 const questionBank = () => stored('mezzo_question_bank', seedQuestions)
 const setQuestionBank = (list) => save('mezzo_question_bank', list)
+const ageFromDob = (dob) => { if (!dob) return ''; const today = new Date(); const born = new Date(dob); let age = today.getFullYear() - born.getFullYear(); const m = today.getMonth() - born.getMonth(); if (m < 0 || (m === 0 && today.getDate() < born.getDate())) age--; return Number.isFinite(age) ? age : '' }
+const isAdmin = () => state.user?.role === 'admin'
+const clamp = (num, min, max) => Math.max(min, Math.min(max, Number(num) || min))
 
 const state = {
-  view: 'battle',
+  view: 'smartboard',
   authMode: 'login',
   message: '',
   editingIndex: null,
   user: stored('mezzo_profile', null),
+  smart: defaultSmartState(),
   battle: { classLevel: 'Grade 4', curriculum: 'GES', topicArea: 'Multiplication', sublevel: '1 digit × 1 digit', opponent: 'Online Participant', questions: [], index: 0, playerScore: 0, opponentScore: 0, selected: '', started: false, finished: false },
   solo: { classLevel: 'JHS 2', curriculum: 'GES', topic: 'Multiplication', time: '10 minutes', level: 1, questions: [], index: 0, score: 0, selected: '', finished: false }
 }
+let countdownTimer = null
+let contestTimer = null
+
+function defaultSmartState() {
+  return {
+    phase: 'setup',
+    countdown: 5,
+    duration: 60,
+    remaining: 60,
+    topic: 'Multiplication by 4 (2 Digits)',
+    classLevel: 'Grade 4',
+    curriculum: 'GES',
+    round: 0,
+    questions: [],
+    roundStartedAt: 0,
+    roundWinner: '',
+    message: 'Enter participant details and start the smart board contest.',
+    a: { name: '', school: '', classLevel: 'Grade 4', score: 0, answer: '', lastTime: 0 },
+    b: { name: '', school: '', classLevel: 'Grade 4', score: 0, answer: '', lastTime: 0 },
+    winner: null,
+    runnerUp: null
+  }
+}
 
 const tabs = [
-  ['home','Home','🏟️'], ['dashboard','My Dashboard','👤'], ['auth','Login / Sign Up','🔐'], ['solo','Solo Practice','🧠'],
-  ['battle','1 vs 1','⚔️'], ['admin','Admin','🛠️'], ['leaderboard','Leaderboard','🏆']
+  ['home','Home','🏟️'], ['smartboard','Smart Board 1v1','📺'], ['battle','Online 1v1','⚔️'], ['solo','Solo Practice','🧠'],
+  ['dashboard','My Dashboard','👤'], ['auth','Login / Sign Up','🔐'], ['admin','Admin','🛠️'], ['leaderboard','Leaderboards','🏆']
 ]
-const optionHtml = (list, selected) => list.map(item => `<option value="${escapeText(item)}" ${item === selected ? 'selected' : ''}>${escapeText(item)}</option>`).join('')
-const ageFromDob = (dob) => { if (!dob) return ''; const today = new Date(); const born = new Date(dob); let age = today.getFullYear() - born.getFullYear(); const m = today.getMonth() - born.getMonth(); if (m < 0 || (m === 0 && today.getDate() < born.getDate())) age--; return Number.isFinite(age) ? age : '' }
-const difficultyFor = (level) => level % 10 === 0 ? ['Power Level', '5× points', 'gold'] : level % 5 === 0 ? ['Boss Level', '3× points', 'orange'] : [`Difficulty ${Math.ceil(level / 5)}`, `${Math.max(1, Math.ceil(level / 5))}× points`, 'blue']
-const escapeText = (value = '') => String(value).replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
-const isAdmin = () => state.user?.role === 'admin'
 
 function render() {
   const active = tabs.find(([id]) => id === state.view)
@@ -86,10 +113,11 @@ function render() {
 }
 
 function viewHtml() {
+  if (state.view === 'smartboard') return smartBoardHtml()
+  if (state.view === 'battle') return battleHtml()
+  if (state.view === 'solo') return soloHtml()
   if (state.view === 'dashboard') return dashboardHtml()
   if (state.view === 'auth') return authHtml()
-  if (state.view === 'solo') return soloHtml()
-  if (state.view === 'battle') return battleHtml()
   if (state.view === 'admin') return adminHtml()
   if (state.view === 'leaderboard') return leaderboardHtml()
   return homeHtml()
@@ -97,60 +125,281 @@ function viewHtml() {
 
 function homeHtml() {
   const cards = [
+    ['📺','Smart Board 1v1','Two students stand before a class screen and compete with keypad answers.','Open Smart Board','smartboard','mode-gold'],
     ['📅','Daily Practice','A fresh 15-question set from your class topics.','Start Daily Practice','solo','mode-purple'],
-    ['⚔️','1 vs 1','Select topic area and battle an online participant.','Start 1 vs 1','battle','mode-red'],
+    ['⚔️','Online 1 vs 1','Select topic area and battle an online participant.','Start Online 1 vs 1','battle','mode-red'],
     ['🤖','Compete with Bot','Play against MathBot when no one is online.','Battle Bot','battle','mode-cyan'],
-    ['🌍','Compete Online','Match with an online learner for live contest practice.','Find Opponent','battle','mode-blue'],
     ['🧠','Solo Practice','Choose class, topic, time and progress through 100 levels.','Start Solo','solo','mode-green']
   ]
-  return `<section class="screen home-screen"><section class="dashboard-hero glass-card"><div><div class="pill">🏟️ Mezzo Maths Battle Arena</div><h1>Choose Your Maths Game Mode</h1><p>Practice daily, fight 1 vs 1, compete with a bot or online participant, and master maths through level progression.</p><div class="cta-row"><button class="btn btn-gold" data-target="battle">⚔️ Open 1 vs 1</button><button class="btn btn-primary" data-target="auth">🔐 Login / Sign Up</button></div></div><div class="hero-visual glass-card mini-hero"><div class="arena-ring"><div class="student student-left">👦🏽</div><div class="trophy-tower">🏆</div><div class="student student-right">🤖</div></div></div></section><section class="home-mode-grid">${cards.map(([icon,title,desc,cta,target,cls]) => `<button class="home-mode-card ${cls}" data-target="${target}"><span>${icon}</span><h3>${title}</h3><p>${desc}</p><strong>${cta} →</strong></button>`).join('')}</section></section>`
+  return `<section class="screen home-screen"><section class="dashboard-hero glass-card"><div><div class="pill">🏟️ Mezzo Maths Battle Arena</div><h1>Choose Your Maths Game Mode</h1><p>Practice daily, compete on a classroom smart board, fight online, battle a bot, and master topics from the Mezzo Maths book.</p><div class="cta-row"><button class="btn btn-gold" data-target="smartboard">📺 Smart Board Contest</button><button class="btn btn-primary" data-target="auth">🔐 Login / Sign Up</button></div></div><div class="hero-visual glass-card mini-hero"><div class="arena-ring"><div class="student student-left">👦🏽</div><div class="trophy-tower">🏆</div><div class="student student-right">👧🏾</div></div></div></section><section class="home-mode-grid">${cards.map(([icon,title,desc,cta,target,cls]) => `<button class="home-mode-card ${cls}" data-target="${target}"><span>${icon}</span><h3>${title}</h3><p>${desc}</p><strong>${cta} →</strong></button>`).join('')}</section></section>`
+}
+
+function smartBoardHtml() {
+  const s = state.smart
+  if (s.phase === 'result') return smartBoardResultHtml()
+  const current = s.questions[s.round]
+  return `<section class="screen smartboard-screen">
+    <section class="smart-top glass-card">
+      <div><div class="pill">📺 Classroom Smart Board 1 vs 1</div><h1>Two-Student Fastest Answer Contest</h1><p>Both students see the same question. The first correct submitted answer earns the points.</p></div>
+      <div class="smart-clock ${s.phase === 'countdown' ? 'counting' : ''}"><small>${s.phase === 'countdown' ? 'Contest starts in' : 'Time left'}</small><strong>${s.phase === 'countdown' ? s.countdown : s.remaining}</strong><span>seconds</span></div>
+    </section>
+    ${s.phase === 'setup' ? smartSetupHtml() : smartLiveHtml(current)}
+  </section>`
+}
+
+function smartSetupHtml() {
+  const s = state.smart
+  return `<section class="smart-setup-grid">
+    ${participantForm('a', 'Student A', s.a)}
+    <form class="smart-settings glass-card" id="smartSetupForm">
+      <h2>Contest Settings</h2>
+      <label class="field-group"><span>Contest Duration</span><select id="smartDuration">${durations.map(d => `<option value="${d}" ${String(s.duration) === d ? 'selected' : ''}>${d} secs</option>`).join('')}</select></label>
+      <label class="field-group"><span>Class Level</span><select id="smartClass">${optionHtml(levels, s.classLevel)}</select></label>
+      <label class="field-group"><span>Curriculum</span><select id="smartCurriculum">${optionHtml(curricula, s.curriculum)}</select></label>
+      <label class="field-group"><span>Topic from Mezzo Topics PDF</span><select id="smartTopic">${optionHtml(topicsByLevel[s.classLevel] || allMezzoTopics, s.topic)}</select></label>
+      <div class="smart-topic-note">Topics are drawn from the uploaded Mezzo book topic list, including Grade 1–8/JHS topics such as Addition & Subtraction of No’s, Multiplication by 11, Division by 0.5, Fast Track Subtraction, General Multiplication, General Division and more.</div>
+      <button class="btn btn-gold" type="button" id="startSmartContest">Start 5-Second Countdown</button>
+    </form>
+    ${participantForm('b', 'Student B', s.b)}
+  </section>`
+}
+
+function participantForm(side, title, p) {
+  return `<article class="smart-player-card glass-card player-${side}">
+    <div class="contest-label">${title}</div>
+    <div class="avatar avatar-medium">${side === 'a' ? '👦🏽' : '👧🏾'}</div>
+    <label class="field-group"><span>Name</span><input id="${side}Name" value="${escapeText(p.name)}" placeholder="Student name"></label>
+    <label class="field-group"><span>School</span><input id="${side}School" value="${escapeText(p.school)}" placeholder="School name"></label>
+    <label class="field-group"><span>Class</span><select id="${side}Class">${optionHtml(levels, p.classLevel)}</select></label>
+  </article>`
+}
+
+function smartLiveHtml(current) {
+  const s = state.smart
+  if (!current) return `<section class="empty-practice light-card"><h2>No question loaded</h2><p>Start again from the setup page.</p></section>`
+  return `<section class="smart-live-board">
+    <aside class="smart-score-card student-a"><div class="contest-label">Student A</div><h2>${escapeText(s.a.name || 'Student A')}</h2><p>${escapeText(s.a.school || 'School')} • ${escapeText(s.a.classLevel)}</p><strong>${s.a.score}</strong><small>Last speed: ${s.a.lastTime ? `${s.a.lastTime}s` : '—'}</small></aside>
+    <main class="smart-question-zone light-card">
+      <div class="smart-meta"><span>Round ${s.round + 1}</span><span>${escapeText(s.topic)}</span><span>${escapeText(s.message)}</span></div>
+      <h1>${escapeText(current.question_text)}</h1>
+      <div class="smart-answer-status">Correct answer is hidden from participants until the round is awarded.</div>
+    </main>
+    <aside class="smart-score-card student-b"><div class="contest-label">Student B</div><h2>${escapeText(s.b.name || 'Student B')}</h2><p>${escapeText(s.b.school || 'School')} • ${escapeText(s.b.classLevel)}</p><strong>${s.b.score}</strong><small>Last speed: ${s.b.lastTime ? `${s.b.lastTime}s` : '—'}</small></aside>
+    ${smartKeypad('a', s.a.answer, 'Student A Keypad')}
+    <section class="smart-center-status glass-card"><div>${s.phase === 'countdown' ? `<strong class="giant-count">${s.countdown}</strong><span>Get ready...</span>` : `<strong>FASTEST CORRECT ANSWER WINS</strong><span>Enter answer and press Submit</span>`}</div><button class="btn btn-danger" id="endSmartContest">End Contest</button></section>
+    ${smartKeypad('b', s.b.answer, 'Student B Keypad')}
+  </section>`
+}
+
+function smartKeypad(side, answer, title) {
+  return `<section class="number-pad glass-card pad-${side}">
+    <h3>${title}</h3>
+    <div class="answer-display">${answer || '0'}</div>
+    <div class="keypad-grid">${['7','8','9','4','5','6','1','2','3','0','.','⌫'].map(k => `<button class="key-btn" data-pad="${side}" data-key="${k}">${k}</button>`).join('')}</div>
+    <button class="btn btn-gold submit-answer" data-submit-smart="${side}">Submit Answer</button>
+  </section>`
+}
+
+function smartBoardResultHtml() {
+  const s = state.smart
+  const winner = s.winner || s.a
+  const runner = s.runnerUp || s.b
+  return `<section class="smart-result-wrap">
+    <section class="winner-card light-card confetti-burst">
+      <div class="trophy-anim">🏆</div>
+      <h1>Congratulations, ${escapeText(winner.name || 'Winner')}!</h1>
+      <p>${escapeText(winner.school || 'School')} • ${escapeText(winner.classLevel || s.classLevel)}</p>
+      <strong>${winner.score} points</strong>
+      <div class="clap-text">👏 👏 👏</div>
+      <button class="btn btn-gold" id="playClap">Play Clapping Sound</button>
+      <button class="btn btn-primary" id="resetSmartContest">New Smart Board Contest</button>
+    </section>
+    <section class="runner-card glass-card">
+      <h2>Second Place: ${escapeText(runner.name || 'Runner Up')}</h2>
+      <p>${escapeText(runner.school || 'School')} • ${escapeText(runner.classLevel || s.classLevel)} • ${runner.score} points</p>
+      <div class="ai-message">AI Motivation: You showed courage and speed today. Keep practising ${escapeText(s.topic)}; one more round of focused practice can turn today’s second place into tomorrow’s trophy.</div>
+    </section>
+    <section class="smart-leader-preview glass-card">
+      <h2>Added to Weekly, Monthly and Yearly Leaderboards</h2>
+      ${leaderboardScopeHtml('weekly')}
+      ${leaderboardScopeHtml('monthly')}
+      ${leaderboardScopeHtml('yearly')}
+    </section>
+  </section>`
+}
+
+function leaderboardScopeHtml(scope) {
+  const data = stored('mezzo_smart_leaderboards', { weekly: [], monthly: [], yearly: [] })[scope] || []
+  return `<div class="leader-scope"><strong>${scope.toUpperCase()}</strong>${data.slice(0,5).map((r, i) => `<span>${i + 1}. ${escapeText(r.name)} — ${r.score} pts</span>`).join('') || '<span>No records yet</span>'}</div>`
+}
+
+function battleHtml() {
+  const b = state.battle
+  return `<section class="screen battle-screen"><section class="dashboard-hero glass-card"><div><div class="pill">⚔️ Online 1 vs 1 Battle Arena</div><h1>Select Topic and Start Battle</h1><p>Choose Addition, Subtraction, Multiplication or Division, then select the skill stage.</p><div class="cta-row"><button class="btn btn-gold" id="startBattle">Start Online Match</button><button class="btn btn-primary" data-target="smartboard">📺 Smart Board Version</button></div></div><div class="solo-level-card"><span class="badge badge-gold">${escapeText(b.opponent)}</span><strong>${b.playerScore} - ${b.opponentScore}</strong><small>Question ${b.started ? b.index + 1 : 0} / 15</small></div></section><section class="solo-builder glass-card"><label class="field-group"><span>Class Level</span><select id="battleClass">${optionHtml(levels, b.classLevel)}</select></label><label class="field-group"><span>Curriculum</span><select id="battleCurriculum">${optionHtml(curricula, b.curriculum)}</select></label><label class="field-group"><span>Topic Area</span><select id="battleTopic">${optionHtml(battleTopicAreas, b.topicArea)}</select></label><label class="field-group"><span>Skill Level</span><select id="battleSublevel">${optionHtml(battleSkillLevels, b.sublevel)}</select></label><label class="field-group"><span>Opponent</span><select id="battleOpponent">${optionHtml(['Online Participant','Bot'], b.opponent)}</select></label><button class="btn btn-gold" id="startBattle2">Start Battle</button></section></section>`
+}
+
+function soloHtml() {
+  const solo = state.solo
+  return `<section class="screen solo-screen"><section class="solo-setup glass-card"><div><div class="pill">🧠 Solo Practice</div><h1>100-Level Solo Practice</h1><p>Select class, topic, timed practice and level. Score 13/15 or higher to move forward.</p></div><div class="solo-level-card"><span class="badge badge-gold">Level</span><strong>${solo.level} / 100</strong><small>Difficulty rises every 5 levels</small></div></section><section class="solo-builder glass-card"><label class="field-group"><span>Select Class</span><select id="soloClass">${optionHtml(levels, solo.classLevel)}</select></label><label class="field-group"><span>Select Curriculum</span><select id="soloCurriculum">${optionHtml(curricula, solo.curriculum)}</select></label><label class="field-group"><span>Select Topic</span><select id="soloTopic">${optionHtml(topicsByLevel[solo.classLevel] || [], solo.topic)}</select></label><label class="field-group"><span>Timed Practice</span><select id="soloTime">${optionHtml(['5 minutes','10 minutes','15 minutes','20 minutes','30 minutes'], solo.time)}</select></label><label class="field-group"><span>Level</span><input id="soloLevel" type="number" min="1" max="100" value="${solo.level}"></label><button class="btn btn-gold" id="startSolo">Start 15 Questions</button></section><section class="empty-practice light-card"><h2>Solo Practice Ready</h2><p>Questions will be randomly selected from the bank using your selected class and topic.</p></section></section>`
+}
+
+function dashboardHtml() {
+  const name = state.user?.full_name || 'Student Champion'
+  return `<section class="screen dashboard-screen"><section class="dashboard-hero glass-card"><div><div class="pill">👤 Personal Dashboard</div><h1>${escapeText(name)}</h1><p><strong>AI Summary:</strong> You are improving in arithmetic speed. Keep competing on the smart board to build accuracy under pressure.</p><div class="cta-row"><button class="btn btn-gold" data-target="smartboard">Smart Board Contest</button><button class="btn btn-primary" data-target="solo">Solo Practice</button></div></div><div class="dashboard-profile-card"><div class="avatar avatar-large glow">👦🏽</div><h3>${escapeText(name)}</h3><p>${state.user?.class_level || 'JHS 2'} • ${state.user?.school_name || 'Meridian Public School'}</p><div class="progress-track gradient"><i style="width:76%"></i></div><small>Lv. 23 • 7,650 XP • 12-day streak</small></div></section><section class="stats-grid"><article class="mini-stat glass-card"><span>⭐</span><strong>7,650</strong><small>Total Points</small></article><article class="mini-stat glass-card"><span>🔥</span><strong>12</strong><small>Streak</small></article><article class="mini-stat glass-card"><span>🎯</span><strong>87%</strong><small>Accuracy</small></article><article class="mini-stat glass-card"><span>🏆</span><strong>#89</strong><small>National Rank</small></article></section></section>`
 }
 
 function authHtml() {
   return `<section class="screen auth-screen"><section class="auth-card glass-card"><div class="auth-switch"><button class="${state.authMode === 'login' ? 'active' : ''}" data-auth-mode="login">Login</button><button class="${state.authMode === 'signup' ? 'active' : ''}" data-auth-mode="signup">Sign Up</button></div>${state.authMode === 'login' ? loginFormHtml() : signupFormHtml()}</section></section>`
 }
 function loginFormHtml() { return `<form id="loginForm"><div class="section-heading compact-heading"><span>Secure access</span><h2>Login as Student or Admin</h2></div><label class="field-group"><span>Email</span><input name="email" type="email" required></label><label class="field-group"><span>Password</span><input name="password" type="password" required></label><label class="field-group"><span>Login Type</span><select name="role"><option value="student">Student</option><option value="admin">Admin</option></select></label><button class="btn btn-primary auth-submit" type="submit">Login</button></form>` }
-function signupFormHtml() { return `<form id="signupForm"><div class="section-heading compact-heading"><span>Create account</span><h2>Student / Admin Sign Up</h2></div><div class="form-grid"><label class="field-group"><span>Full Name</span><input name="full_name" required></label><label class="field-group"><span>Email</span><input name="email" type="email" required></label><label class="field-group"><span>Password</span><input name="password" type="password" required></label><label class="field-group"><span>Date of Birth</span><input id="dobInput" name="date_of_birth" type="date" required></label><label class="field-group"><span>Age</span><input id="ageOutput" name="age" readonly placeholder="Auto calculated"></label><label class="field-group"><span>Name of School</span><input name="school_name" required></label><label class="field-group"><span>Location</span><input name="location" required></label><label class="field-group"><span>Class or Year</span><select name="class_level">${optionHtml(levels, 'JHS 2')}</select></label><label class="field-group"><span>Curriculum Type</span><select name="curriculum">${optionHtml(curricula, 'GES')}</select></label><label class="field-group"><span>Account Type</span><select name="role"><option value="student">Student</option><option value="admin">Admin</option></select></label></div><button class="btn btn-gold auth-submit" type="submit">Create Account</button><p class="auth-note">Age is calculated automatically from date of birth.</p></form>` }
-
-function dashboardHtml() {
-  const name = state.user?.full_name || 'Student Champion'
-  return `<section class="screen dashboard-screen"><section class="dashboard-hero glass-card"><div><div class="pill">👤 Personal Dashboard</div><h1>${escapeText(name)}</h1><p><strong>AI Summary:</strong> You are building strong consistency. Your best area is Speed Maths, your next improvement area is Geometry, and keeping your streak will increase your rank faster.</p><div class="cta-row"><button class="btn btn-gold" data-target="battle">Play 1 vs 1</button><button class="btn btn-primary" data-target="solo">Continue Level ${state.solo.level}</button></div></div><div class="dashboard-profile-card"><div class="avatar avatar-large glow">👦🏽</div><h3>${escapeText(name)}</h3><p>${state.user?.class_level || 'JHS 2'} • ${state.user?.school_name || 'Meridian Public School'}</p><div class="progress-track gradient"><i style="width:76%"></i></div><small>Lv. 23 • 7,650 XP • 12-day streak</small></div></section><section class="stats-grid"><article class="mini-stat glass-card"><span>⭐</span><strong>7,650</strong><small>Total Points</small></article><article class="mini-stat glass-card"><span>🔥</span><strong>12</strong><small>Streak</small></article><article class="mini-stat glass-card"><span>🎯</span><strong>87%</strong><small>Accuracy</small></article><article class="mini-stat glass-card"><span>🏆</span><strong>#89</strong><small>National Rank</small></article></section><section class="dashboard-grid"><article class="mission-card glass-card"><span>📘</span><h3>Attempted Topics</h3><p>Addition, Multiplication, Division, Linear Equations, Statistics.</p><strong>24 topic attempts</strong><small>5 mastered topics</small></article><article class="mission-card glass-card"><span>🧠</span><h3>Levels Progress</h3><p>100-level pathway with difficulty increase every 5 levels.</p><strong>Level ${state.solo.level} / 100</strong><small>Next power level: ${Math.ceil(Number(state.solo.level) / 10) * 10}</small></article><article class="mission-card glass-card"><span>📊</span><h3>Progress Report</h3><p>You answer fastest in arithmetic and need more practice in multi-step word problems.</p><strong>Recommended: Division + Word Problems</strong><small>Practice 15 minutes daily</small></article></section></section>`
-}
-
-function battleHtml() {
-  const b = state.battle; const current = b.questions[b.index]
-  return `<section class="screen battle-screen"><section class="dashboard-hero glass-card"><div><div class="pill">⚔️ 1 vs 1 Battle Arena</div><h1>Select Topic and Start Battle</h1><p>Choose Addition, Subtraction, Multiplication or Division, then select the skill stage: 1 digit × 1 digit, 2 digit × 1 digit or 2 digit × 2 digit.</p><div class="cta-row"><button class="btn btn-gold" id="startBattle">Start 1 vs 1 Match</button><button class="btn btn-primary" data-opponent="Bot">Compete with Bot</button><button class="btn btn-blue" data-opponent="Online Participant">Online Participant</button></div></div><div class="solo-level-card"><span class="badge badge-gold">${escapeText(b.opponent)}</span><strong>${b.playerScore} - ${b.opponentScore}</strong><small>Question ${b.started ? b.index + 1 : 0} / 15</small></div></section><section class="solo-builder glass-card"><label class="field-group"><span>Class Level</span><select id="battleClass">${optionHtml(levels, b.classLevel)}</select></label><label class="field-group"><span>Curriculum</span><select id="battleCurriculum">${optionHtml(curricula, b.curriculum)}</select></label><label class="field-group"><span>Topic Area</span><select id="battleTopic">${optionHtml(battleTopicAreas, b.topicArea)}</select></label><label class="field-group"><span>Skill Level</span><select id="battleSublevel">${optionHtml(battleSkillLevels, b.sublevel)}</select></label><label class="field-group"><span>Opponent</span><select id="battleOpponent">${optionHtml(['Online Participant','Bot'], b.opponent)}</select></label><button class="btn btn-gold" id="startBattle2">Start Battle</button></section><section class="battle-context glass-card"><span>🎯 ${escapeText(b.topicArea)}</span><span>⚡ ${escapeText(b.sublevel)}</span><span>📚 ${escapeText(b.classLevel)}</span><span>🏫 ${escapeText(b.curriculum)}</span></section>${b.finished ? battleResultHtml() : current ? battleQuestionHtml(current) : `<section class="empty-practice light-card"><h2>Ready for 1 vs 1?</h2><p>The system will randomly select questions matching your class, curriculum, topic area and skill level.</p></section>`}</section>`
-}
-function battleQuestionHtml(q) {
-  return `<section class="arena-stage glass-card"><div class="vs-row"><div class="fighter"><div class="avatar avatar-battle glow">👦🏽</div><span>You</span></div><div class="vs-badge">VS</div><div class="fighter"><div class="avatar avatar-battle glow">${state.battle.opponent === 'Bot' ? '🤖' : '👧🏾'}</div><span>${escapeText(state.battle.opponent)}</span></div></div><article class="battle-question"><span>${escapeText(q.topic_area || q.topic)} • ${escapeText(q.topic_sublevel || '')}</span>${q.question_image_url ? `<img class="question-image" src="${q.question_image_url}" alt="Question image">` : ''}<h2>${escapeText(q.question_text)}</h2></article><div class="battle-answer-grid">${['A','B','C','D'].map(key => { const text = q[`option_${key.toLowerCase()}`]; const cls = state.battle.selected === key ? (key === q.correct_answer ? 'correct' : 'wrong') : ''; return `<button class="battle-answer ${cls}" data-battle-answer="${key}"><span>${key}</span><strong>${escapeText(text)}</strong></button>` }).join('')}</div>${state.battle.selected ? `<div class="explanation-card light-card"><div class="result-banner"><strong>${state.battle.selected === q.correct_answer ? 'Correct! Speed Bonus +15' : 'Wrong answer'}</strong><div><span>Answer: ${q.correct_answer}</span></div></div><p>${escapeText(q.explanation || '')}</p><button class="btn btn-primary" id="nextBattle">Next Battle Question</button></div>` : ''}</section>`
-}
-function battleResultHtml() { const won = state.battle.playerScore >= state.battle.opponentScore; return `<section class="result-card light-card"><h2>${won ? 'Battle Won! 🏆' : 'Battle Complete'}</h2><p>Your score: ${state.battle.playerScore}. Opponent score: ${state.battle.opponentScore}. Keep practising the selected topic path.</p><div class="cta-row"><button class="btn btn-gold" id="startBattle">Rematch</button><button class="btn btn-primary" data-target="dashboard">Dashboard</button></div></section>` }
-
-function soloHtml() {
-  const solo = state.solo; const [difficulty, multiplier, tone] = difficultyFor(Number(solo.level)); const current = solo.questions[solo.index]; const progress = solo.questions.length ? Math.round(((solo.index + 1) / 15) * 100) : 0
-  return `<section class="screen solo-screen"><section class="solo-setup glass-card"><div><div class="pill">🧠 Solo Practice</div><h1>100-Level Solo Practice System</h1><p>Select class, topic, timed practice and level. Score 13/15 or higher to move forward.</p></div><div class="solo-level-card"><span class="badge badge-${tone}">${difficulty}</span><strong>Level ${solo.level} / 100</strong><small>${multiplier} • difficulty rises every 5 levels</small></div></section><section class="solo-builder glass-card"><label class="field-group"><span>Select Class</span><select id="soloClass">${optionHtml(levels, solo.classLevel)}</select></label><label class="field-group"><span>Select Curriculum</span><select id="soloCurriculum">${optionHtml(curricula, solo.curriculum)}</select></label><label class="field-group"><span>Select Topic</span><select id="soloTopic">${optionHtml(topicsByLevel[solo.classLevel] || [], solo.topic)}</select></label><label class="field-group"><span>Timed Practice</span><select id="soloTime">${optionHtml(['5 minutes','10 minutes','15 minutes','20 minutes','30 minutes'], solo.time)}</select></label><label class="field-group"><span>Level</span><input id="soloLevel" type="number" min="1" max="100" value="${solo.level}"></label><button class="btn btn-gold" id="startSolo">Start 15 Questions</button></section><section class="quiz-top glass-card"><div class="quiz-progress-wrap"><span>${solo.questions.length ? `Question ${solo.index + 1} / 15` : 'No active set'} • Pass mark 13/15</span><div class="progress-track gradient"><i style="width:${progress}%"></i></div></div><div class="timer danger">⏱ ${solo.time}</div><div class="timer">Score: ${solo.score}/15</div></section>${solo.finished ? soloResultHtml() : current ? soloQuestionHtml(current) : `<section class="empty-practice light-card"><h2>Ready to begin?</h2><p>Questions are randomly selected from the database question bank using the class topic map.</p></section>`}</section>`
-}
-function soloQuestionHtml(q) { return `<section class="quiz-layout"><article class="question-card light-card"><div class="question-meta"><span>${q.class_level} • ${q.curriculum}</span><span class="difficulty">${q.topic}</span></div>${q.question_image_url ? `<img class="question-image" src="${q.question_image_url}" alt="Question visual">` : ''}<h2>${escapeText(q.question_text)}</h2><div class="answer-grid">${['A','B','C','D'].map(key => { const cls = state.solo.selected === key ? (key === q.correct_answer ? 'correct' : 'wrong') : ''; return `<button type="button" class="answer-card ${cls}" data-answer="${key}"><span>${key}</span><strong>${escapeText(q[`option_${key.toLowerCase()}`])}</strong></button>` }).join('')}</div></article><aside class="score-panel glass-card"><div class="panel-metric"><span>✅</span><small>Pass</small><strong>13/15</strong></div><div class="panel-metric"><span>🔥</span><small>Power</small><strong>Every 10</strong></div><div class="panel-metric"><span>🎯</span><small>Score</small><strong>${state.solo.score}</strong></div></aside></section>${state.solo.selected ? `<section class="explanation-card light-card"><div class="result-banner"><strong>${state.solo.selected === q.correct_answer ? 'Correct! 🎉' : 'Not correct yet'}</strong><div><span>Answer: ${q.correct_answer}</span></div></div><p>${escapeText(q.explanation || 'Review the method and try again.')}</p><div class="quiz-actions"><button class="btn btn-primary" id="nextSolo">Next Question ▶</button></div></section>` : ''}` }
-function soloResultHtml() { const passed = state.solo.score >= 13; return `<section class="result-card light-card"><h2>${passed ? 'Level Passed! 🏆' : 'Revision Needed 📘'}</h2><p>You scored ${state.solo.score}/15. ${passed ? `You unlocked Level ${Math.min(Number(state.solo.level) + 1, 100)}.` : 'Score 13/15 or higher to unlock the next level.'}</p><div class="cta-row"><button class="btn btn-gold" id="${passed ? 'advanceSolo' : 'retrySolo'}">${passed ? 'Move to Next Level' : 'Repeat Level'}</button><button class="btn btn-primary" data-target="dashboard">Back to Dashboard</button></div></section>` }
+function signupFormHtml() { return `<form id="signupForm"><div class="section-heading compact-heading"><span>Create account</span><h2>Student / Admin Sign Up</h2></div><div class="form-grid"><label class="field-group"><span>Full Name</span><input name="full_name" required></label><label class="field-group"><span>Email</span><input name="email" type="email" required></label><label class="field-group"><span>Password</span><input name="password" type="password" required></label><label class="field-group"><span>Date of Birth</span><input id="dobInput" name="date_of_birth" type="date" required></label><label class="field-group"><span>Age</span><input id="ageOutput" name="age" readonly placeholder="Auto calculated"></label><label class="field-group"><span>Name of School</span><input name="school_name" required></label><label class="field-group"><span>Location</span><input name="location" required></label><label class="field-group"><span>Class or Year</span><select name="class_level">${optionHtml(levels, 'JHS 2')}</select></label><label class="field-group"><span>Curriculum Type</span><select name="curriculum">${optionHtml(curricula, 'GES')}</select></label><label class="field-group"><span>Account Type</span><select name="role"><option value="student">Student</option><option value="admin">Admin</option></select></label></div><button class="btn btn-gold auth-submit" type="submit">Create Account</button></form>` }
 
 function adminHtml() {
-  if (!isAdmin()) return `<section class="screen admin-screen"><section class="auth-card glass-card"><div class="pill">🔒 Admin Only</div><h1>Admin access required</h1><p class="auth-note">Create or login with an Admin account to generate, edit and delete questions.</p><button class="btn btn-gold" data-target="auth">Login / Sign Up</button></section></section>`
+  if (!isAdmin()) return `<section class="screen admin-screen"><section class="auth-card glass-card"><div class="pill">🔒 Admin Only</div><h1>Admin access required</h1><p class="auth-note">Login with an Admin account to generate, edit and delete questions.</p><button class="btn btn-gold" data-target="auth">Login / Sign Up</button></section></section>`
   const list = questionBank(); const editing = Number.isInteger(state.editingIndex) ? list[state.editingIndex] : null
-  return `<section class="screen admin-screen"><section class="dashboard-hero glass-card"><div><div class="pill">🛠️ Unified Admin Page</div><h1>AI Question Generator, Settings & Bank Manager</h1><p>Generate questions that conform to class topics from the Mezzo book topic file. Edit/delete questions, insert maths symbols, and attach images to questions or options.</p></div><div class="session-summary-grid"><article class="session-card"><span>🤖</span><strong>AI</strong><small>Generate 10-50</small></article><article class="session-card"><span>✍️</span><strong>Edit</strong><small>Question bank</small></article><article class="session-card"><span>🖼️</span><strong>Images</strong><small>Question/options</small></article><article class="session-card"><span>∑</span><strong>Symbols</strong><small>Math input</small></article></div></section><form class="admin-form glass-card" id="aiGenerateForm"><label class="field-group"><span>Number to Generate</span><select name="count">${optionHtml(['10','20','30','40','50'], '10')}</select></label><label class="field-group"><span>Class Level</span><select name="class_level" id="adminLevel">${optionHtml(levels, 'Grade 4')}</select></label><label class="field-group"><span>Curriculum</span><select name="curriculum">${optionHtml(curricula, 'GES')}</select></label><label class="field-group"><span>Topic From Mezzo Book</span><select name="topic" id="adminTopic">${optionHtml(topicsByLevel['Grade 4'], 'Multiplication by 11 (2 & 3 dw)')}</select></label><label class="field-group"><span>Battle Topic Area</span><select name="topic_area">${optionHtml(battleTopicAreas, 'Multiplication')}</select></label><label class="field-group"><span>Skill Level</span><select name="topic_sublevel">${optionHtml(battleSkillLevels, '1 digit × 1 digit')}</select></label><label class="field-group"><span>Difficulty</span><select name="difficulty">${optionHtml(['1','2','3','4','5','6','7','8','9','10'], '1')}</select></label><button class="btn btn-gold" type="submit">🤖 Generate Questions</button></form><section class="question-manager glass-card"><div class="section-row"><h3>Admin Settings</h3><span>One page</span></div><div class="rules-demo-grid"><div><strong>Question Counts</strong><span>10, 20, 30, 40, 50</span></div><div><strong>Battle Topics</strong><span>Addition, Subtraction, Multiplication, Division</span></div><div><strong>Skill Levels</strong><span>1×1, 2×1, 2×2</span></div><div><strong>Media</strong><span>Question and option images</span></div></div></section><form class="admin-form glass-card" id="adminQuestionForm"><input type="hidden" name="editing_index" value="${Number.isInteger(state.editingIndex) ? state.editingIndex : ''}"><label class="field-group"><span>Class</span><select name="class_level">${optionHtml(levels, editing?.class_level || 'Grade 4')}</select></label><label class="field-group"><span>Curriculum</span><select name="curriculum">${optionHtml(curricula, editing?.curriculum || 'GES')}</select></label><label class="field-group"><span>Topic</span><input name="topic" value="${escapeText(editing?.topic || '')}" required placeholder="Multiplication by 11"></label><label class="field-group"><span>Topic Area</span><select name="topic_area">${optionHtml(battleTopicAreas, editing?.topic_area || 'Multiplication')}</select></label><label class="field-group"><span>Skill Level</span><select name="topic_sublevel">${optionHtml(['Class topic', ...battleSkillLevels], editing?.topic_sublevel || 'Class topic')}</select></label><label class="field-group"><span>Difficulty</span><select name="difficulty">${optionHtml(['1','2','3','4','5','6','7','8','9','10'], String(editing?.difficulty || 1))}</select></label><div class="symbol-toolbar wide">${['²','³','√','π','÷','×','≤','≥','≠','±','∑','∞','θ','∆','/','(',')'].map(s => `<button type="button" class="math-symbol" data-symbol="${s}">${s}</button>`).join('')}</div><label class="field-group wide"><span>Question Text</span><textarea name="question_text" class="symbol-target" required>${escapeText(editing?.question_text || '')}</textarea></label><label class="field-group wide"><span>Question Image URL</span><input name="question_image_url" value="${escapeText(editing?.question_image_url || '')}" placeholder="https://..."></label>${['a','b','c','d'].map(letter => `<label class="field-group"><span>Option ${letter.toUpperCase()}</span><input name="option_${letter}" value="${escapeText(editing?.[`option_${letter}`] || '')}" required></label><label class="field-group"><span>Option ${letter.toUpperCase()} Image URL</span><input name="option_${letter}_image_url" value="${escapeText(editing?.[`option_${letter}_image_url`] || '')}" placeholder="optional image URL"></label>`).join('')}<label class="field-group"><span>Correct Answer</span><select name="correct_answer">${optionHtml(['A','B','C','D'], editing?.correct_answer || 'A')}</select></label><label class="field-group wide"><span>Explanation</span><textarea name="explanation">${escapeText(editing?.explanation || '')}</textarea></label><button class="btn btn-primary wide" type="submit">${editing ? 'Update Question' : 'Save Question'}</button></form><section class="question-manager glass-card"><div class="section-row"><h3>Question Bank</h3><span>${list.length} questions</span></div><div class="question-list">${list.map((q,i) => `<article class="bank-row"><div><strong>${escapeText(q.question_text)}</strong><small>${q.class_level} • ${q.curriculum} • ${q.topic} • ${q.topic_area || ''} • ${q.topic_sublevel || ''} • Answer ${q.correct_answer}</small></div><div><button class="btn btn-blue btn-small" data-edit-question="${i}">Edit</button><button class="btn btn-danger btn-small" data-delete-question="${i}">Delete</button></div></article>`).join('')}</div></section></section>`
+  return `<section class="screen admin-screen"><section class="dashboard-hero glass-card"><div><div class="pill">🛠️ Unified Admin Page</div><h1>AI Generator, Settings & Bank Manager</h1><p>Generate questions that conform to the selected class topics from the Mezzo topic book, including smart board contest topics.</p></div><div class="session-summary-grid"><article class="session-card"><span>🤖</span><strong>AI</strong><small>Generate 10-50</small></article><article class="session-card"><span>📺</span><strong>Smart Board</strong><small>Fastest answer</small></article><article class="session-card"><span>🖼️</span><strong>Images</strong><small>Question/options</small></article><article class="session-card"><span>∑</span><strong>Symbols</strong><small>Math input</small></article></div></section><form class="admin-form glass-card" id="aiGenerateForm"><label class="field-group"><span>Number to Generate</span><select name="count">${optionHtml(['10','20','30','40','50'], '10')}</select></label><label class="field-group"><span>Class Level</span><select name="class_level" id="adminLevel">${optionHtml(levels, 'Grade 4')}</select></label><label class="field-group"><span>Curriculum</span><select name="curriculum">${optionHtml(curricula, 'GES')}</select></label><label class="field-group"><span>Topic From Mezzo Book</span><select name="topic" id="adminTopic">${optionHtml(topicsByLevel['Grade 4'], 'Multiplication by 4 (2 Digits)')}</select></label><label class="field-group"><span>Smart Board Topic Area</span><select name="topic_area">${optionHtml(battleTopicAreas, 'Multiplication')}</select></label><label class="field-group"><span>Skill Level</span><select name="topic_sublevel">${optionHtml(battleSkillLevels, '1 digit × 1 digit')}</select></label><label class="field-group"><span>Difficulty</span><select name="difficulty">${optionHtml(['1','2','3','4','5','6','7','8','9','10'], '1')}</select></label><button class="btn btn-gold" type="submit">🤖 Generate Questions</button></form><form class="admin-form glass-card" id="adminQuestionForm"><input type="hidden" name="editing_index" value="${Number.isInteger(state.editingIndex) ? state.editingIndex : ''}"><label class="field-group"><span>Class</span><select name="class_level">${optionHtml(levels, editing?.class_level || 'Grade 4')}</select></label><label class="field-group"><span>Curriculum</span><select name="curriculum">${optionHtml(curricula, editing?.curriculum || 'GES')}</select></label><label class="field-group"><span>Topic</span><input name="topic" value="${escapeText(editing?.topic || '')}" required></label><label class="field-group"><span>Numeric Answer</span><input name="numeric_answer" value="${escapeText(editing?.numeric_answer || '')}" placeholder="for keypad contests"></label><label class="field-group"><span>Topic Area</span><select name="topic_area">${optionHtml(battleTopicAreas, editing?.topic_area || 'Multiplication')}</select></label><label class="field-group"><span>Skill Level</span><select name="topic_sublevel">${optionHtml(['Class topic', ...battleSkillLevels], editing?.topic_sublevel || 'Class topic')}</select></label><div class="symbol-toolbar wide">${['²','³','√','π','÷','×','≤','≥','≠','±','∑','∞','θ','∆','/','(',')'].map(s => `<button type="button" class="math-symbol" data-symbol="${s}">${s}</button>`).join('')}</div><label class="field-group wide"><span>Question Text</span><textarea name="question_text" class="symbol-target" required>${escapeText(editing?.question_text || '')}</textarea></label><label class="field-group wide"><span>Question Image URL</span><input name="question_image_url" value="${escapeText(editing?.question_image_url || '')}"></label>${['a','b','c','d'].map(letter => `<label class="field-group"><span>Option ${letter.toUpperCase()}</span><input name="option_${letter}" value="${escapeText(editing?.[`option_${letter}`] || '')}" required></label><label class="field-group"><span>Option ${letter.toUpperCase()} Image URL</span><input name="option_${letter}_image_url" value="${escapeText(editing?.[`option_${letter}_image_url`] || '')}"></label>`).join('')}<label class="field-group"><span>Correct Answer</span><select name="correct_answer">${optionHtml(['A','B','C','D'], editing?.correct_answer || 'A')}</select></label><label class="field-group wide"><span>Explanation</span><textarea name="explanation">${escapeText(editing?.explanation || '')}</textarea></label><button class="btn btn-primary wide" type="submit">${editing ? 'Update Question' : 'Save Question'}</button></form><section class="question-manager glass-card"><div class="section-row"><h3>Question Bank</h3><span>${list.length} questions</span></div><div class="question-list">${list.map((q,i) => `<article class="bank-row"><div><strong>${escapeText(q.question_text)}</strong><small>${q.class_level} • ${q.curriculum} • ${q.topic} • ${q.topic_area || ''} • ${q.topic_sublevel || ''} • Answer ${q.numeric_answer || q.correct_answer}</small></div><div><button class="btn btn-blue btn-small" data-edit-question="${i}">Edit</button><button class="btn btn-danger btn-small" data-delete-question="${i}">Delete</button></div></article>`).join('')}</div></section></section>`
 }
 
-function leaderboardHtml() { return `<section class="screen leaderboard-screen"><section class="leader-tabs glass-card"><button>School</button><button>Region</button><button class="active">National</button><button>Weekly Tournament</button></section><section class="podium-grid"><article class="podium-card rank-2"><span class="medal">🥈</span><div class="avatar avatar-medium">👦🏽</div><h3>Arjun Sharma</h3><p>Meridian Public School</p><strong>11,250 XP</strong></article><article class="podium-card rank-1"><span class="medal">🥇</span><div class="avatar avatar-medium">👧🏽</div><h3>Riya Patel</h3><p>Bright Future School</p><strong>12,950 XP</strong></article><article class="podium-card rank-3"><span class="medal">🥉</span><div class="avatar avatar-medium">👦🏾</div><h3>Vivaan Mensah</h3><p>Sunrise School</p><strong>10,480 XP</strong></article></section></section>` }
+function leaderboardHtml() {
+  return `<section class="screen leaderboard-screen"><section class="leader-tabs glass-card"><button class="active">Weekly</button><button>Monthly</button><button>Yearly</button></section><section class="smart-leader-preview glass-card">${leaderboardScopeHtml('weekly')}${leaderboardScopeHtml('monthly')}${leaderboardScopeHtml('yearly')}</section></section>`
+}
 function socialFooterHtml() { return `<footer class="social-footer glass-card"><div><strong>Follow and join Mezzo Maths</strong><p>Mezzo Maths is where Mathematics becomes simple, engaging, and meaningful — from foundations to mastery.</p></div><div class="social-links">${socialLinks.map(([name,icon,url]) => `<a href="${url}" target="_blank" rel="noreferrer"><span>${icon}</span>${name}</a>`).join('')}</div></footer>` }
+function leaderboardScopeHtml(scope) { const data = stored('mezzo_smart_leaderboards', { weekly: [], monthly: [], yearly: [] })[scope] || []; return `<div class="leader-scope"><strong>${scope.toUpperCase()}</strong>${data.slice(0,8).map((r,i) => `<span>${i + 1}. ${escapeText(r.name)} — ${r.score} pts • ${escapeText(r.school || '')}</span>`).join('') || '<span>No records yet</span>'}</div>` }
 
-function makeGeneratedQuestions({ count, class_level, curriculum, topic, topic_area, topic_sublevel, difficulty }) {
-  const templates = {
-    Addition: n => ({ question_text: `Calculate ${n + 12} + ${n + 7}.`, option_a: String(n + 16), option_b: String(n + 19), option_c: String(n + 21), option_d: String(n + 25), correct_answer: 'B', explanation: `Add ${n + 12} and ${n + 7}.` }),
-    Subtraction: n => ({ question_text: `Calculate ${n + 35} − ${n + 8}.`, option_a: '23', option_b: '25', option_c: '27', option_d: '29', correct_answer: 'C', explanation: `Subtract ${n + 8} from ${n + 35}.` }),
-    Multiplication: n => ({ question_text: topic_sublevel === '1 digit × 1 digit' ? `What is ${n + 2} × ${n + 3}?` : topic_sublevel === '2 digit × 1 digit' ? `What is ${n + 12} × ${n + 3}?` : `What is ${n + 12} × ${n + 13}?`, option_a: '42', option_b: '56', option_c: '72', option_d: '84', correct_answer: 'B', explanation: 'Use place value multiplication and check carefully.' }),
-    Division: n => ({ question_text: `Divide ${(n + 4) * 6} by 6.`, option_a: String(n + 2), option_b: String(n + 3), option_c: String(n + 4), option_d: String(n + 5), correct_answer: 'C', explanation: `Since ${(n + 4) * 6} = ${n + 4} × 6, the answer is ${n + 4}.` })
-  }
-  return Array.from({ length: Number(count) }, (_, i) => ({ class_level, curriculum, topic, topic_area, topic_sublevel, difficulty: Number(difficulty), ai_generated: true, ...(templates[topic_area] || templates.Multiplication)(i + 1) }))
+function makeGeneratedQuestions({ count = 15, class_level = 'Grade 4', curriculum = 'GES', topic = 'Multiplication', topic_area = 'Multiplication', topic_sublevel = '1 digit × 1 digit', difficulty = 1 }) {
+  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+  return Array.from({ length: Number(count) }, (_, i) => {
+    let a = rand(2,9), b = rand(2,9), symbol = '×', answer = a * b
+    if (topic_sublevel === '2 digit × 1 digit') { a = rand(12,99); b = rand(2,9); answer = a * b }
+    if (topic_sublevel === '2 digit × 2 digit') { a = rand(12,99); b = rand(11,99); answer = a * b }
+    if (topic_area === 'Addition') { a = rand(10,99); b = rand(10,99); symbol = '+'; answer = a + b }
+    if (topic_area === 'Subtraction') { a = rand(40,150); b = rand(10,39); symbol = '−'; answer = a - b }
+    if (topic_area === 'Division') { b = rand(2,12); answer = rand(2,25); a = answer * b; symbol = '÷' }
+    return { class_level, curriculum, topic, topic_area, topic_sublevel, difficulty: Number(difficulty), ai_generated: true, question_text: `${a} ${symbol} ${b}`, numeric_answer: answer, option_a: String(answer - 1), option_b: String(answer), option_c: String(answer + 1), option_d: String(answer + 2), correct_answer: 'B', explanation: `The answer is ${answer}.` }
+  })
 }
+
+async function startSmartContest() {
+  clearInterval(countdownTimer); clearInterval(contestTimer)
+  const duration = Number(document.getElementById('smartDuration')?.value || 60)
+  const classLevel = document.getElementById('smartClass')?.value || 'Grade 4'
+  const curriculum = document.getElementById('smartCurriculum')?.value || 'GES'
+  const topic = document.getElementById('smartTopic')?.value || 'Multiplication by 4 (2 Digits)'
+  const a = { name: document.getElementById('aName')?.value || 'Student A', school: document.getElementById('aSchool')?.value || 'School A', classLevel: document.getElementById('aClass')?.value || classLevel, score: 0, answer: '', lastTime: 0 }
+  const b = { name: document.getElementById('bName')?.value || 'Student B', school: document.getElementById('bSchool')?.value || 'School B', classLevel: document.getElementById('bClass')?.value || classLevel, score: 0, answer: '', lastTime: 0 }
+  let questions = questionBank().filter(q => q.class_level === classLevel && q.curriculum === curriculum && q.topic === topic && q.numeric_answer)
+  if (supabase) { try { const { data } = await supabase.from('question_bank').select('*').eq('class_level', classLevel).eq('curriculum', curriculum).eq('topic', topic).not('numeric_answer', 'is', null).limit(50); if (data?.length) questions = data } catch {} }
+  if (!questions.length) questions = makeGeneratedQuestions({ count: 50, class_level: classLevel, curriculum, topic, topic_area: inferTopicArea(topic), topic_sublevel: '1 digit × 1 digit' })
+  state.smart = { ...defaultSmartState(), phase: 'countdown', countdown: 5, duration, remaining: duration, topic, classLevel, curriculum, questions: questions.sort(() => Math.random() - 0.5), a, b, message: 'Get ready. Countdown started!' }
+  render()
+  countdownTimer = setInterval(() => {
+    state.smart.countdown -= 1
+    if (state.smart.countdown <= 0) beginSmartLive()
+    else render()
+  }, 1000)
+}
+
+function beginSmartLive() {
+  clearInterval(countdownTimer)
+  state.smart.phase = 'live'
+  state.smart.round = 0
+  state.smart.roundStartedAt = Date.now()
+  state.smart.message = 'Answer now!'
+  render()
+  contestTimer = setInterval(() => {
+    state.smart.remaining -= 1
+    if (state.smart.remaining <= 0) endSmartContest()
+    else render()
+  }, 1000)
+}
+
+function smartSubmit(side) {
+  if (state.smart.phase !== 'live' || state.smart.roundWinner) return
+  const q = state.smart.questions[state.smart.round]
+  const player = state.smart[side]
+  const seconds = Number(((Date.now() - state.smart.roundStartedAt) / 1000).toFixed(2))
+  player.lastTime = seconds
+  const userAnswer = Number(player.answer)
+  if (Number(q.numeric_answer) === userAnswer) {
+    const speedBonus = Math.max(1, Math.ceil(10 - seconds))
+    player.score += 10 + speedBonus
+    state.smart.roundWinner = side
+    state.smart.message = `${player.name} answered fastest! +${10 + speedBonus} points`
+    render()
+    setTimeout(nextSmartQuestion, 900)
+  } else {
+    state.smart.message = `${player.name} submitted ${player.answer || 'blank'} — not correct.`
+    player.answer = ''
+    render()
+  }
+}
+
+function nextSmartQuestion() {
+  if (state.smart.phase !== 'live') return
+  state.smart.round += 1
+  state.smart.a.answer = ''
+  state.smart.b.answer = ''
+  state.smart.roundWinner = ''
+  state.smart.roundStartedAt = Date.now()
+  if (state.smart.round >= state.smart.questions.length) endSmartContest()
+  else { state.smart.message = 'Next question. Fastest correct answer wins!'; render() }
+}
+
+function endSmartContest() {
+  clearInterval(countdownTimer); clearInterval(contestTimer)
+  const a = state.smart.a, b = state.smart.b
+  const winner = a.score >= b.score ? a : b
+  const runnerUp = a.score >= b.score ? b : a
+  state.smart.phase = 'result'
+  state.smart.winner = winner
+  state.smart.runnerUp = runnerUp
+  recordSmartWinner(winner)
+  playClap()
+  render()
+}
+
+function resetSmartContest() {
+  clearInterval(countdownTimer); clearInterval(contestTimer)
+  state.smart = defaultSmartState()
+  render()
+}
+
+function recordSmartWinner(winner) {
+  const boards = stored('mezzo_smart_leaderboards', { weekly: [], monthly: [], yearly: [] })
+  const row = { name: winner.name, school: winner.school, classLevel: winner.classLevel, score: winner.score, topic: state.smart.topic, date: new Date().toISOString() }
+  for (const scope of ['weekly','monthly','yearly']) boards[scope] = [row, ...(boards[scope] || [])].sort((x,y) => y.score - x.score).slice(0,50)
+  save('mezzo_smart_leaderboards', boards)
+  if (supabase) {
+    for (const scope of ['weekly','monthly','yearly']) {
+      supabase.from('leaderboard_entries').insert({ school_name: winner.school, class_level: winner.classLevel, xp: winner.score, wins: 1, accuracy: 100, scope }).then(() => {}).catch(() => {})
+    }
+  }
+}
+
+function inferTopicArea(topic) {
+  const t = String(topic).toLowerCase()
+  if (t.includes('division') || t.includes('sharing')) return 'Division'
+  if (t.includes('subtraction') || t.includes('take away')) return 'Subtraction'
+  if (t.includes('add')) return 'Addition'
+  return 'Multiplication'
+}
+
+function playClap() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    for (let i = 0; i < 5; i++) {
+      const bufferSize = ctx.sampleRate * 0.08
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+      const data = buffer.getChannelData(0)
+      for (let j = 0; j < bufferSize; j++) data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / bufferSize, 2)
+      const source = ctx.createBufferSource(); source.buffer = buffer
+      const gain = ctx.createGain(); gain.gain.value = 0.35
+      source.connect(gain).connect(ctx.destination)
+      source.start(ctx.currentTime + i * 0.16)
+    }
+  } catch {}
+}
+
 async function aiGenerate(form) {
   const f = Object.fromEntries(new FormData(form).entries())
   let generated = null
@@ -162,35 +411,41 @@ async function aiGenerate(form) {
 }
 async function saveQuestion(form) {
   const f = Object.fromEntries(new FormData(form).entries())
-  const item = { class_level: f.class_level, curriculum: f.curriculum, topic: f.topic, topic_area: f.topic_area, topic_sublevel: f.topic_sublevel, difficulty: Number(f.difficulty), question_text: f.question_text, question_image_url: f.question_image_url, option_a: f.option_a, option_b: f.option_b, option_c: f.option_c, option_d: f.option_d, option_a_image_url: f.option_a_image_url, option_b_image_url: f.option_b_image_url, option_c_image_url: f.option_c_image_url, option_d_image_url: f.option_d_image_url, correct_answer: f.correct_answer, explanation: f.explanation }
+  const item = { class_level: f.class_level, curriculum: f.curriculum, topic: f.topic, topic_area: f.topic_area, topic_sublevel: f.topic_sublevel, numeric_answer: f.numeric_answer ? Number(f.numeric_answer) : null, question_text: f.question_text, question_image_url: f.question_image_url, option_a: f.option_a, option_b: f.option_b, option_c: f.option_c, option_d: f.option_d, option_a_image_url: f.option_a_image_url, option_b_image_url: f.option_b_image_url, option_c_image_url: f.option_c_image_url, option_d_image_url: f.option_d_image_url, correct_answer: f.correct_answer, explanation: f.explanation }
   const list = questionBank(); const idx = f.editing_index === '' ? -1 : Number(f.editing_index)
   if (idx >= 0) list[idx] = item; else list.unshift(item)
   setQuestionBank(list); state.editingIndex = null; state.message = idx >= 0 ? 'Question updated.' : 'Question saved.'
   if (supabase && idx < 0) { try { await supabase.from('question_bank').insert(item) } catch {} }
   render()
 }
-async function signup(form) { const raw = Object.fromEntries(new FormData(form).entries()); const profile = { ...raw, age: ageFromDob(raw.date_of_birth) }; delete profile.password; localStorage.setItem('mezzo_profile', JSON.stringify(profile)); state.user = profile; if (supabase) { const { data, error } = await supabase.auth.signUp({ email: raw.email, password: raw.password }); if (!error && data.user) await supabase.from('profiles').upsert({ id: data.user.id, ...profile }); state.message = error ? error.message : 'Account created. Check email if confirmation is enabled.' } else state.message = 'Demo account created locally.'; state.view = 'dashboard'; render() }
-async function login(form) { const f = Object.fromEntries(new FormData(form).entries()); const local = stored('mezzo_profile', null) || {}; local.email = f.email; local.role = f.role; save('mezzo_profile', local); state.user = local; if (supabase) { const { error } = await supabase.auth.signInWithPassword({ email: f.email, password: f.password }); state.message = error ? error.message : 'Logged in successfully.' } else state.message = 'Demo login successful.'; state.view = f.role === 'admin' ? 'admin' : 'dashboard'; render() }
-async function startSolo() { const classLevel = document.getElementById('soloClass').value, curriculum = document.getElementById('soloCurriculum').value, topic = document.getElementById('soloTopic').value, time = document.getElementById('soloTime').value, level = Math.max(1, Math.min(100, Number(document.getElementById('soloLevel').value || 1))); let questions = []; if (supabase) { const { data } = await supabase.from('question_bank').select('*').eq('class_level', classLevel).eq('curriculum', curriculum).eq('topic', topic).limit(60); if (data?.length) questions = data } if (!questions.length) questions = questionBank().filter(q => q.class_level === classLevel && q.curriculum === curriculum && q.topic === topic); if (!questions.length) questions = questionBank(); const set = [...questions].sort(() => Math.random() - 0.5); while (set.length < 15) set.push(...questions); state.solo = { classLevel, curriculum, topic, time, level, questions: set.slice(0,15), index: 0, score: 0, selected: '', finished: false }; render() }
-async function startBattle() { const classLevel = document.getElementById('battleClass')?.value || state.battle.classLevel, curriculum = document.getElementById('battleCurriculum')?.value || state.battle.curriculum, topicArea = document.getElementById('battleTopic')?.value || state.battle.topicArea, sublevel = document.getElementById('battleSublevel')?.value || state.battle.sublevel, opponent = document.getElementById('battleOpponent')?.value || state.battle.opponent; let questions = []; if (supabase) { const { data } = await supabase.from('question_bank').select('*').eq('class_level', classLevel).eq('curriculum', curriculum).eq('topic_area', topicArea).eq('topic_sublevel', sublevel).limit(60); if (data?.length) questions = data } if (!questions.length) questions = questionBank().filter(q => q.class_level === classLevel && q.curriculum === curriculum && (q.topic_area === topicArea || q.topic === topicArea) && (q.topic_sublevel === sublevel || !q.topic_sublevel)); if (!questions.length) questions = makeGeneratedQuestions({ count: 15, class_level: classLevel, curriculum, topic: topicArea, topic_area: topicArea, topic_sublevel: sublevel, difficulty: 1 }); const set = [...questions].sort(() => Math.random() - 0.5); while (set.length < 15) set.push(...questions); state.battle = { classLevel, curriculum, topicArea, sublevel, opponent, questions: set.slice(0,15), index: 0, playerScore: 0, opponentScore: 0, selected: '', started: true, finished: false }; render() }
+async function signup(form) { const raw = Object.fromEntries(new FormData(form).entries()); const profile = { ...raw, age: ageFromDob(raw.date_of_birth) }; delete profile.password; save('mezzo_profile', profile); state.user = profile; if (supabase) { const { data, error } = await supabase.auth.signUp({ email: raw.email, password: raw.password }); if (!error && data.user) await supabase.from('profiles').upsert({ id: data.user.id, ...profile }); state.message = error ? error.message : 'Account created.' } else state.message = 'Demo account created locally.'; state.view = 'dashboard'; render() }
+async function login(form) { const f = Object.fromEntries(new FormData(form).entries()); const local = stored('mezzo_profile', {}) || {}; local.email = f.email; local.role = f.role; save('mezzo_profile', local); state.user = local; if (supabase) { const { error } = await supabase.auth.signInWithPassword({ email: f.email, password: f.password }); state.message = error ? error.message : 'Logged in successfully.' } else state.message = 'Demo login successful.'; state.view = f.role === 'admin' ? 'admin' : 'dashboard'; render() }
+
+function startSolo() { state.message = 'Solo practice engine is ready. Select a class and topic, then load question sets from the bank.'; render() }
+function startBattle() { state.message = 'Online battle mode is ready. For two students in front of a smart board, use Smart Board 1v1.'; render() }
 
 document.addEventListener('click', async (e) => {
-  const target = e.target.closest('[data-target]'); if (target) { state.view = target.dataset.target; state.message = ''; state.editingIndex = null; render(); return }
+  const target = e.target.closest('[data-target]'); if (target) { clearInterval(countdownTimer); clearInterval(contestTimer); state.view = target.dataset.target; state.message = ''; state.editingIndex = null; render(); return }
   const mode = e.target.closest('[data-auth-mode]'); if (mode) { state.authMode = mode.dataset.authMode; render(); return }
-  const opponent = e.target.closest('[data-opponent]'); if (opponent) { state.battle.opponent = opponent.dataset.opponent; await startBattle(); return }
   const edit = e.target.closest('[data-edit-question]'); if (edit) { state.editingIndex = Number(edit.dataset.editQuestion); render(); return }
   const del = e.target.closest('[data-delete-question]'); if (del) { const list = questionBank(); list.splice(Number(del.dataset.deleteQuestion), 1); setQuestionBank(list); state.message = 'Question deleted.'; render(); return }
   const sym = e.target.closest('[data-symbol]'); if (sym) { const field = document.activeElement?.matches('textarea,input') ? document.activeElement : document.querySelector('.symbol-target'); if (field) { field.value += sym.dataset.symbol; field.focus() } return }
-  if (e.target.closest('#startSolo')) { await startSolo(); return }
-  if (e.target.closest('#startBattle') || e.target.closest('#startBattle2')) { await startBattle(); return }
-  const battleAns = e.target.closest('[data-battle-answer]'); if (battleAns && !state.battle.selected) { const q = state.battle.questions[state.battle.index]; state.battle.selected = battleAns.dataset.battleAnswer; if (state.battle.selected === q.correct_answer) state.battle.playerScore += 1; if (Math.random() > 0.45) state.battle.opponentScore += 1; render(); return }
-  if (e.target.closest('#nextBattle')) { if (state.battle.index >= 14) state.battle.finished = true; else { state.battle.index += 1; state.battle.selected = '' } render(); return }
-  const ans = e.target.closest('[data-answer]'); if (ans && !state.solo.selected) { const q = state.solo.questions[state.solo.index]; state.solo.selected = ans.dataset.answer; if (state.solo.selected === q.correct_answer) state.solo.score += 1; render(); return }
-  if (e.target.closest('#nextSolo')) { if (state.solo.index >= 14) state.solo.finished = true; else { state.solo.index += 1; state.solo.selected = '' } render(); return }
-  if (e.target.closest('#advanceSolo')) { state.solo.level = Math.min(Number(state.solo.level) + 1, 100); state.solo.questions = []; state.solo.index = 0; state.solo.score = 0; state.solo.selected = ''; state.solo.finished = false; render(); return }
-  if (e.target.closest('#retrySolo')) { state.solo.questions = []; state.solo.index = 0; state.solo.score = 0; state.solo.selected = ''; state.solo.finished = false; render() }
+  const key = e.target.closest('[data-key]'); if (key && state.smart.phase === 'live') { const p = state.smart[key.dataset.pad]; p.answer = key.dataset.key === '⌫' ? p.answer.slice(0,-1) : `${p.answer}${key.dataset.key}`; render(); return }
+  const smartSubmitBtn = e.target.closest('[data-submit-smart]'); if (smartSubmitBtn) { smartSubmit(smartSubmitBtn.dataset.submitSmart); return }
+  if (e.target.closest('#startSmartContest')) { await startSmartContest(); return }
+  if (e.target.closest('#endSmartContest')) { endSmartContest(); return }
+  if (e.target.closest('#resetSmartContest')) { resetSmartContest(); return }
+  if (e.target.closest('#playClap')) { playClap(); return }
+  if (e.target.closest('#startSolo')) { startSolo(); return }
+  if (e.target.closest('#startBattle') || e.target.closest('#startBattle2')) { startBattle(); return }
 })
-document.addEventListener('change', (e) => { if (e.target.id === 'dobInput') document.getElementById('ageOutput').value = ageFromDob(e.target.value); if (e.target.id === 'soloClass') { state.solo.classLevel = e.target.value; state.solo.topic = (topicsByLevel[e.target.value] || [])[0] || ''; render() } if (e.target.id === 'adminLevel') { const topic = document.getElementById('adminTopic'); if (topic) topic.innerHTML = optionHtml(topicsByLevel[e.target.value] || [], (topicsByLevel[e.target.value] || [])[0]) } })
+
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'dobInput') document.getElementById('ageOutput').value = ageFromDob(e.target.value)
+  if (e.target.id === 'smartClass') { state.smart.classLevel = e.target.value; state.smart.topic = (topicsByLevel[e.target.value] || [])[0] || ''; render() }
+  if (e.target.id === 'soloClass') { state.solo.classLevel = e.target.value; state.solo.topic = (topicsByLevel[e.target.value] || [])[0] || ''; render() }
+  if (e.target.id === 'adminLevel') { const topic = document.getElementById('adminTopic'); if (topic) topic.innerHTML = optionHtml(topicsByLevel[e.target.value] || [], (topicsByLevel[e.target.value] || [])[0]) }
+})
 document.addEventListener('submit', async (e) => { e.preventDefault(); if (e.target.id === 'signupForm') await signup(e.target); if (e.target.id === 'loginForm') await login(e.target); if (e.target.id === 'adminQuestionForm') await saveQuestion(e.target); if (e.target.id === 'aiGenerateForm') await aiGenerate(e.target) })
 
 render()
