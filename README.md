@@ -1,35 +1,60 @@
 # Mezzo Maths Battle Arena
 
-A premium, responsive React + Vite educational game web app for **Mezzo Maths Battle Arena**.
+A premium, responsive Vite web app for **Mezzo Maths Battle Arena**.
 
 The app is designed for competitive mathematics learning: students practise maths, battle opponents, earn XP, collect coins, climb leaderboards, and prepare for the Mezzopedia National Mathematics Contest.
 
-## Included Screens
+## Current Screens
 
-1. Landing Page
-2. Student Game Lobby Dashboard
-3. Game Zone Session Builder
-4. Solo Practice / Quiz Screen
-5. 1v1 Battle Arena Screen
-6. Leaderboard Screen
-7. Teacher / Smart Board Contest Studio
-8. Design System section
+1. Dashboard Home
+2. Student/Admin Sign Up
+3. Student/Admin Login
+4. Solo Practice
+5. Game Zone
+6. Admin Question Bank
+7. Leaderboard
+8. Settings
 
 ## Latest Additions
 
-- Class levels from **Grade 1 to Grade 6, JHS 1 to JHS 3, and SHS 1 to SHS 3**.
-- Curriculum selector for **GES, Cambridge, and Pearson Edexcel**.
-- Specific topic-area selector per class level.
-- Game Zone Session Builder for choosing class, curriculum, topics, and trophy progression path.
-- Each question set is shown as **15 questions**.
-- Pass rule is shown as **above 12**, implemented visually as **13/15 or higher** to progress.
-- Trophy map progression per class level with 5 stages leading to the Ultimate Trophy.
-- Quiz and Battle screens now display selected level, curriculum, topics, and 15-question progression rules.
+- Landing screen changed to **Dashboard**.
+- Supabase-ready sign up and login flow for students and admins.
+- Sign up form captures full name, email, password, date of birth, auto age, school name, location, class/year, curriculum type and account type.
+- Supabase database schema added at `supabase/schema.sql`.
+- Tables include profiles, question bank, practice sessions, session answers, leaderboard entries, daily challenges and student progress.
+- Admin page for saving questions by class level, curriculum, topic, difficulty and answer options.
+- Question generation size selector: **10, 20, 30, 40, 50**.
+- Solo Practice page started with class, curriculum, topic, timer and level selection.
+- Solo Practice now supports a **100-level system**.
+- Every level uses a 15-question set.
+- Pass mark is **13/15**.
+- Difficulty increases every 5 levels.
+- Power levels appear every 10 levels with higher point multipliers.
+- Questions are selected randomly from Supabase `question_bank` when Supabase keys are configured; otherwise, demo questions are used.
+
+## Supabase Setup
+
+1. Create a Supabase project.
+2. Go to **SQL Editor**.
+3. Paste and run the contents of:
+
+```bash
+supabase/schema.sql
+```
+
+4. In Vercel, add these Environment Variables:
+
+```bash
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+```
+
+5. Redeploy the latest commit.
 
 ## Tech Stack
 
-- React
 - Vite
+- Supabase client
 - Tailwind CSS setup
 - Custom responsive CSS components
 
@@ -50,37 +75,21 @@ npm run build
 
 The production files will be created in the `dist` folder.
 
-## Upload to GitHub
-
-```bash
-git init
-git add .
-git commit -m "Build Mezzo Maths Battle Arena UI"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/YOUR-REPO-NAME.git
-git push -u origin main
-```
-
 ## Deploy on Vercel
 
-1. Go to Vercel.
-2. Click **Add New Project**.
-3. Import the GitHub repository.
-4. Vercel should detect Vite automatically.
-5. Use these settings if needed:
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-6. Click **Deploy**.
+Use these settings:
 
-## Notes for Codex / Developers
+```bash
+Install Command: npm install
+Build Command: npm run build
+Output Directory: dist
+```
 
-- Main app file: `src/App.jsx`
+## Important Files
+
+- Main app file: `src/main.jsx`
 - Main styling file: `src/index.css`
-- Academic configuration data is currently stored near the top of `src/App.jsx`:
-  - `classLevels`
-  - `curricula`
-  - `topicsByLevel`
-  - `stageNodes`
-  - `gameZoneRules`
-- Components are reusable: cards, buttons, badges, avatars, XP bars, leaderboard table, player bars, topic chips, Game Zone setup, stage map, and mobile nav.
-- Screen switching is currently handled with React state in `App.jsx`; a router can be added later when backend routes are needed.
+- New feature styling file: `src/upgrade.css`
+- Supabase client: `src/supabaseClient.js`
+- Supabase schema: `supabase/schema.sql`
+- Environment example: `.env.example`
