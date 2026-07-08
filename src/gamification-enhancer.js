@@ -35,6 +35,9 @@ function getStats() {
   const level = Math.max(1, Math.floor((saved.xp || 0) / 250) + 1)
   return { ...defaultStats, ...saved, level }
 }
+function statsSignature(stats = getStats()) {
+  return [stats.xp, stats.coins, stats.wins, stats.streak, stats.level, stats.correctAnswers, stats.attemptedAnswers, stats.completedSets, stats.smartWins, (stats.badges || []).join('|')].join('-')
+}
 function saveStats(stats) {
   stats.level = Math.max(1, Math.floor((stats.xp || 0) / 250) + 1)
   stats.badges = Array.from(new Set(stats.badges || []))
@@ -89,18 +92,16 @@ function award({ xp = 0, coins = 0, correct = false, attempt = false, completed 
   syncGamificationUI()
   const levelText = stats.level > beforeLevel ? ` • Level up to ${stats.level}!` : ''
   showRewardToast('Reward earned', `+${xp} XP • +${coins} coins • ${reason}${levelText}`)
-  if (newBadges.length) {
-    setTimeout(() => showRewardToast('Badge unlocked!', `${newBadges.map(b => `${b.icon} ${b.name}`).join(', ')}`), 650)
-  }
+  if (newBadges.length) setTimeout(() => showRewardToast('Badge unlocked!', `${newBadges.map(b => `${b.icon} ${b.name}`).join(', ')}`), 650)
 }
 function badgeHtml(badge, unlocked) {
   return `<div class="badge-tile ${unlocked ? 'earned' : 'locked'}"><span>${unlocked ? badge.icon : '🔒'}</span><strong>${badge.name}</strong><small>${badge.desc}</small></div>`
 }
-function statsPanelHtml() {
+function statsPanelHtml(signature) {
   const stats = getStats()
   const { progress, remaining } = levelProgress(stats)
   const earned = new Set(stats.badges || [])
-  return `<section class="gamification-panel glass-card">
+  return `<section class="gamification-panel glass-card" data-reward-signature="${signature}">
     <div class="reward-header">
       <div><div class="pill">🎮 XP • Coins • Badges</div><h2>My Battle Rewards</h2><p>Earn XP, coins and badges by answering correctly, completing practice sets and winning battles.</p></div>
       <div class="level-orb"><span>Level</span><strong>${stats.level}</strong></div>
@@ -116,34 +117,45 @@ function statsPanelHtml() {
     <div class="badge-cabinet"><div class="section-row"><h3>Badge Cabinet</h3><span>${earned.size}/${BADGES.length} earned</span></div><div class="badge-grid">${BADGES.map(b => badgeHtml(b, earned.has(b.id))).join('')}</div></div>
   </section>`
 }
-function miniDockHtml() {
+function miniDockHtml(signature) {
   const stats = getStats()
-  return `<div class="reward-mini-dock"><span>Lv. ${stats.level}</span><strong>⚡ ${stats.xp}</strong><strong>🪙 ${stats.coins}</strong><strong>🏆 ${stats.wins}</strong></div>`
+  return `<div class="reward-mini-dock" data-reward-signature="${signature}"><span>Lv. ${stats.level}</span><strong>⚡ ${stats.xp}</strong><strong>🪙 ${stats.coins}</strong><strong>🏆 ${stats.wins}</strong></div>`
+}
+function htmlToElement(html) {
+  const wrap = document.createElement('div')
+  wrap.innerHTML = html.trim()
+  return wrap.firstElementChild
 }
 function injectDashboardRewards() {
   const dashboard = document.querySelector('.dashboard-screen')
   if (!dashboard) return
+  const signature = statsSignature()
   const existing = dashboard.querySelector('.gamification-panel')
-  if (existing) existing.remove()
-  const wrap = document.createElement('div')
-  wrap.innerHTML = statsPanelHtml()
-  const avatarLab = dashboard.querySelector('.avatar-lab-card')
-  if (avatarLab) avatarLab.insertAdjacentElement('afterend', wrap.firstElementChild)
-  else dashboard.appendChild(wrap.firstElementChild)
+  if (existing?.dataset.rewardSignature === signature) return
+  const next = htmlToElement(statsPanelHtml(signature))
+  if (existing) existing.replaceWith(next)
+  else {
+    const avatarLab = dashboard.querySelector('.avatar-lab-card')
+    if (avatarLab) avatarLab.insertAdjacentElement('afterend', next)
+    else dashboard.appendChild(next)
+  }
 }
 function injectMiniDock() {
   const appFrame = document.querySelector('.app-frame')
   if (!appFrame) return
-  const old = document.querySelector('.reward-mini-dock')
-  if (old) old.remove()
-  const node = document.createElement('div')
-  node.innerHTML = miniDockHtml()
-  appFrame.prepend(node.firstElementChild)
+  const signature = statsSignature()
+  const existing = appFrame.querySelector(':scope > .reward-mini-dock') || document.querySelector('.reward-mini-dock')
+  if (existing?.dataset.rewardSignature === signature) return
+  const next = htmlToElement(miniDockHtml(signature))
+  if (existing) existing.replaceWith(next)
+  else appFrame.prepend(next)
 }
 function syncLandingStats() {
   const stats = getStats()
+  const signature = statsSignature(stats)
   const grid = document.querySelector('.landing-stat-grid')
-  if (!grid) return
+  if (!grid || grid.dataset.rewardSignature === signature) return
+  grid.dataset.rewardSignature = signature
   const items = grid.querySelectorAll('.landing-stat')
   const values = [
     ['🔥', `${stats.streak}-Day`, 'Current streak'],
@@ -156,14 +168,18 @@ function syncLandingStats() {
     item.innerHTML = `<span>${values[index][0]}</span><strong>${values[index][1]}</strong><small>${values[index][2]}</small>`
   })
 }
+let syncQueued = false
 function syncGamificationUI() {
-  injectMiniDock()
-  injectDashboardRewards()
-  syncLandingStats()
+  if (syncQueued) return
+  syncQueued = true
+  requestAnimationFrame(() => {
+    syncQueued = false
+    injectMiniDock()
+    injectDashboardRewards()
+    syncLandingStats()
+  })
 }
-function resultText() {
-  return document.querySelector('.result-banner strong')?.textContent?.trim() || ''
-}
+function resultText() { return document.querySelector('.result-banner strong')?.textContent?.trim() || '' }
 function oncePerElement(el, key) {
   if (!el || el.dataset[key]) return false
   el.dataset[key] = '1'
@@ -189,9 +205,7 @@ document.addEventListener('click', event => {
       else award({ xp: 3, coins: 1, attempt: true, reason: 'Smart Board attempt' })
     }, 100)
   }
-  if (event.target.closest('[data-start-daily]')) {
-    award({ xp: 10, coins: 5, daily: true, reason: 'Daily challenge opened' })
-  }
+  if (event.target.closest('[data-start-daily]')) award({ xp: 10, coins: 5, daily: true, reason: 'Daily challenge opened' })
 })
 
 const completedKeys = new Set()
