@@ -9,11 +9,11 @@ The app is designed for competitive mathematics learning: students practise math
 1. Premium game-style Homepage
 2. Smart Board 1 vs 1 Contest Studio
 3. Online 1 vs 1 Battle page
-4. Personal User Dashboard with Avatar Studio and Reward System
+4. Personal User Dashboard with Avatar Studio, Reward System, Topic Progress Map and Teacher Overview
 5. Combined Login / Sign Up page
 6. Solo Practice
-7. Unified Admin page with Admin Settings and AI Question Generator
-8. Weekly / Monthly / Yearly Leaderboards
+7. Unified Admin page with Admin Settings, AI Question Generator and Teacher Dashboard
+8. Expanded Weekly / Monthly / Yearly / Class / School / Regional / National Leaderboards
 
 ## Latest Additions
 
@@ -27,6 +27,11 @@ The app is designed for competitive mathematics learning: students practise math
 - Added a downloadable **Winner Card** image for Smart Board winners.
 - Added an **AI Coach Feedback** panel after practice, battle and Smart Board results.
 - AI Coach feedback shows score percentage, strength, area to improve and recommended next practice.
+- Added expanded leaderboard sections for **Class, School, Regional, National and Smart Board** leaders.
+- Added a **Teacher Dashboard** showing active students, total attempts, strong topics, weak topics, students needing help, best performer and recent attempts.
+- Added CSV export for the Teacher Dashboard report.
+- Added a colourful **Topic Progress Map** that marks topics as Locked, Started, Improving or Mastered based on practice results.
+- Practice results are saved locally as learning history so the Teacher Dashboard and Topic Progress Map can update immediately.
 - Correct answers, attempts, completed practice sets, daily challenge starts, battle wins and Smart Board wins now award XP and coins.
 - Added a sticky mini reward dock showing current level, XP, coins and wins.
 - Added a dashboard reward panel with XP, coins, wins, streak, correct answers, level progress and badge cabinet.
@@ -146,10 +151,11 @@ Output Directory: dist
 
 - Main app file: `src/main.jsx`
 - Main styling file: `src/index.css`
-- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`, `src/avatar.css`, `src/gamification.css`, `src/celebration-ai.css`
+- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`, `src/avatar.css`, `src/gamification.css`, `src/celebration-ai.css`, `src/school-progress.css`
 - Avatar enhancer: `src/avatar-enhancer.js`
 - Gamification enhancer: `src/gamification-enhancer.js`
 - Celebration and AI Coach enhancer: `src/celebration-ai-coach.js`
+- School leaderboard, teacher dashboard and topic progress enhancer: `src/school-progress-enhancer.js`
 - Supabase client: `src/supabaseClient.js`
 - Supabase schema: `supabase/schema.sql`
 - Supabase migrations: `supabase/migrations/002_admin_ai_question_tools.sql`, `supabase/migrations/003_smart_board_contests.sql`
