@@ -1,0 +1,287 @@
+/* Final UI alignment polish */
+html,body,#root{
+  max-width:100%!important;
+  overflow-x:hidden!important;
+}
+
+.app-shell{
+  overflow-x:hidden!important;
+}
+
+.app-frame{
+  width:min(1500px,calc(100vw - 20px))!important;
+  max-width:1500px!important;
+  margin-inline:auto!important;
+  overflow-x:hidden!important;
+  padding-top:10px!important;
+}
+
+.screen-tabs{
+  display:grid!important;
+  grid-template-columns:auto 1fr!important;
+  gap:12px!important;
+  align-items:center!important;
+  overflow:visible!important;
+  padding:10px!important;
+  border-radius:24px!important;
+}
+
+.brand-chip{
+  min-width:170px!important;
+  flex:0 0 auto!important;
+}
+
+.tab-scroll{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  justify-content:flex-end!important;
+  align-items:center!important;
+  gap:8px!important;
+  overflow:visible!important;
+  white-space:normal!important;
+  max-width:100%!important;
+  scrollbar-width:none!important;
+}
+
+.tab-scroll::-webkit-scrollbar{
+  display:none!important;
+}
+
+.screen-tab{
+  flex:0 1 auto!important;
+  min-width:auto!important;
+  padding:9px 11px!important;
+  border-radius:15px!important;
+  font-size:.82rem!important;
+  line-height:1.1!important;
+  white-space:nowrap!important;
+}
+
+.screen-tab span{
+  font-size:1rem!important;
+}
+
+.active-title{
+  margin:10px 0!important;
+}
+
+.sound-toggle{
+  position:fixed!important;
+  top:14px!important;
+  right:16px!important;
+  z-index:100006!important;
+  margin:0!important;
+  min-height:38px!important;
+  padding:8px 12px!important;
+  border-radius:999px!important;
+  font-size:.82rem!important;
+  box-shadow:0 14px 34px rgba(0,0,0,.34)!important;
+}
+
+.reward-mini-dock{
+  position:fixed!important;
+  top:58px!important;
+  right:16px!important;
+  z-index:100005!important;
+  margin:0!important;
+  justify-content:flex-end!important;
+  transform:scale(.92)!important;
+  transform-origin:top right!important;
+}
+
+.game-hero{
+  grid-template-columns:minmax(0,1fr) minmax(380px,600px)!important;
+  align-items:stretch!important;
+  gap:24px!important;
+}
+
+.arena-stage{
+  min-height:520px!important;
+  height:100%!important;
+  display:block!important;
+  position:relative!important;
+  padding:24px!important;
+  overflow:hidden!important;
+}
+
+.arena-stage .floating-badge{
+  z-index:8!important;
+  white-space:nowrap!important;
+}
+
+.arena-stage .badge-top{
+  top:26px!important;
+  left:26px!important;
+}
+
+.arena-stage .badge-side{
+  top:82px!important;
+  right:26px!important;
+}
+
+.arena-stage .floating-fire{
+  left:48%!important;
+  top:53%!important;
+  bottom:auto!important;
+  opacity:.35!important;
+}
+
+.arena-stage .coin-one{
+  right:18%!important;
+  top:68%!important;
+  bottom:auto!important;
+  opacity:.55!important;
+}
+
+.arena-stage .coin-two{
+  left:24%!important;
+  top:30%!important;
+  opacity:.85!important;
+}
+
+.battle-platform{
+  position:absolute!important;
+  left:50%!important;
+  top:45%!important;
+  transform:translate(-50%,-50%)!important;
+  width:88%!important;
+  display:grid!important;
+  grid-template-columns:minmax(110px,1fr) minmax(150px,210px) minmax(110px,1fr)!important;
+  align-items:end!important;
+  justify-items:center!important;
+  gap:18px!important;
+  z-index:4!important;
+}
+
+.player-token{
+  width:138px!important;
+  min-width:138px!important;
+  min-height:150px!important;
+  padding:14px 10px!important;
+  border-radius:28px!important;
+  font-size:4.6rem!important;
+  line-height:1!important;
+  align-self:end!important;
+  overflow:visible!important;
+}
+
+.player-token span{
+  display:block!important;
+  width:100%!important;
+  margin-top:8px!important;
+  color:#fff!important;
+  font-size:.86rem!important;
+  line-height:1.15!important;
+  text-align:center!important;
+  white-space:normal!important;
+  overflow-wrap:break-word!important;
+}
+
+.gold-trophy{
+  font-size:7.2rem!important;
+  align-self:center!important;
+  margin-bottom:16px!important;
+  z-index:5!important;
+}
+
+.mini-leader-board{
+  left:26px!important;
+  right:26px!important;
+  bottom:24px!important;
+  top:auto!important;
+  z-index:6!important;
+  padding:16px 20px!important;
+  border-radius:24px!important;
+  background:rgba(15,23,42,.82)!important;
+  backdrop-filter:blur(12px)!important;
+}
+
+.mini-leader-board strong{
+  display:block!important;
+  margin-bottom:8px!important;
+  font-size:1.05rem!important;
+  line-height:1.1!important;
+}
+
+.mini-leader-board span{
+  display:block!important;
+  font-size:.98rem!important;
+  line-height:1.35!important;
+  margin:2px 0!important;
+  white-space:normal!important;
+}
+
+@media(max-width:1250px){
+  .screen-tabs{
+    grid-template-columns:1fr!important;
+  }
+  .brand-chip{
+    width:max-content!important;
+  }
+  .tab-scroll{
+    justify-content:flex-start!important;
+  }
+  .screen-tab{
+    font-size:.78rem!important;
+    padding:8px 10px!important;
+  }
+  .game-hero{
+    grid-template-columns:1fr!important;
+  }
+  .arena-stage{
+    min-height:500px!important;
+  }
+}
+
+@media(max-width:760px){
+  .sound-toggle{
+    top:auto!important;
+    right:14px!important;
+    bottom:14px!important;
+  }
+  .reward-mini-dock{
+    display:none!important;
+  }
+  .screen-tabs{
+    padding:8px!important;
+  }
+  .tab-scroll{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px!important;
+  }
+  .screen-tab{
+    justify-content:center!important;
+    width:100%!important;
+    white-space:normal!important;
+    min-height:42px!important;
+  }
+  .arena-stage{
+    min-height:460px!important;
+    padding:18px!important;
+  }
+  .battle-platform{
+    width:94%!important;
+    grid-template-columns:1fr 1fr!important;
+    top:43%!important;
+  }
+  .gold-trophy{
+    position:absolute!important;
+    left:50%!important;
+    top:50%!important;
+    transform:translate(-50%,-50%)!important;
+    font-size:5.2rem!important;
+    opacity:.92!important;
+  }
+  .player-token{
+    width:112px!important;
+    min-width:112px!important;
+    min-height:126px!important;
+    font-size:3.4rem!important;
+  }
+  .mini-leader-board{
+    left:18px!important;
+    right:18px!important;
+    bottom:18px!important;
+  }
+}
