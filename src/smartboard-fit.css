@@ -1,0 +1,312 @@
+/* Smart Board viewport-fit override */
+.smartboard-screen{
+  max-width:100%!important;
+  min-height:calc(100vh - 150px)!important;
+  display:grid!important;
+  gap:10px!important;
+  align-content:start!important;
+  overflow:visible!important;
+}
+
+.smartboard-screen .smart-top{
+  grid-template-columns:1fr 150px!important;
+  gap:10px!important;
+  padding:12px 16px!important;
+  margin-bottom:8px!important;
+  border-radius:22px!important;
+}
+
+.smartboard-screen .smart-top h1{
+  font-size:clamp(1.65rem,3.3vw,3.3rem)!important;
+  line-height:.92!important;
+  margin:4px 0!important;
+}
+
+.smartboard-screen .smart-top p{
+  margin:0!important;
+  font-size:.86rem!important;
+  line-height:1.25!important;
+}
+
+.smartboard-screen .smart-clock{
+  min-height:92px!important;
+  padding:10px!important;
+  border-radius:20px!important;
+}
+
+.smartboard-screen .smart-clock strong{
+  font-size:2.55rem!important;
+  line-height:1!important;
+}
+
+.smartboard-screen .smart-setup-grid{
+  grid-template-columns:minmax(190px,.62fr) minmax(300px,1fr) minmax(190px,.62fr)!important;
+  gap:10px!important;
+}
+
+.smartboard-screen .smart-player-card,
+.smartboard-screen .smart-settings{
+  padding:12px!important;
+  border-radius:22px!important;
+}
+
+.smartboard-screen .smart-settings h2{
+  font-size:1.5rem!important;
+  margin-bottom:8px!important;
+}
+
+.smartboard-screen .field-group{
+  gap:5px!important;
+  margin-bottom:8px!important;
+}
+
+.smartboard-screen .field-group span{
+  font-size:.72rem!important;
+}
+
+.smartboard-screen .field-group input,
+.smartboard-screen .field-group select,
+.smartboard-screen .field-group textarea{
+  min-height:38px!important;
+  padding:8px 10px!important;
+  border-radius:13px!important;
+  font-size:.88rem!important;
+}
+
+.smartboard-screen .avatar-medium,
+.smartboard-screen .avatar{
+  width:54px!important;
+  height:54px!important;
+  font-size:2rem!important;
+  margin:5px auto!important;
+}
+
+.smartboard-screen .contest-label{
+  font-size:.72rem!important;
+}
+
+.smartboard-screen .smart-topic-note{
+  padding:8px!important;
+  margin:6px 0!important;
+  font-size:.78rem!important;
+  line-height:1.25!important;
+}
+
+.smartboard-screen .smart-live-board{
+  display:grid!important;
+  grid-template-columns:170px minmax(0,1fr) 170px!important;
+  grid-template-areas:
+    "a question b"
+    "pad-a center pad-b"!important;
+  gap:10px!important;
+  align-items:stretch!important;
+  min-height:calc(100vh - 260px)!important;
+}
+
+.smartboard-screen .student-a{grid-area:a!important;}
+.smartboard-screen .student-b{grid-area:b!important;}
+.smartboard-screen .smart-question-zone{grid-area:question!important;}
+.smartboard-screen .pad-a{grid-area:pad-a!important;}
+.smartboard-screen .pad-b{grid-area:pad-b!important;}
+.smartboard-screen .smart-center-status{grid-area:center!important;}
+
+.smartboard-screen .smart-score-card{
+  min-height:0!important;
+  height:auto!important;
+  padding:12px!important;
+  border-radius:22px!important;
+}
+
+.smartboard-screen .smart-score-card h2{
+  font-size:1.25rem!important;
+  line-height:1.05!important;
+  margin:6px 0 0!important;
+}
+
+.smartboard-screen .smart-score-card p{
+  font-size:.78rem!important;
+  line-height:1.2!important;
+  margin:5px 0!important;
+}
+
+.smartboard-screen .smart-score-card strong{
+  font-size:clamp(2.6rem,5vw,4.4rem)!important;
+}
+
+.smartboard-screen .smart-score-card small{
+  font-size:.74rem!important;
+}
+
+.smartboard-screen .smart-question-zone{
+  min-height:240px!important;
+  height:auto!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  align-items:center!important;
+  padding:18px!important;
+  border-radius:24px!important;
+  overflow:hidden!important;
+}
+
+.smartboard-screen .smart-meta{
+  width:100%!important;
+  justify-content:center!important;
+  gap:8px!important;
+  margin-bottom:10px!important;
+}
+
+.smartboard-screen .smart-meta span{
+  border-radius:999px!important;
+  padding:6px 9px!important;
+  background:#e0f2fe!important;
+  color:#0f172a!important;
+  font-size:.7rem!important;
+  line-height:1!important;
+}
+
+.smartboard-screen .smart-question-zone h1{
+  width:100%!important;
+  max-width:100%!important;
+  margin:8px 0 12px!important;
+  color:#0f172a!important;
+  font-size:clamp(1.85rem,4.6vw,4.6rem)!important;
+  line-height:1.04!important;
+  text-align:center!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+  white-space:normal!important;
+}
+
+.smartboard-screen .smart-answer-status{
+  max-width:100%!important;
+  padding:8px 11px!important;
+  font-size:.78rem!important;
+  line-height:1.2!important;
+  text-align:center!important;
+  white-space:normal!important;
+}
+
+.smartboard-screen .number-pad{
+  padding:12px!important;
+  border-radius:22px!important;
+}
+
+.smartboard-screen .number-pad h3{
+  font-size:1.05rem!important;
+  margin-bottom:8px!important;
+}
+
+.smartboard-screen .answer-display{
+  min-height:44px!important;
+  border-radius:14px!important;
+  margin-bottom:8px!important;
+  font-size:1.55rem!important;
+}
+
+.smartboard-screen .keypad-grid{
+  gap:6px!important;
+}
+
+.smartboard-screen .key-btn{
+  min-height:42px!important;
+  border-radius:12px!important;
+  font-size:1.05rem!important;
+}
+
+.smartboard-screen .submit-answer{
+  margin-top:8px!important;
+  min-height:40px!important;
+  padding:9px 10px!important;
+}
+
+.smartboard-screen .smart-center-status{
+  min-height:86px!important;
+  padding:12px!important;
+  border-radius:22px!important;
+}
+
+.smartboard-screen .smart-center-status strong{
+  font-size:1.35rem!important;
+  line-height:1!important;
+}
+
+.smartboard-screen .smart-center-status span{
+  font-size:.82rem!important;
+}
+
+.smartboard-screen .giant-count{
+  font-size:4rem!important;
+}
+
+/* Countdown should appear as an overlay and disappear automatically when live starts */
+.smartboard-screen .smart-clock.counting{
+  position:fixed!important;
+  inset:0!important;
+  z-index:100004!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100vw!important;
+  height:100vh!important;
+  border-radius:0!important;
+  border:0!important;
+  background:radial-gradient(circle at center,rgba(251,191,36,.28),transparent 34%),rgba(2,6,23,.88)!important;
+  backdrop-filter:blur(14px)!important;
+  box-shadow:none!important;
+}
+
+.smartboard-screen .smart-clock.counting small,
+.smartboard-screen .smart-clock.counting span{
+  display:block!important;
+  color:#f8fafc!important;
+  font-size:clamp(1rem,2vw,1.45rem)!important;
+  letter-spacing:.08em!important;
+  text-align:center!important;
+}
+
+.smartboard-screen .smart-clock.counting strong{
+  display:grid!important;
+  place-items:center!important;
+  width:min(42vw,260px)!important;
+  height:min(42vw,260px)!important;
+  margin:18px auto!important;
+  border-radius:50%!important;
+  color:#0f172a!important;
+  background:linear-gradient(135deg,#fef3c7,#fbbf24)!important;
+  font-size:clamp(5rem,16vw,11rem)!important;
+  box-shadow:0 30px 90px rgba(251,191,36,.42)!important;
+}
+
+.smartboard-screen .smart-clock.counting + *{
+  filter:blur(1px)!important;
+}
+
+@media(max-width:1100px){
+  .smartboard-screen .smart-setup-grid{
+    grid-template-columns:1fr!important;
+  }
+  .smartboard-screen .smart-live-board{
+    grid-template-columns:130px minmax(0,1fr) 130px!important;
+  }
+  .smartboard-screen .smart-question-zone h1{
+    font-size:clamp(1.6rem,5vw,3.5rem)!important;
+  }
+}
+
+@media(max-width:760px){
+  .smartboard-screen .smart-top{
+    grid-template-columns:1fr!important;
+  }
+  .smartboard-screen .smart-live-board{
+    grid-template-columns:1fr 1fr!important;
+    grid-template-areas:
+      "question question"
+      "a b"
+      "pad-a pad-b"
+      "center center"!important;
+    min-height:auto!important;
+  }
+  .smartboard-screen .smart-score-card strong{
+    font-size:2.4rem!important;
+  }
+}
