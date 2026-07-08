@@ -22,6 +22,11 @@ The app is designed for competitive mathematics learning: students practise math
 - Added **Student Avatar Studio** on the dashboard so students can choose and save their maths identity.
 - Added starter avatars and unlock-style avatars tied to XP, coins, wins, streaks and levels.
 - Added **XP, coins, badges and levels** as a reward system.
+- Added stronger **winner celebration effects** for Smart Board winners: confetti, fireworks, trophy glow, champion overlay and crowd-clapping sound.
+- Added **Champion of the Day** celebration overlay using the selected student avatar.
+- Added a downloadable **Winner Card** image for Smart Board winners.
+- Added an **AI Coach Feedback** panel after practice, battle and Smart Board results.
+- AI Coach feedback shows score percentage, strength, area to improve and recommended next practice.
 - Correct answers, attempts, completed practice sets, daily challenge starts, battle wins and Smart Board wins now award XP and coins.
 - Added a sticky mini reward dock showing current level, XP, coins and wins.
 - Added a dashboard reward panel with XP, coins, wins, streak, correct answers, level progress and badge cabinet.
@@ -141,9 +146,10 @@ Output Directory: dist
 
 - Main app file: `src/main.jsx`
 - Main styling file: `src/index.css`
-- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`, `src/avatar.css`, `src/gamification.css`
+- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`, `src/avatar.css`, `src/gamification.css`, `src/celebration-ai.css`
 - Avatar enhancer: `src/avatar-enhancer.js`
 - Gamification enhancer: `src/gamification-enhancer.js`
+- Celebration and AI Coach enhancer: `src/celebration-ai-coach.js`
 - Supabase client: `src/supabaseClient.js`
 - Supabase schema: `supabase/schema.sql`
 - Supabase migrations: `supabase/migrations/002_admin_ai_question_tools.sql`, `supabase/migrations/003_smart_board_contests.sql`
