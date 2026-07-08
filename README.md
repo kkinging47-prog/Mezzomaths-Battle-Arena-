@@ -35,6 +35,10 @@ The app is designed for competitive mathematics learning: students practise math
 - The Admin page has a **Load Questions From Database** button and loads Supabase questions whenever the Admin page is opened.
 - The Smart Board contest loads matching numeric-answer questions from Supabase on every contest request before falling back to local/demo generated questions.
 - Manual Admin saves/edits now save to Supabase when the question has database access.
+- The class levels now run as **Grade 1 to Grade 9, SHS 1 to SHS 3**.
+- Mezzo PDF topics have been expanded across Grade 1 to Grade 8. Grade 7 and Grade 8 topics from the PDF are shown as Grade 7 and Grade 8 in the app.
+- Topic area is now automatically matched from the selected topic. Admins no longer choose a conflicting topic area manually.
+- AI generation, manual question saving, Smart Board contest loading and database saving all use the auto-matched topic area.
 - Added Supabase migration for smart board contests, numeric answers and smart board leaderboard records.
 - The Admin page remains merged into one sizeable page for admin-only editing, AI generation, question editing and deletion.
 
