@@ -86,13 +86,34 @@ function viewHtml() { if (state.view === 'smartboard') return smartBoardHtml(); 
 
 function homeHtml() {
   const cards = [
-    ['📺','Smart Board 1v1','Two students stand before a smart board and compete with keypad answers.','Open Smart Board','smartboard','mode-gold'],
-    ['📅','Daily Practice','Fresh questions from the database, reshuffled every day/request.','Start Daily Practice','daily','mode-purple'],
-    ['⚔️','Online 1 vs 1','Loads from database and reshuffles questions for every match.','Start Online 1 vs 1','battle','mode-red'],
-    ['🤖','Compete with Bot','Database questions, random order, bot score simulation.','Battle Bot','bot','mode-cyan'],
-    ['🧠','Solo Practice','Choose class/topic and practise reshuffled database questions.','Start Solo','solo','mode-green']
+    ['📅','Daily Challenge','Fresh database questions reshuffled every day/request.','Start Daily Challenge','daily','mode-purple','⚡ +150 XP','Daily streak'],
+    ['📺','Smart Board 1v1','Two students stand before a smart board and compete live.','Open Smart Board','smartboard','mode-gold','🏆 Trophy mode','Classroom battle'],
+    ['⚔️','Online Battle','Loads from database and reshuffles questions for every match.','Start Online 1v1','battle','mode-red','🔥 Battle coins','PvP arena'],
+    ['🤖','Compete With Bot','Database questions, random order, bot score simulation.','Battle MathBot','bot','mode-cyan','🤖 AI rival','Bot challenge'],
+    ['🧠','Solo Practice','Choose class/topic and practise reshuffled database questions.','Start Solo Practice','solo','mode-green','💎 Mastery gems','100 levels'],
+    ['🏆','Leaderboards','Check weekly, monthly and yearly champions.','View Champions','leaderboard','mode-blue','👑 Crown points','Top performers'],
+    ['🎓','Mezzopedia Prep','Use Mezzo topics to prepare for contest rounds.','Begin Prep','solo','mode-orange','🎯 Contest ready','Exam focus']
   ]
-  return `<section class="screen home-screen"><section class="dashboard-hero glass-card"><div><div class="pill">🏟️ Mezzo Maths Battle Arena</div><h1>Choose Your Maths Game Mode</h1><p>Daily Practice, Online 1v1, Bot Battle and Solo Practice all load from the question database when Supabase is connected.</p><div class="cta-row"><button class="btn btn-gold" data-target="smartboard">📺 Smart Board Contest</button><button class="btn btn-primary" data-target="auth">🔐 Login / Sign Up</button></div></div><div class="hero-visual glass-card mini-hero"><div class="arena-ring"><div class="student student-left">👦🏽</div><div class="trophy-tower">🏆</div><div class="student student-right">👧🏾</div></div></div></section><section class="home-mode-grid">${cards.map(([icon,title,desc,cta,target,cls]) => `<button class="home-mode-card ${cls}" ${target === 'daily' ? 'data-start-daily="true"' : target === 'bot' ? 'data-start-bot="true"' : `data-target="${target}"`}><span>${icon}</span><h3>${title}</h3><p>${desc}</p><strong>${cta} →</strong></button>`).join('')}</section></section>`
+  const buttonAttrs = target => target === 'daily' ? 'data-start-daily="true"' : target === 'bot' ? 'data-start-bot="true"' : `data-target="${target}"`
+  return `<section class="screen home-screen game-landing">
+    <section class="game-hero glass-card">
+      <div class="hero-copy">
+        <div class="hero-kicker"><span>🚀 New student arena</span><span>Database-powered questions</span></div>
+        <h1 class="mega-title">Welcome to Mezzo Maths Battle Arena</h1>
+        <p class="hero-text">Choose a game mode, earn XP, collect coins, protect your streak, battle friends, challenge MathBot, and climb the champion boards while mastering Mezzo Maths topics.</p>
+        <div class="hero-actions"><button class="btn btn-gold" data-start-daily="true">⚡ Start Daily Challenge</button><button class="btn btn-primary" data-target="smartboard">📺 Smart Board 1v1</button><button class="btn btn-blue" data-target="leaderboard">🏆 View Champions</button></div>
+        <div class="landing-stat-grid"><div class="landing-stat"><span>🔥</span><strong>7-Day</strong><small>Streak target</small></div><div class="landing-stat"><span>🪙</span><strong>Coins</strong><small>Earn by playing</small></div><div class="landing-stat"><span>🏆</span><strong>Trophies</strong><small>Win battles</small></div><div class="landing-stat"><span>📚</span><strong>Grade 1–SHS</strong><small>Topic coverage</small></div></div>
+      </div>
+      <div class="arena-stage glass-card">
+        <div class="floating-badge badge-top">⭐ Champion quest</div><div class="floating-badge badge-side">+250 XP</div><div class="floating-fire">🔥</div><div class="floating-coin coin-one">🪙</div><div class="floating-coin coin-two">🪙</div>
+        <div class="battle-platform"><div class="player-token left-token">👦🏽<span>Player A</span></div><div class="gold-trophy">🏆</div><div class="player-token right-token">👧🏾<span>Player B</span></div></div>
+        <div class="mini-leader-board"><strong>Live Arena</strong><span>1. Smart Board Winner</span><span>2. Daily Challenge Hero</span><span>3. MathBot Slayer</span></div>
+      </div>
+    </section>
+    <section class="mode-section-head"><div><span>🎮 Select a game mode</span><h2>Every mode feels like a maths game</h2></div><p>Students see clear start buttons, rewards, badges, and database-backed reshuffled question sets.</p></section>
+    <section class="home-mode-grid battle-grid">${cards.map(([icon,title,desc,cta,target,cls,reward,tag]) => `<button class="home-mode-card game-mode-card ${cls}" ${buttonAttrs(target)}><i class="mode-shine"></i><div class="mode-top"><span class="mode-icon">${icon}</span><em>${tag}</em></div><h3>${title}</h3><p>${desc}</p><div class="reward-pill">${reward}</div><strong>${cta} →</strong></button>`).join('')}</section>
+    <section class="landing-strip glass-card"><div><span>✨ Today’s mission</span><strong>Complete one daily challenge, one bot battle and one solo practice to build your streak.</strong></div><button class="btn btn-gold" data-start-daily="true">Begin Mission</button></section>
+  </section>`
 }
 
 function smartBoardHtml() { const s = state.smart; if (s.phase === 'result') return smartBoardResultHtml(); const current = s.questions[s.round]; return `<section class="screen smartboard-screen"><section class="smart-top glass-card"><div><div class="pill">📺 Classroom Smart Board 1 vs 1</div><h1>Two-Student Fastest Answer Contest</h1><p>Questions continue until the selected contest time ends. Topic area is automatically matched from the selected Mezzo topic.</p></div><div class="smart-clock ${s.phase === 'countdown' ? 'counting' : ''}"><small>${s.phase === 'countdown' ? 'Contest starts in' : 'Time left'}</small><strong>${s.phase === 'countdown' ? s.countdown : s.remaining}</strong><span>seconds</span></div></section>${s.phase === 'setup' ? smartSetupHtml() : smartLiveHtml(current)}</section>` }
