@@ -13,6 +13,8 @@ const profileFallback = { full_name: 'Student Champion', class_level: 'Grade 8',
 let audioEnabled = localStorage.getItem('mezzo_sound_enabled') !== 'off'
 let prepSession = null
 let prepTimer = null
+let syncQueued = false
+let initialHomeForced = false
 
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
 function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
@@ -40,13 +42,13 @@ function playTone(type = 'tap') {
     const osc = ctx.createOscillator()
     const now = ctx.currentTime
     const settings = {
-      tap: [520, 0.04, 'sine', 0.06],
-      start: [220, 0.18, 'triangle', 0.09],
-      correct: [780, 0.16, 'sine', 0.11],
-      wrong: [150, 0.18, 'sawtooth', 0.07],
-      level: [980, 0.22, 'triangle', 0.12],
-      beep: [640, 0.08, 'square', 0.06]
-    }[type] || [440, 0.08, 'sine', 0.05]
+      tap: [520, 0.04, 'sine', 0.04],
+      start: [220, 0.18, 'triangle', 0.075],
+      correct: [780, 0.16, 'sine', 0.09],
+      wrong: [150, 0.18, 'sawtooth', 0.055],
+      level: [980, 0.22, 'triangle', 0.10],
+      beep: [640, 0.08, 'square', 0.05]
+    }[type] || [440, 0.08, 'sine', 0.04]
     osc.frequency.setValueAtTime(settings[0], now)
     if (type === 'correct' || type === 'level') osc.frequency.exponentialRampToValueAtTime(settings[0] * 1.35, now + settings[1])
     if (type === 'wrong') osc.frequency.exponentialRampToValueAtTime(Math.max(60, settings[0] * 0.72), now + settings[1])
@@ -58,20 +60,19 @@ function playTone(type = 'tap') {
     osc.stop(now + settings[1] + 0.02)
   } catch {}
 }
-function playStartFanfare() {
-  playTone('start')
-  setTimeout(() => playTone('beep'), 120)
-  setTimeout(() => playTone('level'), 250)
-}
+function playStartFanfare() { playTone('start'); setTimeout(() => playTone('beep'), 120); setTimeout(() => playTone('level'), 250) }
 function renderSoundToggle() {
-  if (document.querySelector('.sound-toggle')) return
   const app = document.querySelector('.app-frame') || document.body
-  const btn = document.createElement('button')
+  let btn = document.querySelector('.sound-toggle')
+  const text = `${audioEnabled ? '🔊' : '🔇'} Sound ${audioEnabled ? 'On' : 'Off'}`
+  if (!btn) {
+    btn = document.createElement('button')
+    btn.type = 'button'
+    btn.dataset.soundToggle = 'true'
+    app.prepend(btn)
+  }
   btn.className = `sound-toggle ${audioEnabled ? 'on' : 'off'}`
-  btn.type = 'button'
-  btn.innerHTML = `${audioEnabled ? '🔊' : '🔇'} Sound ${audioEnabled ? 'On' : 'Off'}`
-  btn.dataset.soundToggle = 'true'
-  app.prepend(btn)
+  if (btn.innerHTML !== text) btn.innerHTML = text
 }
 function makeQuestion(topic, i, total) {
   const area = inferArea(topic)
@@ -80,7 +81,7 @@ function makeQuestion(topic, i, total) {
   if (area === 'Squaring') { a = rand(4, 25); b = 2; answer = a * a; symbol = '²' }
   if (area === 'Fractions') { a = rand(1, 9); b = rand(2, 9); answer = a + b; symbol = '+' }
   if (area === 'Percentages') { b = 100; a = rand(10, 90); answer = a; symbol = '%' }
-  if (area === 'Algebra') { a = rand(2, 12); b = rand(2, 20); answer = a + b; symbol = '+ x ='; }
+  if (area === 'Algebra') { a = rand(2, 12); b = rand(2, 20); answer = a + b; symbol = '+ x =' }
   const word = i > Math.ceil(total * 0.35) && i % 2 === 0
   const question = word
     ? area === 'Division' ? `A contest team shares ${a} points equally among ${b} players. How many points does each player get?`
@@ -101,21 +102,16 @@ function prepHomeHtml() {
   return `<main class="app-shell prep-app"><section class="prep-frame glass-card">
     <div class="prep-hero"><div><button class="prep-back" data-prep-back-home="true">← Back to Arena</button><div class="pill">🎓 Mezzopedia Contest Prep Mode</div><h1>Prepare for Mezzopedia 2026</h1><p>Train for Stage 1, Stage 2, Stage 3, the TV Round and the Grand Finale with timed mock tests and mixed Mezzo topic questions.</p><div class="prep-profile-chip">👤 ${escapeHtml(p.full_name)} • ${escapeHtml(p.class_level)} • ${escapeHtml(p.school_name)}</div></div><div class="prep-trophy">🏆</div></div>
     <section class="prep-stage-grid">${prepStages.map(stage => `<button class="prep-stage-card" data-prep-stage="${stage.id}"><span>${stage.icon}</span><h3>${stage.title}</h3><p>${stage.desc}</p><strong>${stage.count} questions • ${stage.time}</strong><em>Start Stage →</em></button>`).join('')}</section>
-    <section class="prep-roadmap"><div><b>Stage 1</b><span>Online speed practice</span></div><i></i><div><b>Stage 2</b><span>Mixed challenge</span></div><i></i><div><b>Stage 3</b><span>Final online screening</span></div><i></i><div><b>TV Round</b><span>Fast buzzer practice</span></div><i></i><div><b>Grand Finale</b><span>Full contest mode</span></div></section>
+    <section class="prep-roadmap"><div><b>Stage 1</b><span>Online speed practice</span></div><div><b>Stage 2</b><span>Mixed challenge</span></div><div><b>Stage 3</b><span>Final online screening</span></div><div><b>TV Round</b><span>Fast buzzer practice</span></div><div><b>Grand Finale</b><span>Full contest mode</span></div></section>
   </section></main>`
 }
-function renderPrepHome() {
-  clearInterval(prepTimer)
-  prepSession = null
-  document.getElementById('root').innerHTML = prepHomeHtml()
-  playStartFanfare()
-}
+function renderPrepHome() { clearInterval(prepTimer); prepSession = null; document.getElementById('root').innerHTML = prepHomeHtml(); playStartFanfare() }
 function renderPrepQuestion() {
   const s = prepSession
   const q = s.questions[s.index]
   document.getElementById('root').innerHTML = `<main class="app-shell prep-app"><section class="prep-frame glass-card">
     <div class="prep-topbar"><button class="prep-back" data-prep-open="true">← Prep Menu</button><div><strong>${escapeHtml(s.stage.title)}</strong><span>Q${s.index + 1}/${s.questions.length} • ${escapeHtml(q.topic)} • ${s.remaining}s left</span></div><div class="prep-score">${s.score} pts</div></div>
-    <article class="prep-question-card light-card"><div class="prep-meta"><span>${escapeHtml(q.area)}</span><span>${s.stage.icon} ${escapeHtml(s.stage.title)}</span></div><h2>${escapeHtml(q.question)}</h2><div class="prep-options">${q.options.map((option, idx) => `<button data-prep-answer="${option}"><b>${String.fromCharCode(65 + idx)}</b><span>${escapeHtml(option)}</span></button>`).join('')}</div></article>
+    <article class="prep-question-card light-card"><div class="prep-meta"><span>${escapeHtml(q.area)}</span><span>${s.stage.icon} ${escapeHtml(s.stage.title)}</span></div><h2>${escapeHtml(q.question)}</h2><div class="prep-options">${q.options.map((option, idx) => `<button data-prep-answer="${escapeHtml(option)}"><b>${String.fromCharCode(65 + idx)}</b><span>${escapeHtml(option)}</span></button>`).join('')}</div></article>
   </section></main>`
 }
 function startPrepStage(id) {
@@ -130,7 +126,6 @@ function startPrepStage(id) {
     prepSession.remaining -= 1
     if ([5,4,3,2,1].includes(prepSession.remaining)) playTone('beep')
     if (prepSession.remaining <= 0) finishPrep()
-    else if (prepSession.remaining % 5 === 0) renderPrepQuestion()
   }, 1000)
 }
 function answerPrep(value) {
@@ -138,8 +133,9 @@ function answerPrep(value) {
   const q = prepSession.questions[prepSession.index]
   const correct = Number(value) === Number(q.answer)
   if (correct) { prepSession.score += 10; prepSession.correct += 1; playTone('correct') } else playTone('wrong')
-  const picked = document.querySelector(`[data-prep-answer="${CSS.escape(value)}"]`)
-  if (picked) picked.classList.add(correct ? 'prep-correct' : 'prep-wrong')
+  document.querySelectorAll('[data-prep-answer]').forEach(btn => {
+    if (btn.dataset.prepAnswer === value) btn.classList.add(correct ? 'prep-correct' : 'prep-wrong')
+  })
   setTimeout(() => {
     prepSession.index += 1
     if (prepSession.index >= prepSession.questions.length) finishPrep()
@@ -163,23 +159,39 @@ function soundFromClick(event) {
   if (event.target.closest('#nextSolo,#nextBattle')) playTone('beep')
 }
 function soundFromMutation() {
-  const result = document.querySelector('.result-banner strong')?.textContent?.trim().toLowerCase()
-  if (result && !document.querySelector('.result-banner')?.dataset.soundPlayed) {
-    document.querySelector('.result-banner').dataset.soundPlayed = '1'
-    playTone(result.includes('correct') ? 'correct' : 'wrong')
-  }
+  const banner = document.querySelector('.result-banner')
+  const result = banner?.querySelector('strong')?.textContent?.trim().toLowerCase()
+  if (result && !banner.dataset.soundPlayed) { banner.dataset.soundPlayed = '1'; playTone(result.includes('correct') ? 'correct' : 'wrong') }
 }
 function installPrepButtons() {
   document.querySelectorAll('.game-mode-card').forEach(card => {
-    if (card.textContent.includes('Mezzopedia Prep')) {
-      card.setAttribute('data-prep-open', 'true')
-      card.removeAttribute('data-target')
-    }
+    if (!card.textContent.includes('Mezzopedia Prep')) return
+    if (card.dataset.prepOpen !== 'true') card.dataset.prepOpen = 'true'
+    if (card.hasAttribute('data-target')) card.removeAttribute('data-target')
   })
   const home = document.querySelector('.home-screen')
   if (home && !home.querySelector('.prep-promo-banner')) {
     home.insertAdjacentHTML('beforeend', `<section class="prep-promo-banner glass-card"><div><span>🎓 Special Contest Mode</span><h2>Mezzopedia Contest Prep</h2><p>Train for Stage 1, Stage 2, Stage 3, TV Round and Grand Finale.</p></div><button class="btn btn-gold" data-prep-open="true">Open Prep Mode</button></section>`)
   }
+}
+function syncSoundPrep() {
+  if (syncQueued) return
+  syncQueued = true
+  requestAnimationFrame(() => {
+    syncQueued = false
+    renderSoundToggle()
+    installPrepButtons()
+    soundFromMutation()
+  })
+}
+function forceHomeOnStartup() {
+  if (initialHomeForced) return
+  initialHomeForced = true
+  setTimeout(() => {
+    if (document.querySelector('.smartboard-screen') && document.querySelector('[data-target="home"]')) {
+      document.querySelector('[data-target="home"]').click()
+    }
+  }, 120)
 }
 
 document.addEventListener('click', event => {
@@ -187,18 +199,19 @@ document.addEventListener('click', event => {
   if (event.target.closest('[data-sound-toggle]')) {
     audioEnabled = !audioEnabled
     localStorage.setItem('mezzo_sound_enabled', audioEnabled ? 'on' : 'off')
-    document.querySelectorAll('.sound-toggle').forEach(btn => { btn.className = `sound-toggle ${audioEnabled ? 'on' : 'off'}`; btn.innerHTML = `${audioEnabled ? '🔊' : '🔇'} Sound ${audioEnabled ? 'On' : 'Off'}` })
+    renderSoundToggle()
     playTone('tap')
+    return
   }
-  if (event.target.closest('[data-prep-open]')) { event.preventDefault(); event.stopPropagation(); renderPrepHome() }
+  if (event.target.closest('[data-prep-open]')) { event.preventDefault(); event.stopPropagation(); renderPrepHome(); return }
   const stage = event.target.closest('[data-prep-stage]')
-  if (stage) { event.preventDefault(); event.stopPropagation(); startPrepStage(stage.dataset.prepStage) }
+  if (stage) { event.preventDefault(); event.stopPropagation(); startPrepStage(stage.dataset.prepStage); return }
   const answer = event.target.closest('[data-prep-answer]')
-  if (answer) { event.preventDefault(); answerPrep(answer.dataset.prepAnswer) }
-  if (event.target.closest('[data-prep-back-home]')) { event.preventDefault(); window.location.reload() }
+  if (answer) { event.preventDefault(); event.stopPropagation(); answerPrep(answer.dataset.prepAnswer); return }
+  if (event.target.closest('[data-prep-back-home]')) { event.preventDefault(); event.stopPropagation(); window.location.reload() }
 }, true)
 
-const observer = new MutationObserver(() => { renderSoundToggle(); installPrepButtons(); soundFromMutation() })
-observer.observe(document.body, { childList: true, subtree: true })
-window.addEventListener('load', () => { renderSoundToggle(); installPrepButtons() })
-setTimeout(() => { renderSoundToggle(); installPrepButtons() }, 300)
+const observer = new MutationObserver(syncSoundPrep)
+observer.observe(document.body, { childList: true, subtree: true, attributes: false })
+window.addEventListener('load', () => { syncSoundPrep(); forceHomeOnStartup() })
+setTimeout(() => { syncSoundPrep(); forceHomeOnStartup() }, 300)
