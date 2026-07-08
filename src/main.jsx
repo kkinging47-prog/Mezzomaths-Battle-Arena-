@@ -38,9 +38,9 @@ const socialLinks = [
 ]
 
 const seedQuestions = [
-  { class_level: 'Grade 4', curriculum: 'GES', topic: 'Multiplication by 4 (2 Digits)', topic_area: 'Multiplication', topic_sublevel: '1 digit × 1 digit', question_text: '7 × 8', numeric_answer: 56, option_a: '54', option_b: '56', option_c: '58', option_d: '64', correct_answer: 'B', explanation: '7 × 8 = 56.' },
-  { class_level: 'Grade 4', curriculum: 'GES', topic: 'Addition & Subtraction of No’s', topic_area: 'Addition', topic_sublevel: '2 digit × 1 digit', question_text: '48 + 37', numeric_answer: 85, option_a: '75', option_b: '85', option_c: '95', option_d: '65', correct_answer: 'B', explanation: '48 + 37 = 85.' },
-  { class_level: 'Grade 5', curriculum: 'GES', topic: 'Sharing in twos (2)', topic_area: 'Division', topic_sublevel: '1 digit × 1 digit', question_text: '42 ÷ 6', numeric_answer: 7, option_a: '6', option_b: '7', option_c: '8', option_d: '9', correct_answer: 'B', explanation: '42 ÷ 6 = 7.' }
+  { class_level: 'Grade 4', curriculum: 'GES', topic: 'Multiplication by 4 (2 Digits)', topic_area: 'Multiplication', topic_sublevel: '1 digit × 1 digit', difficulty: 1, question_text: '7 × 8', numeric_answer: 56, option_a: '54', option_b: '56', option_c: '58', option_d: '64', correct_answer: 'B', explanation: '7 × 8 = 56.', is_active: true },
+  { class_level: 'Grade 4', curriculum: 'GES', topic: 'Addition & Subtraction of No’s', topic_area: 'Addition', topic_sublevel: '2 digit × 1 digit', difficulty: 1, question_text: '48 + 37', numeric_answer: 85, option_a: '75', option_b: '85', option_c: '95', option_d: '65', correct_answer: 'B', explanation: '48 + 37 = 85.', is_active: true },
+  { class_level: 'Grade 5', curriculum: 'GES', topic: 'Sharing in twos (2)', topic_area: 'Division', topic_sublevel: '1 digit × 1 digit', difficulty: 1, question_text: '42 ÷ 6', numeric_answer: 7, option_a: '6', option_b: '7', option_c: '8', option_d: '9', correct_answer: 'B', explanation: '42 ÷ 6 = 7.', is_active: true }
 ]
 
 const tabs = [
@@ -79,7 +79,7 @@ function defaultSmartState() {
 }
 
 const state = {
-  view: 'smartboard', authMode: 'login', message: '', editingIndex: null, adminPage: 1,
+  view: 'smartboard', authMode: 'login', message: '', editingIndex: null, adminPage: 1, lastDbLoad: '',
   user: stored('mezzo_profile', null),
   smart: defaultSmartState(),
   battle: { classLevel: 'Grade 4', curriculum: 'GES', topicArea: 'Multiplication', sublevel: '1 digit × 1 digit', opponent: 'Online Participant', playerScore: 0, opponentScore: 0, started: false },
@@ -140,7 +140,7 @@ function smartBoardHtml() {
 
 function smartSetupHtml() {
   const s = state.smart
-  return `<section class="smart-setup-grid">${participantForm('a', 'Student A', s.a)}<form class="smart-settings glass-card" id="smartSetupForm"><h2>Contest Settings</h2><label class="field-group"><span>Contest Duration</span><select id="smartDuration">${durations.map(d => `<option value="${d}" ${String(s.duration) === d ? 'selected' : ''}>${d} secs</option>`).join('')}</select></label><label class="field-group"><span>Class Level</span><select id="smartClass">${optionHtml(levels, s.classLevel)}</select></label><label class="field-group"><span>Curriculum</span><select id="smartCurriculum">${optionHtml(curricula, s.curriculum)}</select></label><label class="field-group"><span>Topic from Mezzo Topics PDF</span><select id="smartTopic">${optionHtml(topicsByLevel[s.classLevel] || [], s.topic)}</select></label><div class="smart-topic-note">Topics come from the uploaded Mezzo book topic list for Grade 1 to JHS/SHS levels.</div><button class="btn btn-gold" type="button" id="startSmartContest">Start 5-Second Countdown</button></form>${participantForm('b', 'Student B', s.b)}</section>`
+  return `<section class="smart-setup-grid">${participantForm('a', 'Student A', s.a)}<form class="smart-settings glass-card" id="smartSetupForm"><h2>Contest Settings</h2><label class="field-group"><span>Contest Duration</span><select id="smartDuration">${durations.map(d => `<option value="${d}" ${String(s.duration) === d ? 'selected' : ''}>${d} secs</option>`).join('')}</select></label><label class="field-group"><span>Class Level</span><select id="smartClass">${optionHtml(levels, s.classLevel)}</select></label><label class="field-group"><span>Curriculum</span><select id="smartCurriculum">${optionHtml(curricula, s.curriculum)}</select></label><label class="field-group"><span>Topic from Mezzo Topics PDF</span><select id="smartTopic">${optionHtml(topicsByLevel[s.classLevel] || [], s.topic)}</select></label><div class="smart-topic-note">Topics come from the uploaded Mezzo book topic list. Smart Board loads matching numeric-answer questions from Supabase when connected.</div><button class="btn btn-gold" type="button" id="startSmartContest">Start 5-Second Countdown</button></form>${participantForm('b', 'Student B', s.b)}</section>`
 }
 function participantForm(side, title, p) { return `<article class="smart-player-card glass-card player-${side}"><div class="contest-label">${title}</div><div class="avatar avatar-medium">${side === 'a' ? '👦🏽' : '👧🏾'}</div><label class="field-group"><span>Name</span><input id="${side}Name" value="${escapeText(p.name)}" placeholder="Student name"></label><label class="field-group"><span>School</span><input id="${side}School" value="${escapeText(p.school)}" placeholder="School name"></label><label class="field-group"><span>Class</span><select id="${side}Class">${optionHtml(levels, p.classLevel)}</select></label></article>` }
 
@@ -166,10 +166,10 @@ function loginFormHtml() { return `<form id="loginForm"><div class="section-head
 function signupFormHtml() { return `<form id="signupForm"><div class="section-heading compact-heading"><span>Create account</span><h2>Student / Admin Sign Up</h2></div><div class="form-grid"><label class="field-group"><span>Full Name</span><input name="full_name" required></label><label class="field-group"><span>Email</span><input name="email" type="email" required></label><label class="field-group"><span>Password</span><input name="password" type="password" required></label><label class="field-group"><span>Date of Birth</span><input id="dobInput" name="date_of_birth" type="date" required></label><label class="field-group"><span>Age</span><input id="ageOutput" name="age" readonly placeholder="Auto calculated"></label><label class="field-group"><span>Name of School</span><input name="school_name" required></label><label class="field-group"><span>Location</span><input name="location" required></label><label class="field-group"><span>Class or Year</span><select name="class_level">${optionHtml(levels, 'JHS 2')}</select></label><label class="field-group"><span>Curriculum Type</span><select name="curriculum">${optionHtml(curricula, 'GES')}</select></label><label class="field-group"><span>Account Type</span><select name="role"><option value="student">Student</option><option value="admin">Admin</option></select></label></div><button class="btn btn-gold auth-submit" type="submit">Create Account</button></form>` }
 
 function adminHtml() {
-  if (!isAdmin()) return `<section class="screen admin-screen"><section class="auth-card glass-card"><div class="pill">🔒 Admin Only</div><h1>Admin access required</h1><p class="auth-note">Login with an Admin account to generate, edit and delete questions.</p><button class="btn btn-gold" data-target="auth">Login / Sign Up</button></section></section>`
+  if (!isAdmin()) return `<section class="screen admin-screen"><section class="auth-card glass-card"><div class="pill">🔒 Admin Only</div><h1>Admin access required</h1><p class="auth-note">Login with an Admin account to generate, save and load database questions.</p><button class="btn btn-gold" data-target="auth">Login / Sign Up</button></section></section>`
   const list = questionBank(); const editing = Number.isInteger(state.editingIndex) ? list[state.editingIndex] : null
   const summary = generationSummary(); const totalPages = Math.max(1, Math.ceil(list.length / 20)); const page = Math.min(Math.max(1, state.adminPage), totalPages); const start = (page - 1) * 20; const visible = list.slice(start, start + 20); const last = summary.batches[0]
-  return `<section class="screen admin-screen"><section class="dashboard-hero glass-card"><div><div class="pill">🛠️ Unified Admin Page</div><h1>AI Generator, Settings & Bank Manager</h1><p>Generated question summary, 20-question pages, editing tools, and Smart Board numeric-answer support.</p></div></section><section class="question-manager glass-card"><div class="section-row"><h3>Generated Questions Summary</h3><span>${summary.batches.length} batches</span></div><div class="rules-demo-grid"><div><strong>Total Questions</strong><span>${list.length}</span></div><div><strong>AI Generated</strong><span>${summary.totalGenerated}</span></div><div><strong>Last Batch</strong><span>${last ? `${last.count} for ${escapeText(last.class_level)}` : 'None yet'}</span></div><div><strong>Showing</strong><span>${start + 1}-${Math.min(start + 20, list.length)} of ${list.length}</span></div></div><div class="question-list">${summary.batches.slice(0,5).map(b => `<article class="bank-row"><div><strong>${escapeText(b.count)} questions generated</strong><small>${escapeText(b.class_level)} • ${escapeText(b.curriculum)} • ${escapeText(b.topic)} • ${escapeText(b.topic_area)} • ${escapeText(b.created_at)}</small></div></article>`).join('') || '<p class="auth-note">No generated-question batch yet.</p>'}</div></section><form class="admin-form glass-card" id="aiGenerateForm"><label class="field-group"><span>Number to Generate</span><select name="count">${optionHtml(['10','20','30','40','50'], '10')}</select></label><label class="field-group"><span>Class Level</span><select name="class_level" id="adminLevel">${optionHtml(levels, 'Grade 4')}</select></label><label class="field-group"><span>Curriculum</span><select name="curriculum">${optionHtml(curricula, 'GES')}</select></label><label class="field-group"><span>Topic From Mezzo Book</span><select name="topic" id="adminTopic">${optionHtml(topicsByLevel['Grade 4'], 'Multiplication by 4 (2 Digits)')}</select></label><label class="field-group"><span>Smart Board Topic Area</span><select name="topic_area">${optionHtml(battleTopicAreas, 'Multiplication')}</select></label><label class="field-group"><span>Skill Level</span><select name="topic_sublevel">${optionHtml(battleSkillLevels, '1 digit × 1 digit')}</select></label><button class="btn btn-gold" type="submit">🤖 Generate Questions</button></form><form class="admin-form glass-card" id="adminQuestionForm"><input type="hidden" name="editing_index" value="${Number.isInteger(state.editingIndex) ? state.editingIndex : ''}"><label class="field-group"><span>Class</span><select name="class_level">${optionHtml(levels, editing?.class_level || 'Grade 4')}</select></label><label class="field-group"><span>Curriculum</span><select name="curriculum">${optionHtml(curricula, editing?.curriculum || 'GES')}</select></label><label class="field-group"><span>Topic</span><input name="topic" value="${escapeText(editing?.topic || '')}" required></label><label class="field-group"><span>Numeric Answer</span><input name="numeric_answer" value="${escapeText(editing?.numeric_answer || '')}" placeholder="for keypad contests"></label><label class="field-group wide"><span>Question Text</span><textarea name="question_text" class="symbol-target" required>${escapeText(editing?.question_text || '')}</textarea></label>${['a','b','c','d'].map(letter => `<label class="field-group"><span>Option ${letter.toUpperCase()}</span><input name="option_${letter}" value="${escapeText(editing?.[`option_${letter}`] || '')}" required></label>`).join('')}<label class="field-group"><span>Correct Answer</span><select name="correct_answer">${optionHtml(['A','B','C','D'], editing?.correct_answer || 'B')}</select></label><label class="field-group wide"><span>Explanation</span><textarea name="explanation">${escapeText(editing?.explanation || '')}</textarea></label><button class="btn btn-primary wide" type="submit">${editing ? 'Update Question' : 'Save Question'}</button></form><section class="question-manager glass-card"><div class="section-row"><h3>Question Bank</h3><span>Page ${page} of ${totalPages} • 20 per page</span></div><div class="question-list">${visible.map((q,i) => `<article class="bank-row"><div><strong>${escapeText(q.question_text)}</strong><small>${q.class_level} • ${q.curriculum} • ${q.topic} • Answer ${q.numeric_answer || q.correct_answer}</small></div><div><button class="btn btn-blue btn-small" data-edit-question="${start + i}">Edit</button><button class="btn btn-danger btn-small" data-delete-question="${start + i}">Delete</button></div></article>`).join('') || '<p class="auth-note">No questions found.</p>'}</div><div class="cta-row pagination-row"><button class="btn btn-ghost" data-admin-page="${Math.max(1, page - 1)}">← Previous 20</button><button class="btn btn-gold" data-admin-page="${Math.min(totalPages, page + 1)}">Next 20 →</button></div></section></section>`
+  return `<section class="screen admin-screen"><section class="dashboard-hero glass-card"><div><div class="pill">🛠️ Unified Admin Page</div><h1>Database Question Bank</h1><p>Generated questions are saved into Supabase question_bank and can be loaded again on every request.</p><div class="cta-row"><button class="btn btn-blue" id="loadDbQuestions">Load Questions From Database</button><button class="btn btn-gold" id="syncLocalQuestions">Sync Local Questions to Database</button></div></div></section><section class="question-manager glass-card"><div class="section-row"><h3>Generated Questions Summary</h3><span>${supabase ? 'Supabase connected' : 'Supabase not configured'}</span></div><div class="rules-demo-grid"><div><strong>Total Questions Loaded</strong><span>${list.length}</span></div><div><strong>AI Generated</strong><span>${summary.totalGenerated}</span></div><div><strong>Last Batch</strong><span>${last ? `${last.count} for ${escapeText(last.class_level)}` : 'None yet'}</span></div><div><strong>Last DB Load</strong><span>${state.lastDbLoad || 'Not loaded yet'}</span></div></div><div class="question-list">${summary.batches.slice(0,5).map(b => `<article class="bank-row"><div><strong>${escapeText(b.count)} questions generated</strong><small>${escapeText(b.class_level)} • ${escapeText(b.curriculum)} • ${escapeText(b.topic)} • ${escapeText(b.topic_area)} • ${escapeText(b.created_at)}</small></div></article>`).join('') || '<p class="auth-note">No generated-question batch yet.</p>'}</div></section><form class="admin-form glass-card" id="aiGenerateForm"><label class="field-group"><span>Number to Generate</span><select name="count">${optionHtml(['10','20','30','40','50'], '10')}</select></label><label class="field-group"><span>Class Level</span><select name="class_level" id="adminLevel">${optionHtml(levels, 'Grade 4')}</select></label><label class="field-group"><span>Curriculum</span><select name="curriculum">${optionHtml(curricula, 'GES')}</select></label><label class="field-group"><span>Topic From Mezzo Book</span><select name="topic" id="adminTopic">${optionHtml(topicsByLevel['Grade 4'], 'Multiplication by 4 (2 Digits)')}</select></label><label class="field-group"><span>Smart Board Topic Area</span><select name="topic_area">${optionHtml(battleTopicAreas, 'Multiplication')}</select></label><label class="field-group"><span>Skill Level</span><select name="topic_sublevel">${optionHtml(battleSkillLevels, '1 digit × 1 digit')}</select></label><button class="btn btn-gold" type="submit">🤖 Generate & Save to Database</button></form><form class="admin-form glass-card" id="adminQuestionForm"><input type="hidden" name="editing_index" value="${Number.isInteger(state.editingIndex) ? state.editingIndex : ''}"><label class="field-group"><span>Class</span><select name="class_level">${optionHtml(levels, editing?.class_level || 'Grade 4')}</select></label><label class="field-group"><span>Curriculum</span><select name="curriculum">${optionHtml(curricula, editing?.curriculum || 'GES')}</select></label><label class="field-group"><span>Topic</span><input name="topic" value="${escapeText(editing?.topic || '')}" required></label><label class="field-group"><span>Numeric Answer</span><input name="numeric_answer" value="${escapeText(editing?.numeric_answer || '')}" placeholder="for keypad contests"></label><label class="field-group wide"><span>Question Text</span><textarea name="question_text" class="symbol-target" required>${escapeText(editing?.question_text || '')}</textarea></label>${['a','b','c','d'].map(letter => `<label class="field-group"><span>Option ${letter.toUpperCase()}</span><input name="option_${letter}" value="${escapeText(editing?.[`option_${letter}`] || '')}" required></label>`).join('')}<label class="field-group"><span>Correct Answer</span><select name="correct_answer">${optionHtml(['A','B','C','D'], editing?.correct_answer || 'B')}</select></label><label class="field-group wide"><span>Explanation</span><textarea name="explanation">${escapeText(editing?.explanation || '')}</textarea></label><button class="btn btn-primary wide" type="submit">${editing ? 'Update Question in Database' : 'Save Question to Database'}</button></form><section class="question-manager glass-card"><div class="section-row"><h3>Question Bank</h3><span>Page ${page} of ${totalPages} • 20 per page</span></div><div class="question-list">${visible.map((q,i) => `<article class="bank-row"><div><strong>${escapeText(q.question_text)}</strong><small>${q.class_level} • ${q.curriculum} • ${q.topic} • Answer ${q.numeric_answer || q.correct_answer}${q.id ? ' • DB saved' : ' • local'}</small></div><div><button class="btn btn-blue btn-small" data-edit-question="${start + i}">Edit</button><button class="btn btn-danger btn-small" data-delete-question="${start + i}">Delete</button></div></article>`).join('') || '<p class="auth-note">No questions found.</p>'}</div><div class="cta-row pagination-row"><button class="btn btn-ghost" data-admin-page="${Math.max(1, page - 1)}">← Previous 20</button><button class="btn btn-gold" data-admin-page="${Math.min(totalPages, page + 1)}">Next 20 →</button></div></section></section>`
 }
 
 function leaderboardHtml() { return `<section class="screen leaderboard-screen"><section class="leader-tabs glass-card"><button class="active">Weekly</button><button>Monthly</button><button>Yearly</button></section><section class="smart-leader-preview glass-card">${leaderboardScopeHtml('weekly')}${leaderboardScopeHtml('monthly')}${leaderboardScopeHtml('yearly')}</section></section>` }
@@ -184,8 +184,90 @@ function makeGeneratedQuestions({ count = 15, class_level = 'Grade 4', curriculu
     if (topic_area === 'Addition') { a = rand(10,99); b = rand(10,99); symbol = '+'; answer = a + b }
     if (topic_area === 'Subtraction') { a = rand(40,150); b = rand(10,39); symbol = '−'; answer = a - b }
     if (topic_area === 'Division') { b = rand(2,12); answer = rand(2,25); a = answer * b; symbol = '÷' }
-    return { class_level, curriculum, topic, topic_area, topic_sublevel, question_text: `${a} ${symbol} ${b}`, numeric_answer: answer, option_a: String(answer - 1), option_b: String(answer), option_c: String(answer + 1), option_d: String(answer + 2), correct_answer: 'B', explanation: `The answer is ${answer}.` }
+    return { class_level, curriculum, topic, topic_area, topic_sublevel, difficulty: 1, question_text: `${a} ${symbol} ${b}`, numeric_answer: answer, option_a: String(answer - 1), option_b: String(answer), option_c: String(answer + 1), option_d: String(answer + 2), correct_answer: 'B', explanation: `The answer is ${answer}.`, ai_generated: true, is_active: true }
   })
+}
+
+function prepareQuestionForDb(q) {
+  return {
+    class_level: q.class_level,
+    curriculum: q.curriculum,
+    topic: q.topic,
+    topic_area: q.topic_area || inferTopicArea(q.topic),
+    topic_sublevel: q.topic_sublevel || 'Class topic',
+    difficulty: Number(q.difficulty || 1),
+    question_text: q.question_text,
+    numeric_answer: q.numeric_answer === '' || q.numeric_answer === undefined || q.numeric_answer === null ? null : Number(q.numeric_answer),
+    option_a: q.option_a || String(Number(q.numeric_answer || 0) - 1),
+    option_b: q.option_b || String(q.numeric_answer || ''),
+    option_c: q.option_c || String(Number(q.numeric_answer || 0) + 1),
+    option_d: q.option_d || String(Number(q.numeric_answer || 0) + 2),
+    correct_answer: q.correct_answer || 'B',
+    explanation: q.explanation || '',
+    ai_generated: Boolean(q.ai_generated),
+    is_active: true
+  }
+}
+
+async function loadQuestionsFromDatabase(filters = {}) {
+  if (!supabase) {
+    state.message = 'Supabase is not configured yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel.'
+    return false
+  }
+  let query = supabase.from('question_bank').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(1000)
+  if (filters.class_level) query = query.eq('class_level', filters.class_level)
+  if (filters.curriculum) query = query.eq('curriculum', filters.curriculum)
+  if (filters.topic) query = query.eq('topic', filters.topic)
+  if (filters.numericOnly) query = query.not('numeric_answer', 'is', null)
+  const { data, error } = await query
+  if (error) {
+    state.message = `Database load failed: ${error.message}`
+    return false
+  }
+  if (data?.length) {
+    setQuestionBank(data)
+    state.adminPage = 1
+    state.lastDbLoad = `${data.length} questions loaded at ${new Date().toLocaleTimeString()}`
+    state.message = `Loaded ${data.length} questions from Supabase database.`
+    return true
+  }
+  state.lastDbLoad = `No database questions found at ${new Date().toLocaleTimeString()}`
+  state.message = 'No matching questions found in Supabase yet.'
+  return false
+}
+
+async function saveGeneratedQuestionsToDatabase(questions, batch) {
+  if (!supabase) {
+    state.message = `${questions.length} questions generated locally. Supabase is not configured, so they were not saved to the cloud database.`
+    return false
+  }
+  const payload = questions.map(prepareQuestionForDb)
+  const { error } = await supabase.from('question_bank').insert(payload)
+  if (error) {
+    state.message = `${questions.length} questions generated locally, but database save failed: ${error.message}`
+    return false
+  }
+  await supabase.from('ai_question_generations').insert({
+    class_level: batch.class_level,
+    curriculum: batch.curriculum,
+    topic: batch.topic,
+    topic_area: batch.topic_area,
+    topic_sublevel: batch.topic_sublevel,
+    question_count: questions.length,
+    difficulty: 1,
+    prompt: `Generated ${questions.length} ${batch.topic} questions for ${batch.class_level} ${batch.curriculum}`,
+    status: 'completed'
+  }).then(() => {}).catch(() => {})
+  state.message = `${questions.length} questions generated and saved in Supabase question_bank.`
+  return true
+}
+
+async function syncLocalQuestionsToDatabase() {
+  const list = questionBank().filter(q => !q.id)
+  if (!list.length) { state.message = 'All visible questions already appear to be database records.'; render(); return }
+  const ok = await saveGeneratedQuestionsToDatabase(list, { class_level: 'Mixed', curriculum: 'GES', topic: 'Bulk Sync', topic_area: 'Mixed', topic_sublevel: 'Mixed' })
+  if (ok) await loadQuestionsFromDatabase()
+  render()
 }
 
 async function startSmartContest() {
@@ -196,11 +278,16 @@ async function startSmartContest() {
   const topic = document.getElementById('smartTopic')?.value || 'Multiplication by 4 (2 Digits)'
   const a = { name: document.getElementById('aName')?.value || 'Student A', school: document.getElementById('aSchool')?.value || 'School A', classLevel: document.getElementById('aClass')?.value || classLevel, score: 0, answer: '', lastTime: 0 }
   const b = { name: document.getElementById('bName')?.value || 'Student B', school: document.getElementById('bSchool')?.value || 'School B', classLevel: document.getElementById('bClass')?.value || classLevel, score: 0, answer: '', lastTime: 0 }
-  let questions = questionBank().filter(q => q.class_level === classLevel && q.curriculum === curriculum && q.topic === topic && q.numeric_answer)
-  if (supabase) { try { const { data } = await supabase.from('question_bank').select('*').eq('class_level', classLevel).eq('curriculum', curriculum).eq('topic', topic).not('numeric_answer', 'is', null).limit(200); if (data?.length) questions = data } catch {} }
+  let questions = []
+  if (supabase) {
+    let query = supabase.from('question_bank').select('*').eq('class_level', classLevel).eq('curriculum', curriculum).eq('topic', topic).eq('is_active', true).not('numeric_answer', 'is', null).limit(200)
+    const { data } = await query
+    if (data?.length) questions = data
+  }
+  if (!questions.length) questions = questionBank().filter(q => q.class_level === classLevel && q.curriculum === curriculum && q.topic === topic && q.numeric_answer)
   if (!questions.length) questions = makeGeneratedQuestions({ count: 200, class_level: classLevel, curriculum, topic, topic_area: inferTopicArea(topic), topic_sublevel: '1 digit × 1 digit' })
   while (questions.length < 200) questions = [...questions, ...makeGeneratedQuestions({ count: 50, class_level: classLevel, curriculum, topic, topic_area: inferTopicArea(topic), topic_sublevel: '1 digit × 1 digit' })]
-  state.smart = { ...defaultSmartState(), phase: 'countdown', countdown: 5, duration, remaining: duration, topic, classLevel, curriculum, questions: questions.sort(() => Math.random() - 0.5), a, b, message: 'Get ready. Countdown started!' }
+  state.smart = { ...defaultSmartState(), phase: 'countdown', countdown: 5, duration, remaining: duration, topic, classLevel, curriculum, questions: questions.sort(() => Math.random() - 0.5), a, b, message: `Loaded ${questions.length} questions. Get ready!` }
   render()
   countdownTimer = setInterval(() => { state.smart.countdown -= 1; if (state.smart.countdown <= 0) beginSmartLive(); else render() }, 1000)
 }
@@ -229,21 +316,54 @@ function recordSmartWinner(winner) { const boards = stored('mezzo_smart_leaderbo
 function inferTopicArea(topic) { const t = String(topic).toLowerCase(); if (t.includes('division') || t.includes('sharing')) return 'Division'; if (t.includes('subtraction') || t.includes('take away')) return 'Subtraction'; if (t.includes('add')) return 'Addition'; return 'Multiplication' }
 function playClap() { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); for (let i = 0; i < 5; i++) { const size = ctx.sampleRate * 0.08; const buffer = ctx.createBuffer(1, size, ctx.sampleRate); const data = buffer.getChannelData(0); for (let j = 0; j < size; j++) data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / size, 2); const source = ctx.createBufferSource(); source.buffer = buffer; const gain = ctx.createGain(); gain.gain.value = 0.35; source.connect(gain).connect(ctx.destination); source.start(ctx.currentTime + i * 0.16) } } catch {} }
 
-async function aiGenerate(form) { const f = Object.fromEntries(new FormData(form).entries()); let generated = null; if (supabase) { try { const { data } = await supabase.functions.invoke('generate-questions', { body: f }); if (data?.questions?.length) generated = data.questions } catch { generated = null } } generated ||= makeGeneratedQuestions(f); setQuestionBank([...generated, ...questionBank()]); const summary = generationSummary(); summary.totalGenerated += generated.length; summary.batches.unshift({ count: generated.length, class_level: f.class_level, curriculum: f.curriculum, topic: f.topic, topic_area: f.topic_area, topic_sublevel: f.topic_sublevel, created_at: new Date().toLocaleString() }); saveGenerationSummary(summary); state.adminPage = 1; state.message = `${generated.length} questions generated and added to the question bank.`; render() }
-async function saveQuestion(form) { const f = Object.fromEntries(new FormData(form).entries()); const item = { class_level: f.class_level, curriculum: f.curriculum, topic: f.topic, numeric_answer: f.numeric_answer ? Number(f.numeric_answer) : null, question_text: f.question_text, option_a: f.option_a, option_b: f.option_b, option_c: f.option_c, option_d: f.option_d, correct_answer: f.correct_answer, explanation: f.explanation }; const list = questionBank(); const idx = f.editing_index === '' ? -1 : Number(f.editing_index); if (idx >= 0) list[idx] = item; else list.unshift(item); setQuestionBank(list); state.editingIndex = null; state.message = idx >= 0 ? 'Question updated.' : 'Question saved.'; render() }
+async function aiGenerate(form) {
+  const f = Object.fromEntries(new FormData(form).entries())
+  let generated = null
+  if (supabase) { try { const { data } = await supabase.functions.invoke('generate-questions', { body: f }); if (data?.questions?.length) generated = data.questions } catch { generated = null } }
+  generated ||= makeGeneratedQuestions(f)
+  const prepared = generated.map(q => ({ ...q, ai_generated: true, is_active: true }))
+  setQuestionBank([...prepared, ...questionBank()])
+  const summary = generationSummary()
+  summary.totalGenerated += prepared.length
+  summary.batches.unshift({ count: prepared.length, class_level: f.class_level, curriculum: f.curriculum, topic: f.topic, topic_area: f.topic_area, topic_sublevel: f.topic_sublevel, created_at: new Date().toLocaleString() })
+  saveGenerationSummary(summary)
+  state.adminPage = 1
+  const saved = await saveGeneratedQuestionsToDatabase(prepared, f)
+  if (saved) await loadQuestionsFromDatabase()
+  render()
+}
+async function saveQuestion(form) {
+  const f = Object.fromEntries(new FormData(form).entries())
+  const list = questionBank()
+  const idx = f.editing_index === '' ? -1 : Number(f.editing_index)
+  const existing = idx >= 0 ? list[idx] : null
+  const item = { ...existing, class_level: f.class_level, curriculum: f.curriculum, topic: f.topic, numeric_answer: f.numeric_answer ? Number(f.numeric_answer) : null, question_text: f.question_text, option_a: f.option_a, option_b: f.option_b, option_c: f.option_c, option_d: f.option_d, correct_answer: f.correct_answer, explanation: f.explanation, difficulty: existing?.difficulty || 1, is_active: true }
+  if (supabase) {
+    const dbItem = prepareQuestionForDb(item)
+    const { data, error } = item.id ? await supabase.from('question_bank').update(dbItem).eq('id', item.id).select().single() : await supabase.from('question_bank').insert(dbItem).select().single()
+    if (error) state.message = `Database save failed: ${error.message}`
+    else { if (idx >= 0) list[idx] = data; else list.unshift(data); state.message = item.id ? 'Question updated in Supabase database.' : 'Question saved in Supabase database.' }
+  } else {
+    if (idx >= 0) list[idx] = item; else list.unshift(item)
+    state.message = idx >= 0 ? 'Question updated locally. Supabase is not configured.' : 'Question saved locally. Supabase is not configured.'
+  }
+  setQuestionBank(list); state.editingIndex = null; render()
+}
 async function signup(form) { const raw = Object.fromEntries(new FormData(form).entries()); const profile = { ...raw, age: ageFromDob(raw.date_of_birth) }; delete profile.password; save('mezzo_profile', profile); state.user = profile; state.message = 'Demo account created.'; state.view = 'dashboard'; render() }
-async function login(form) { const f = Object.fromEntries(new FormData(form).entries()); const local = stored('mezzo_profile', {}) || {}; local.email = f.email; local.role = f.role; save('mezzo_profile', local); state.user = local; state.message = 'Demo login successful.'; state.view = f.role === 'admin' ? 'admin' : 'dashboard'; render() }
+async function login(form) { const f = Object.fromEntries(new FormData(form).entries()); const local = stored('mezzo_profile', {}) || {}; local.email = f.email; local.role = f.role; save('mezzo_profile', local); state.user = local; state.message = 'Demo login successful.'; state.view = f.role === 'admin' ? 'admin' : 'dashboard'; if (f.role === 'admin') await loadQuestionsFromDatabase(); render() }
 function startSolo() { state.message = 'Solo practice engine is ready.'; render() }
 function startBattle() { state.message = 'Online battle mode is ready. Use Smart Board 1v1 for classroom contest.'; render() }
 
 document.addEventListener('click', async e => {
-  const target = e.target.closest('[data-target]'); if (target) { clearInterval(countdownTimer); clearInterval(contestTimer); state.view = target.dataset.target; state.message = ''; state.editingIndex = null; render(); return }
-  const mode = e.target.closest('[data-auth-mode]'); if (mode) { state.authMode = mode.datasetAuthMode || mode.dataset.authMode; render(); return }
+  const target = e.target.closest('[data-target]'); if (target) { clearInterval(countdownTimer); clearInterval(contestTimer); state.view = target.dataset.target; state.message = ''; state.editingIndex = null; if (state.view === 'admin') await loadQuestionsFromDatabase(); render(); return }
+  const mode = e.target.closest('[data-auth-mode]'); if (mode) { state.authMode = mode.dataset.authMode; render(); return }
   const adminPage = e.target.closest('[data-admin-page]'); if (adminPage) { state.adminPage = Number(adminPage.dataset.adminPage); render(); return }
   const edit = e.target.closest('[data-edit-question]'); if (edit) { state.editingIndex = Number(edit.dataset.editQuestion); render(); return }
-  const del = e.target.closest('[data-delete-question]'); if (del) { const list = questionBank(); list.splice(Number(del.dataset.deleteQuestion), 1); setQuestionBank(list); state.message = 'Question deleted.'; render(); return }
+  const del = e.target.closest('[data-delete-question]'); if (del) { const list = questionBank(); const idx = Number(del.dataset.deleteQuestion); const q = list[idx]; if (supabase && q?.id) await supabase.from('question_bank').update({ is_active: false }).eq('id', q.id); list.splice(idx, 1); setQuestionBank(list); state.message = 'Question deleted.'; render(); return }
   const key = e.target.closest('[data-key]'); if (key && state.smart.phase === 'live') { const p = state.smart[key.dataset.pad]; p.answer = key.dataset.key === '⌫' ? p.answer.slice(0,-1) : `${p.answer}${key.dataset.key}`; render(); return }
   const smartSubmitBtn = e.target.closest('[data-submit-smart]'); if (smartSubmitBtn) { smartSubmit(smartSubmitBtn.dataset.submitSmart); return }
+  if (e.target.closest('#loadDbQuestions')) { await loadQuestionsFromDatabase(); render(); return }
+  if (e.target.closest('#syncLocalQuestions')) { await syncLocalQuestionsToDatabase(); return }
   if (e.target.closest('#startSmartContest')) { await startSmartContest(); return }
   if (e.target.closest('#endSmartContest')) { endSmartContest(); return }
   if (e.target.closest('#resetSmartContest')) { resetSmartContest(); return }
