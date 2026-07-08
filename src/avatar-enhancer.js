@@ -14,11 +14,11 @@ const AVATARS = [
 ]
 
 const fallbackStats = { xp: 7650, coins: 1200, wins: 12, streak: 7, level: 23 }
+let syncQueued = false
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback }
 }
-function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
 function stats() { return { ...fallbackStats, ...readJson('mezzo_player_stats', fallbackStats) } }
 function selectedAvatarId() { return localStorage.getItem('mezzo_avatar') || 'math_boy' }
 function avatarById(id) { return AVATARS.find(a => a.id === id) || AVATARS[0] }
@@ -48,8 +48,8 @@ function toast(message) {
 function syncHeroAvatars() {
   const avatar = currentAvatar()
   document.querySelectorAll('.dashboard-profile-card .avatar, .avatar-large.glow').forEach(node => {
-    node.textContent = avatar.emoji
-    node.title = avatar.name
+    if (node.textContent !== avatar.emoji) node.textContent = avatar.emoji
+    if (node.title !== avatar.name) node.title = avatar.name
   })
   document.querySelectorAll('.left-token').forEach(node => {
     if (node.dataset.avatarSynced === avatar.id) return
@@ -70,7 +70,7 @@ function avatarCardHtml(avatar) {
 function avatarLabHtml() {
   const avatar = currentAvatar()
   const s = stats()
-  return `<section class="avatar-lab-card glass-card">
+  return `<section class="avatar-lab-card glass-card" data-avatar-studio="${avatar.id}">
     <div class="avatar-lab-hero">
       <div class="avatar-stage"><div class="avatar-current">${avatar.emoji}</div><span>Current Avatar</span></div>
       <div>
@@ -91,31 +91,37 @@ function avatarLabHtml() {
 }
 function injectDashboardAvatarStudio() {
   const dashboard = document.querySelector('.dashboard-screen')
-  if (!dashboard || dashboard.querySelector('.avatar-lab-card')) return
+  if (!dashboard) return
+  const avatar = currentAvatar()
+  const existing = dashboard.querySelector('.avatar-lab-card')
+  if (existing?.dataset.avatarStudio === avatar.id) return
   const section = document.createElement('div')
   section.innerHTML = avatarLabHtml()
-  dashboard.appendChild(section.firstElementChild)
+  if (existing) existing.replaceWith(section.firstElementChild)
+  else dashboard.appendChild(section.firstElementChild)
 }
 function syncAvatarExperience() {
-  syncHeroAvatars()
-  injectDashboardAvatarStudio()
+  if (syncQueued) return
+  syncQueued = true
+  requestAnimationFrame(() => {
+    syncQueued = false
+    syncHeroAvatars()
+    injectDashboardAvatarStudio()
+  })
 }
 
 document.addEventListener('click', event => {
   const pick = event.target.closest('[data-avatar-pick]')
   if (!pick) return
   const avatar = avatarById(pick.dataset.avatarPick)
-  if (!isUnlocked(avatar)) {
-    toast(`${avatar.name} is locked. ${avatar.need}.`)
-    return
-  }
+  if (!isUnlocked(avatar)) { toast(`${avatar.name} is locked. ${avatar.need}.`); return }
   localStorage.setItem('mezzo_avatar', avatar.id)
   toast(`${avatar.name} selected as your avatar.`)
   syncAvatarExperience()
 })
 
-const observer = new MutationObserver(() => syncAvatarExperience())
-observer.observe(document.body, { childList: true, subtree: true })
+const observer = new MutationObserver(syncAvatarExperience)
+observer.observe(document.body, { childList: true, subtree: true, attributes: false })
 window.addEventListener('storage', syncAvatarExperience)
 window.addEventListener('load', syncAvatarExperience)
 setTimeout(syncAvatarExperience, 250)
