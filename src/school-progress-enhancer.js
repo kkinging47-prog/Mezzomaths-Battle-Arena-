@@ -3,10 +3,9 @@ import './school-progress.css'
 const fallbackProfile = { full_name: 'Student Champion', school_name: 'Mezzo Demo School', class_level: 'Grade 8', location: 'Greater Accra' }
 const fallbackStats = { xp: 0, coins: 0, wins: 0, streak: 0, level: 1, correctAnswers: 0, attemptedAnswers: 0, completedSets: 0 }
 const fallbackTopics = ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Word Problems', 'Fractions', 'Percentages', 'Squaring', 'General Multiplication', 'General Division', 'BECE Exam Practice']
+let syncQueued = false
 
-function readJson(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback }
-}
+function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
 function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
 function profile() { return { ...fallbackProfile, ...readJson('mezzo_profile', fallbackProfile) } }
 function stats() { return { ...fallbackStats, ...readJson('mezzo_player_stats', fallbackStats) } }
@@ -68,9 +67,7 @@ function leaderboardRows(scope) {
   return base.sort((a,b) => b.score - a.score)
 }
 function expandedLeaderboardsHtml() {
-  const scopes = [
-    ['class', 'Class'], ['school', 'School'], ['regional', 'Regional'], ['national', 'National'], ['smart', 'Smart Board']
-  ]
+  const scopes = [['class', 'Class'], ['school', 'School'], ['regional', 'Regional'], ['national', 'National'], ['smart', 'Smart Board']]
   return `<section class="expanded-leaderboards glass-card">
     <div class="section-row"><div><span class="mini-kicker">🏆 Expanded Rankings</span><h2>Class, School, Regional and National Leaderboards</h2></div><small>Uses saved scores now and can later be connected to Supabase leaderboard tables.</small></div>
     <div class="expanded-board-grid">${scopes.map(([scope, label]) => `<article class="rank-board"><h3>${label} Leaders</h3>${leaderboardRows(scope).slice(0, 6).map((row, index) => `<div class="rank-row"><b>${index + 1}</b><span>${escapeHtml(row.name)}</span><em>${escapeHtml(row.school || row.location || '')}</em><strong>${row.score || 0} ${row.label || 'XP'}</strong></div>`).join('')}</article>`).join('')}</div>
@@ -93,15 +90,7 @@ function teacherAnalytics() {
     grouped[h.topic].best = Math.max(grouped[h.topic].best, pc)
   }
   const topics = Object.values(grouped).map(t => ({ ...t, avg: Math.round(t.total / t.attempts) }))
-  return {
-    students: Math.max(1, new Set(history.map(h => h.student)).size),
-    attempts: history.length,
-    completed: history.length,
-    bestTopic: topics.sort((a,b) => b.best - a.best)[0]?.topic || 'Multiplication',
-    weakTopic: topics.sort((a,b) => a.avg - b.avg)[0]?.topic || 'Word Problems',
-    bestStudent: p.full_name || 'Student Champion',
-    needsHelp: topics.filter(t => t.avg < 55).map(t => t.topic).slice(0, 3)
-  }
+  return { students: Math.max(1, new Set(history.map(h => h.student)).size), attempts: history.length, completed: history.length, bestTopic: topics.sort((a,b) => b.best - a.best)[0]?.topic || 'Multiplication', weakTopic: topics.sort((a,b) => a.avg - b.avg)[0]?.topic || 'Word Problems', bestStudent: p.full_name || 'Student Champion', needsHelp: topics.filter(t => t.avg < 55).map(t => t.topic).slice(0, 3) }
 }
 function teacherDashboardHtml() {
   const a = teacherAnalytics()
@@ -113,17 +102,14 @@ function teacherDashboardHtml() {
   </section>`
 }
 function injectTeacherDashboard() {
-  const admin = document.querySelector('.admin-screen')
-  const dashboard = document.querySelector('.dashboard-screen')
-  const target = admin || dashboard
+  const target = document.querySelector('.admin-screen') || document.querySelector('.dashboard-screen')
   if (!target || target.querySelector('.teacher-dashboard-panel')) return
   target.insertAdjacentHTML('beforeend', teacherDashboardHtml())
 }
 function topicListFromCurrentDom() {
   const soloOptions = Array.from(document.querySelectorAll('#soloTopic option')).map(o => o.value).filter(Boolean)
   const smartOptions = Array.from(document.querySelectorAll('#smartTopic option')).map(o => o.value).filter(Boolean)
-  const merged = [...new Set([...soloOptions, ...smartOptions, ...fallbackTopics])]
-  return merged.slice(0, 18)
+  return [...new Set([...soloOptions, ...smartOptions, ...fallbackTopics])].slice(0, 18)
 }
 function topicProgressHtml() {
   const map = topicProgress()
@@ -135,10 +121,8 @@ function topicProgressHtml() {
 }
 function injectTopicProgressMap() {
   const dashboard = document.querySelector('.dashboard-screen')
-  const solo = document.querySelector('.solo-screen')
-  const target = dashboard || solo
-  if (!target || target.querySelector('.topic-progress-map')) return
-  target.insertAdjacentHTML('beforeend', topicProgressHtml())
+  if (!dashboard || dashboard.querySelector('.topic-progress-map')) return
+  dashboard.insertAdjacentHTML('beforeend', topicProgressHtml())
 }
 function exportTeacherReport() {
   const history = allHistory()
@@ -151,17 +135,23 @@ function exportTeacherReport() {
   link.click()
   setTimeout(() => URL.revokeObjectURL(link.href), 1000)
 }
+function syncSchoolProgress() {
+  if (syncQueued) return
+  syncQueued = true
+  requestAnimationFrame(() => {
+    syncQueued = false
+    recordHistory()
+    injectExpandedLeaderboards()
+    injectTeacherDashboard()
+    injectTopicProgressMap()
+  })
+}
 
 document.addEventListener('click', event => {
   if (event.target.closest('[data-export-teacher-report]')) exportTeacherReport()
 })
 
-const observer = new MutationObserver(() => {
-  recordHistory()
-  injectExpandedLeaderboards()
-  injectTeacherDashboard()
-  injectTopicProgressMap()
-})
-observer.observe(document.body, { childList: true, subtree: true })
-window.addEventListener('load', () => { recordHistory(); injectExpandedLeaderboards(); injectTeacherDashboard(); injectTopicProgressMap() })
-setTimeout(() => { recordHistory(); injectExpandedLeaderboards(); injectTeacherDashboard(); injectTopicProgressMap() }, 400)
+const observer = new MutationObserver(syncSchoolProgress)
+observer.observe(document.body, { childList: true, subtree: true, attributes: false })
+window.addEventListener('load', syncSchoolProgress)
+setTimeout(syncSchoolProgress, 400)
