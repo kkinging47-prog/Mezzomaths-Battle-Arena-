@@ -39,6 +39,10 @@ The app is designed for competitive mathematics learning: students practise math
 - Mezzo PDF topics have been expanded across Grade 1 to Grade 8. Grade 7 and Grade 8 topics from the PDF are shown as Grade 7 and Grade 8 in the app.
 - Topic area is now automatically matched from the selected topic. Admins no longer choose a conflicting topic area manually.
 - AI generation, manual question saving, Smart Board contest loading and database saving all use the auto-matched topic area.
+- Generated sets now mix direct calculation questions with word problems as the set progresses.
+- Daily Practice, Solo Practice, Online 1 vs 1 and Compete With Bot now all load question sets from Supabase `question_bank` when connected.
+- Practice modes reshuffle questions on every request and keep a short local recent-question memory to reduce repeats.
+- If the database has no matching questions for a selected topic, the app falls back to generated mixed direct/word questions so the mode still works.
 - Added Supabase migration for smart board contests, numeric answers and smart board leaderboard records.
 - The Admin page remains merged into one sizeable page for admin-only editing, AI generation, question editing and deletion.
 
