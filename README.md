@@ -9,7 +9,7 @@ The app is designed for competitive mathematics learning: students practise math
 1. Premium game-style Homepage
 2. Smart Board 1 vs 1 Contest Studio
 3. Online 1 vs 1 Battle page
-4. Personal User Dashboard
+4. Personal User Dashboard with Avatar Studio
 5. Combined Login / Sign Up page
 6. Solo Practice
 7. Unified Admin page with Admin Settings and AI Question Generator
@@ -19,6 +19,9 @@ The app is designed for competitive mathematics learning: students practise math
 
 - Added a full **Smart Board 1 vs 1 Contest Studio** for two students standing in front of a classroom smart board.
 - Added a premium **Welcome to Mezzo Maths Battle Arena** landing page with a hero section, animated arena stage, trophies, coins, streak cards, XP rewards and large game-mode cards.
+- Added **Student Avatar Studio** on the dashboard so students can choose and save their maths identity.
+- Added starter avatars and unlock-style avatars tied to XP, coins, wins, streaks and levels.
+- The selected avatar is saved locally and automatically appears on the dashboard profile card and homepage arena token.
 - The homepage now highlights Daily Challenge, Smart Board 1v1, Online Battle, Compete With Bot, Solo Practice, Leaderboards and Mezzopedia Prep as clear game modes.
 - Homepage game cards now include glowing borders, mode icons, reward pills and direct Start buttons.
 - Before the contest starts, Student A and Student B enter name, school and class.
@@ -132,7 +135,8 @@ Output Directory: dist
 
 - Main app file: `src/main.jsx`
 - Main styling file: `src/index.css`
-- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`
+- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`, `src/avatar.css`
+- Avatar enhancer: `src/avatar-enhancer.js`
 - Supabase client: `src/supabaseClient.js`
 - Supabase schema: `supabase/schema.sql`
 - Supabase migrations: `supabase/migrations/002_admin_ai_question_tools.sql`, `supabase/migrations/003_smart_board_contests.sql`
