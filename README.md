@@ -6,7 +6,7 @@ The app is designed for competitive mathematics learning: students practise math
 
 ## Current Screens
 
-1. Homepage
+1. Premium game-style Homepage
 2. Smart Board 1 vs 1 Contest Studio
 3. Online 1 vs 1 Battle page
 4. Personal User Dashboard
@@ -18,6 +18,9 @@ The app is designed for competitive mathematics learning: students practise math
 ## Latest Additions
 
 - Added a full **Smart Board 1 vs 1 Contest Studio** for two students standing in front of a classroom smart board.
+- Added a premium **Welcome to Mezzo Maths Battle Arena** landing page with a hero section, animated arena stage, trophies, coins, streak cards, XP rewards and large game-mode cards.
+- The homepage now highlights Daily Challenge, Smart Board 1v1, Online Battle, Compete With Bot, Solo Practice, Leaderboards and Mezzopedia Prep as clear game modes.
+- Homepage game cards now include glowing borders, mode icons, reward pills and direct Start buttons.
 - Before the contest starts, Student A and Student B enter name, school and class.
 - Contest setup includes duration options from **30 seconds to 360 seconds** in 30-second steps.
 - Contest setup includes class level, curriculum and a topic selector using the uploaded Mezzo Maths topic list.
