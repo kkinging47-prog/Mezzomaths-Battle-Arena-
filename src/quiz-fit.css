@@ -1,0 +1,311 @@
+/* Quiz/practice page viewport fit */
+.quiz-layout{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 250px!important;
+  gap:14px!important;
+  align-items:stretch!important;
+  min-height:calc(100vh - 150px)!important;
+  max-height:calc(100vh - 118px)!important;
+  overflow:hidden!important;
+}
+
+.question-card.light-card,
+.quiz-layout .question-card{
+  min-height:0!important;
+  height:100%!important;
+  max-height:calc(100vh - 125px)!important;
+  padding:clamp(18px,2.1vw,32px)!important;
+  border-radius:28px!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(130px,1fr) auto!important;
+  gap:14px!important;
+  overflow:hidden!important;
+}
+
+.question-meta{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:center!important;
+  gap:10px!important;
+  margin:0!important;
+  font-size:.9rem!important;
+}
+
+.question-meta span,
+.question-meta .difficulty{
+  font-size:.82rem!important;
+  line-height:1.1!important;
+}
+
+.question-card h2{
+  align-self:center!important;
+  justify-self:center!important;
+  width:100%!important;
+  max-width:100%!important;
+  margin:0!important;
+  color:#0f172a!important;
+  font-size:clamp(2.4rem,5.2vw,5.7rem)!important;
+  line-height:1.08!important;
+  text-align:center!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+  white-space:normal!important;
+}
+
+.question-card h2[data-long-question="true"]{
+  font-size:clamp(1.85rem,3.6vw,4rem)!important;
+  line-height:1.12!important;
+}
+
+.question-card h2[data-very-long-question="true"]{
+  font-size:clamp(1.55rem,2.9vw,3.2rem)!important;
+  line-height:1.16!important;
+}
+
+.answer-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:12px!important;
+  width:100%!important;
+  align-self:end!important;
+}
+
+.answer-card{
+  min-height:78px!important;
+  height:auto!important;
+  border-radius:20px!important;
+  padding:14px 18px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:14px!important;
+  font-size:1.15rem!important;
+}
+
+.answer-card span{
+  flex:0 0 42px!important;
+  width:42px!important;
+  height:42px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:13px!important;
+  line-height:1!important;
+}
+
+.answer-card strong{
+  font-size:clamp(1.05rem,1.7vw,1.55rem)!important;
+  line-height:1.18!important;
+  overflow-wrap:break-word!important;
+  white-space:normal!important;
+}
+
+.score-panel{
+  min-height:0!important;
+  height:100%!important;
+  max-height:calc(100vh - 125px)!important;
+  padding:12px!important;
+  border-radius:24px!important;
+  display:grid!important;
+  gap:10px!important;
+  align-content:stretch!important;
+  overflow:hidden!important;
+}
+
+.panel-metric{
+  min-height:0!important;
+  padding:14px 10px!important;
+  border-radius:20px!important;
+  display:grid!important;
+  place-items:center!important;
+  text-align:center!important;
+}
+
+.panel-metric span{
+  font-size:1.7rem!important;
+}
+
+.panel-metric small{
+  font-size:.72rem!important;
+  line-height:1.1!important;
+}
+
+.panel-metric strong{
+  font-size:1.25rem!important;
+  line-height:1.1!important;
+}
+
+.explanation-card.light-card,
+.explanation-card{
+  position:fixed!important;
+  left:clamp(18px,2.6vw,46px)!important;
+  right:clamp(292px,18vw,340px)!important;
+  bottom:16px!important;
+  z-index:10020!important;
+  max-height:132px!important;
+  min-height:104px!important;
+  margin:0!important;
+  padding:0!important;
+  border-radius:24px!important;
+  overflow:hidden!important;
+  box-shadow:0 20px 70px rgba(0,0,0,.35)!important;
+  border:1px solid rgba(255,255,255,.28)!important;
+  background:#f8fafc!important;
+}
+
+.explanation-card .result-banner{
+  min-height:54px!important;
+  padding:12px 18px!important;
+  margin:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  border-radius:0!important;
+  color:#fff!important;
+  background:linear-gradient(135deg,#16a34a,#22c55e)!important;
+}
+
+.explanation-card[data-feedback="wrong"] .result-banner,
+.explanation-card .result-banner[data-feedback="wrong"]{
+  background:linear-gradient(135deg,#dc2626,#ef4444)!important;
+}
+
+.explanation-card .result-banner strong{
+  font-size:1rem!important;
+  line-height:1.1!important;
+}
+
+.explanation-card .result-banner div{
+  margin-left:auto!important;
+}
+
+.explanation-card p{
+  margin:0!important;
+  padding:8px 18px 0!important;
+  color:#0f172a!important;
+  font-size:.9rem!important;
+  line-height:1.2!important;
+  max-width:calc(100% - 220px)!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+
+.explanation-card .btn,
+.explanation-card #nextSolo,
+.explanation-card #nextBattle{
+  position:absolute!important;
+  right:14px!important;
+  bottom:12px!important;
+  min-height:42px!important;
+  padding:10px 16px!important;
+  border-radius:18px!important;
+  font-size:.92rem!important;
+  white-space:nowrap!important;
+}
+
+.explanation-card[data-feedback="wrong"]{
+  border-color:rgba(239,68,68,.55)!important;
+  box-shadow:0 20px 70px rgba(220,38,38,.28)!important;
+}
+
+.explanation-card[data-feedback="correct"]{
+  border-color:rgba(34,197,94,.55)!important;
+  box-shadow:0 20px 70px rgba(34,197,94,.24)!important;
+}
+
+/* Floating reward buttons: keep position but center the icons perfectly */
+.reward-mini-dock{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:8px!important;
+  right:14px!important;
+  bottom:84px!important;
+  align-items:center!important;
+  justify-items:center!important;
+}
+
+.reward-mini-dock span,
+.reward-mini-dock strong,
+.sound-toggle{
+  width:52px!important;
+  height:52px!important;
+  min-width:52px!important;
+  min-height:52px!important;
+  max-width:52px!important;
+  max-height:52px!important;
+  padding:0!important;
+  border-radius:50%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+  line-height:1!important;
+  overflow:hidden!important;
+}
+
+.sound-toggle{
+  right:14px!important;
+  bottom:18px!important;
+  font-size:0!important;
+}
+
+.sound-toggle::before,
+.reward-mini-dock strong::before{
+  display:block!important;
+  position:static!important;
+  transform:none!important;
+  margin:0!important;
+  line-height:1!important;
+  text-align:center!important;
+}
+
+.sound-toggle::before{font-size:1.45rem!important;}
+.reward-mini-dock span{font-size:.72rem!important;font-weight:1000!important;}
+.reward-mini-dock strong{font-size:0!important;}
+.reward-mini-dock strong:nth-of-type(1)::before{content:'⚡';font-size:1.35rem!important;}
+.reward-mini-dock strong:nth-of-type(2)::before{content:'🪙';font-size:1.35rem!important;}
+.reward-mini-dock strong:nth-of-type(3)::before{content:'🏆';font-size:1.35rem!important;}
+
+@media(max-width:1000px){
+  .quiz-layout{
+    grid-template-columns:1fr!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .score-panel{
+    display:grid!important;
+    grid-template-columns:repeat(3,1fr)!important;
+    max-height:none!important;
+  }
+  .explanation-card{
+    left:14px!important;
+    right:14px!important;
+    bottom:72px!important;
+  }
+  .explanation-card p{
+    max-width:calc(100% - 170px)!important;
+  }
+}
+
+@media(max-width:640px){
+  .question-card h2,
+  .question-card h2[data-long-question="true"],
+  .question-card h2[data-very-long-question="true"]{
+    font-size:clamp(1.6rem,8vw,2.8rem)!important;
+  }
+  .answer-grid{grid-template-columns:1fr!important;}
+  .answer-card{min-height:64px!important;}
+  .explanation-card{
+    max-height:150px!important;
+    min-height:128px!important;
+  }
+  .explanation-card p{
+    white-space:normal!important;
+    max-width:100%!important;
+    padding-right:18px!important;
+  }
+  .explanation-card .btn{
+    position:static!important;
+    margin:8px 14px!important;
+  }
+}
