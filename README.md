@@ -31,6 +31,10 @@ The app is designed for competitive mathematics learning: students practise math
 - Winners are added to local **weekly, monthly and yearly leaderboards**.
 - The Admin page now shows a generated-question summary: total questions, total AI-generated questions, latest batch and recent generation batches.
 - The Admin question bank now shows **20 questions per page** with Previous/Next pagination.
+- Generated questions are now inserted into Supabase `question_bank` when Supabase is configured.
+- The Admin page has a **Load Questions From Database** button and loads Supabase questions whenever the Admin page is opened.
+- The Smart Board contest loads matching numeric-answer questions from Supabase on every contest request before falling back to local/demo generated questions.
+- Manual Admin saves/edits now save to Supabase when the question has database access.
 - Added Supabase migration for smart board contests, numeric answers and smart board leaderboard records.
 - The Admin page remains merged into one sizeable page for admin-only editing, AI generation, question editing and deletion.
 
@@ -64,6 +68,10 @@ VITE_SUPABASE_ANON_KEY=your-public-anon-key
 ```
 
 7. Redeploy the latest commit.
+
+## Important Production Note
+
+Supabase Row Level Security must allow the logged-in admin to insert into `question_bank`. The included schema expects admin users to have `profiles.role = 'admin'`. For public launch, do not rely on the current demo admin selector alone.
 
 ## Optional AI Edge Function
 
