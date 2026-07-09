@@ -1,3 +1,5 @@
+import './signup-email.css'
+
 let sendingWelcome = false
 
 function toast(message) {
