@@ -18,10 +18,21 @@ function profile() { return readJson('mezzo_profile', null) || {} }
 function stats() { return readJson('mezzo_player_stats', {}) || {} }
 function isSignedIn() { const p = profile(); return Boolean(p.email || p.full_name || p.role) }
 function isSubscribed() { const sub = readJson('mezzo_subscription', null); return Boolean(sub?.active && (!sub.expires_at || new Date(sub.expires_at) > new Date())) }
+function trialStatus() { const trial = readJson('mezzo_trial_extension', null); return trial?.active && trial?.expires_at && new Date(trial.expires_at) > new Date() ? trial : null }
+function hasTrialExtension() { return Boolean(trialStatus()) }
 function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) }
 function levelReached() { const s = stats(); return Number(s.level || 1) >= 3 || Number(s.completedSets || 0) >= 3 }
 function closeSubscriptionModal() { document.querySelector('.subscription-gate-overlay')?.remove(); modalOpen = false }
 function goToDashboard() { closeSubscriptionModal(); const dashboard = document.querySelector('[data-target="dashboard"]'); if (dashboard) dashboard.click(); else window.dispatchEvent(new CustomEvent('mezzoNavigateDashboard')) }
+function extendTrialAndDashboard() {
+  const now = new Date()
+  const existing = trialStatus()
+  const base = existing ? new Date(existing.expires_at) : now
+  base.setDate(base.getDate() + 7)
+  saveJson('mezzo_trial_extension', { active: true, extended_at: now.toISOString(), expires_at: base.toISOString(), reason: 'subscription_not_ready' })
+  showToast(`Trial extended for 7 more days. Valid until ${base.toLocaleDateString()}.`)
+  goToDashboard()
+}
 function planById(id) { return PLANS.find(plan => plan.id === id) || PLANS[1] }
 function addMonths(date, months) { const d = new Date(date); d.setMonth(d.getMonth() + months); return d.toISOString() }
 function periodToExpiry(period) { if (period === 'week') { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString() } if (period === 'term') return addMonths(new Date(), 3); if (period === 'year') return addMonths(new Date(), 12); return addMonths(new Date(), 1) }
@@ -34,17 +45,22 @@ function planCard(plan, index) { return `<button class="subscription-plan ${inde
   <ul>${plan.features.map(feature => `<li>✓ ${escapeHtml(feature)}</li>`).join('')}</ul>
   <b>Pay with Visa/Card or MoMo →</b>
 </button>` }
+function trialNoteHtml() {
+  const trial = trialStatus()
+  return trial ? `<div class="subscription-trial-note"><strong>Trial active:</strong> Your extended trial is valid until ${new Date(trial.expires_at).toLocaleDateString()}.</div>` : `<div class="subscription-trial-note"><strong>Not ready?</strong> Extend your free trial for 7 more days and return to your dashboard.</div>`
+}
 function subscriptionModalHtml() { return `<div class="subscription-gate-overlay" role="dialog" aria-modal="true" aria-label="Subscription plans">
   <section class="subscription-gate-card">
     <button class="subscription-close" type="button" aria-label="Close">×</button>
     <div class="subscription-head"><div><span class="sub-kicker">🔓 Premium unlock</span><h2>Choose your Mezzo Maths plan</h2><p>You have completed the first 3 game levels. Subscribe to continue premium practice, battles, Mezzopedia Prep, topic tracking, rewards and reports.</p></div><div class="sub-lock">🏆</div></div>
     <div class="subscription-grid">${PLANS.map(planCard).join('')}</div>
     <div class="subscription-note"><strong>Payments:</strong> Checkout is prepared for Paystack Ghana so parents/schools can pay with Visa/Card or Mobile Money. Add your Paystack secret key in Vercel to activate live payments.</div>
-    <div class="subscription-later-row"><button class="btn btn-ghost" type="button" data-subscription-later="true">Not ready yet — go to Dashboard</button></div>
+    ${trialNoteHtml()}
+    <div class="subscription-later-row"><button class="btn btn-blue" type="button" data-extend-trial="true">Extend Trial 7 More Days</button><button class="btn btn-ghost" type="button" data-subscription-later="true">Not ready yet — go to Dashboard</button></div>
   </section>
 </div>` }
 function showSubscriptionModal(force = false) {
-  if (modalOpen || isSubscribed()) return
+  if (modalOpen || isSubscribed() || hasTrialExtension()) return
   if (!force && !levelReached()) return
   modalOpen = true
   document.body.insertAdjacentHTML('beforeend', subscriptionModalHtml())
@@ -77,7 +93,9 @@ async function startPayment(planId) {
     if (!res.ok || !data?.authorization_url) throw new Error(data?.error || 'Payment initialization failed')
     window.location.href = data.authorization_url
   } catch (error) {
-    showToast(`${error.message}. Add PAYSTACK_SECRET_KEY in Vercel, then redeploy.`)
+    showToast(`${error.message}. You can extend your trial for 7 more days.`)
+    const row = document.querySelector('.subscription-later-row')
+    if (row && !row.querySelector('[data-payment-failed-trial]')) row.insertAdjacentHTML('afterbegin', '<button class="btn btn-blue" type="button" data-extend-trial="true" data-payment-failed-trial="true">Payment failed — Extend Trial 7 Days</button>')
   } finally {
     paymentBusy = false
   }
@@ -93,13 +111,14 @@ async function verifyPaymentFromUrl() {
     if (!res.ok || data.status !== 'success') throw new Error(data.error || 'Payment could not be verified')
     const plan = planById(data.plan_id)
     saveJson('mezzo_subscription', { active: true, plan_id: plan.id, plan_name: plan.name, amount: plan.price, reference, paid_at: new Date().toISOString(), expires_at: periodToExpiry(plan.period) })
+    localStorage.removeItem('mezzo_trial_extension')
     showToast(`Subscription active: ${plan.name}`)
     window.history.replaceState({}, document.title, window.location.pathname)
   } catch (error) {
-    showToast(error.message)
+    showToast(`${error.message}. You can extend your trial for 7 more days.`)
   }
 }
-function checkGate() { if (!isSubscribed() && levelReached()) showSubscriptionModal(false) }
+function checkGate() { if (!isSubscribed() && !hasTrialExtension() && levelReached()) showSubscriptionModal(false) }
 function queueSync() { if (syncQueued) return; syncQueued = true; requestAnimationFrame(() => { syncQueued = false; installPlanButton(); checkGate() }) }
 
 document.addEventListener('click', event => {
@@ -107,8 +126,9 @@ document.addEventListener('click', event => {
   if (open) { event.preventDefault(); showSubscriptionModal(true); return }
   const plan = event.target.closest('[data-subscribe-plan]')
   if (plan) { event.preventDefault(); startPayment(plan.dataset.subscribePlan); return }
-  if (event.target.closest('[data-subscription-later]')) { event.preventDefault(); goToDashboard(); return }
-  if (event.target.closest('.subscription-close')) { goToDashboard(); return }
+  if (event.target.closest('[data-extend-trial]')) { event.preventDefault(); extendTrialAndDashboard(); return }
+  if (event.target.closest('[data-subscription-later]')) { event.preventDefault(); extendTrialAndDashboard(); return }
+  if (event.target.closest('.subscription-close')) { extendTrialAndDashboard(); return }
 })
 
 const observer = new MutationObserver(queueSync)
