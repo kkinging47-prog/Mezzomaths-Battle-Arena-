@@ -21,6 +21,7 @@ function isSubscribed() { const sub = readJson('mezzo_subscription', null); retu
 function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) }
 function levelReached() { const s = stats(); return Number(s.level || 1) >= 3 || Number(s.completedSets || 0) >= 3 }
 function closeSubscriptionModal() { document.querySelector('.subscription-gate-overlay')?.remove(); modalOpen = false }
+function goToDashboard() { closeSubscriptionModal(); const dashboard = document.querySelector('[data-target="dashboard"]'); if (dashboard) dashboard.click(); else window.dispatchEvent(new CustomEvent('mezzoNavigateDashboard')) }
 function planById(id) { return PLANS.find(plan => plan.id === id) || PLANS[1] }
 function addMonths(date, months) { const d = new Date(date); d.setMonth(d.getMonth() + months); return d.toISOString() }
 function periodToExpiry(period) { if (period === 'week') { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString() } if (period === 'term') return addMonths(new Date(), 3); if (period === 'year') return addMonths(new Date(), 12); return addMonths(new Date(), 1) }
@@ -39,6 +40,7 @@ function subscriptionModalHtml() { return `<div class="subscription-gate-overlay
     <div class="subscription-head"><div><span class="sub-kicker">🔓 Premium unlock</span><h2>Choose your Mezzo Maths plan</h2><p>You have completed the first 3 game levels. Subscribe to continue premium practice, battles, Mezzopedia Prep, topic tracking, rewards and reports.</p></div><div class="sub-lock">🏆</div></div>
     <div class="subscription-grid">${PLANS.map(planCard).join('')}</div>
     <div class="subscription-note"><strong>Payments:</strong> Checkout is prepared for Paystack Ghana so parents/schools can pay with Visa/Card or Mobile Money. Add your Paystack secret key in Vercel to activate live payments.</div>
+    <div class="subscription-later-row"><button class="btn btn-ghost" type="button" data-subscription-later="true">Not ready yet — go to Dashboard</button></div>
   </section>
 </div>` }
 function showSubscriptionModal(force = false) {
@@ -105,7 +107,8 @@ document.addEventListener('click', event => {
   if (open) { event.preventDefault(); showSubscriptionModal(true); return }
   const plan = event.target.closest('[data-subscribe-plan]')
   if (plan) { event.preventDefault(); startPayment(plan.dataset.subscribePlan); return }
-  if (event.target.closest('.subscription-close')) { closeSubscriptionModal(); return }
+  if (event.target.closest('[data-subscription-later]')) { event.preventDefault(); goToDashboard(); return }
+  if (event.target.closest('.subscription-close')) { goToDashboard(); return }
 })
 
 const observer = new MutationObserver(queueSync)
