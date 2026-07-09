@@ -19,6 +19,11 @@ The app is designed for competitive mathematics learning: students practise math
 
 ## Latest Additions
 
+- Added a visible **Subscription** button in the main navigation and homepage hero actions.
+- Added online 1v1 matchmaking scan before each online match. The app searches for a live learner on the same class/curriculum/topic, then falls back to MathBot if no live participant is found.
+- Added optional Supabase `battle_match_queue` migration for live online participant discovery.
+- Added welcome email sending after student sign-up through a Vercel email endpoint.
+- Added automatic payment receipt emails after successful Paystack verification.
 - Added subscription pop-ups after the player completes the first **3 game levels** or 3 completed sets.
 - Added five subscription plans: Weekly Starter, Student Monthly, Term Pass, Annual Champion and School Pack.
 - Added Paystack payment initialization and verification API routes for Visa/Card and Mobile Money checkout.
@@ -108,6 +113,29 @@ PAYSTACK_SECRET_KEY=sk_live_your_paystack_secret_key
 
 Then redeploy. The frontend calls `/api/paystack-initialize`, redirects the user to Paystack Checkout, and verifies the returned payment reference through `/api/paystack-verify`.
 
+## Email Setup
+
+The app includes:
+
+```bash
+api/send-welcome-email.js
+```
+
+It also sends Paystack receipts from:
+
+```bash
+api/paystack-verify.js
+```
+
+Add these Vercel Environment Variables to activate email sending:
+
+```bash
+RESEND_API_KEY=re_your_resend_api_key
+RESEND_FROM_EMAIL=Mezzo Maths <noreply@yourdomain.com>
+```
+
+If `RESEND_API_KEY` is missing, sign-up and payment will still work, but emails will be skipped.
+
 ## Supabase Setup
 
 1. Create a Supabase project.
@@ -130,14 +158,20 @@ supabase/migrations/002_admin_ai_question_tools.sql
 supabase/migrations/003_smart_board_contests.sql
 ```
 
-6. In Vercel, add these Environment Variables:
+6. For live online 1v1 participant matching, also run:
+
+```bash
+supabase/migrations/004_battle_match_queue.sql
+```
+
+7. In Vercel, add these Environment Variables:
 
 ```bash
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-public-anon-key
 ```
 
-7. Redeploy the latest commit.
+8. Redeploy the latest commit.
 
 ## Important Production Note
 
@@ -159,6 +193,7 @@ Deploy it with Supabase CLI and set `AI_API_KEY` as a Supabase secret. If the fu
 - Supabase client
 - Vercel API routes
 - Paystack Checkout integration
+- Resend email API integration
 - Tailwind CSS setup
 - Custom responsive CSS components
 
@@ -193,16 +228,20 @@ Output Directory: dist
 
 - Main app file: `src/main.jsx`
 - Main styling file: `src/index.css`
-- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`, `src/avatar.css`, `src/gamification.css`, `src/celebration-ai.css`, `src/school-progress.css`, `src/sound-prep.css`, `src/subscription-gate.css`
+- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`, `src/avatar.css`, `src/gamification.css`, `src/celebration-ai.css`, `src/school-progress.css`, `src/sound-prep.css`, `src/subscription-gate.css`, `src/subscription-button.css`, `src/online-matchmaking.css`, `src/signup-email.css`
 - Avatar enhancer: `src/avatar-enhancer.js`
 - Gamification enhancer: `src/gamification-enhancer.js`
 - Celebration and AI Coach enhancer: `src/celebration-ai-coach.js`
 - School leaderboard, teacher dashboard and topic progress enhancer: `src/school-progress-enhancer.js`
 - Sound effects and Mezzopedia Prep enhancer: `src/sound-prep-enhancer.js`
 - Subscription gate and Paystack frontend: `src/subscription-gate-enhancer.js`
+- Subscription button enhancer: `src/subscription-button-enhancer.js`
+- Online matchmaking enhancer: `src/online-matchmaking-enhancer.js`
+- Sign-up email enhancer: `src/signup-email-enhancer.js`
 - Paystack API routes: `api/paystack-initialize.js`, `api/paystack-verify.js`
+- Welcome email API route: `api/send-welcome-email.js`
 - Supabase client: `src/supabaseClient.js`
 - Supabase schema: `supabase/schema.sql`
-- Supabase migrations: `supabase/migrations/002_admin_ai_question_tools.sql`, `supabase/migrations/003_smart_board_contests.sql`
+- Supabase migrations: `supabase/migrations/002_admin_ai_question_tools.sql`, `supabase/migrations/003_smart_board_contests.sql`, `supabase/migrations/004_battle_match_queue.sql`
 - Optional AI function: `supabase/functions/generate-questions/index.ts`
 - Environment example: `.env.example`
