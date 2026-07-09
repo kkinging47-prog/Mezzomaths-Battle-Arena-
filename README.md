@@ -2,7 +2,7 @@
 
 A premium, responsive Vite web app for **Mezzo Maths Battle Arena**.
 
-The app is designed for competitive mathematics learning: students practise maths, battle opponents, earn XP, collect coins, climb leaderboards, and prepare for the Mezzopedia National Mathematics Contest.
+The app is designed for competitive mathematics learning: students practise maths, battle opponents, earn XP, collect coins, climb leaderboards, prepare for the Mezzopedia National Mathematics Contest, and subscribe for premium access.
 
 ## Current Screens
 
@@ -15,9 +15,15 @@ The app is designed for competitive mathematics learning: students practise math
 7. Solo Practice
 8. Unified Admin page with Admin Settings, AI Question Generator and Teacher Dashboard
 9. Expanded Weekly / Monthly / Yearly / Class / School / Regional / National Leaderboards
+10. Subscription Plans and Payment Checkout
 
 ## Latest Additions
 
+- Added subscription pop-ups after the player completes the first **3 game levels** or 3 completed sets.
+- Added five subscription plans: Weekly Starter, Student Monthly, Term Pass, Annual Champion and School Pack.
+- Added Paystack payment initialization and verification API routes for Visa/Card and Mobile Money checkout.
+- Added frontend subscription verification after Paystack redirects back to the app.
+- Added a homepage subscription banner so users can view plans manually.
 - Added a full **Smart Board 1 vs 1 Contest Studio** for two students standing in front of a classroom smart board.
 - Added a premium **Welcome to Mezzo Maths Battle Arena** landing page with a hero section, animated arena stage, trophies, coins, streak cards, XP rewards and large game-mode cards.
 - Added **Student Avatar Studio** on the dashboard so students can choose and save their maths identity.
@@ -66,14 +72,41 @@ The app is designed for competitive mathematics learning: students practise math
 - Manual Admin saves/edits now save to Supabase when the question has database access.
 - The class levels now run as **Grade 1 to Grade 9, SHS 1 to SHS 3**.
 - Mezzo PDF topics have been expanded across Grade 1 to Grade 8. Grade 7 and Grade 8 topics from the PDF are shown as Grade 7 and Grade 8 in the app.
-- Topic area is now automatically matched from the selected topic. Admins no longer choose a conflicting topic area manually.
-- AI generation, manual question saving, Smart Board contest loading and database saving all use the auto-matched topic area.
 - Generated sets now mix direct calculation questions with word problems as the set progresses.
 - Daily Practice, Solo Practice, Online 1 vs 1 and Compete With Bot now all load question sets from Supabase `question_bank` when connected.
 - Practice modes reshuffle questions on every request and keep a short local recent-question memory to reduce repeats.
 - If the database has no matching questions for a selected topic, the app falls back to generated mixed direct/word questions so the mode still works.
 - Added Supabase migration for smart board contests, numeric answers and smart board leaderboard records.
 - The Admin page remains merged into one sizeable page for admin-only editing, AI generation, question editing and deletion.
+
+## Subscription Plans
+
+The current Ghana-friendly subscription tiers are:
+
+| Plan | Price | Period | Use case |
+| --- | ---: | --- | --- |
+| Weekly Starter | GHS 10 | 1 week | Low-entry student plan |
+| Student Monthly | GHS 35 | 1 month | Regular individual learner |
+| Term Pass | GHS 90 | 1 school term | Best value for term practice |
+| Annual Champion | GHS 300 | 1 year | Full-year contest preparation |
+| School Pack | GHS 750 | 1 month | Teacher dashboard/class access for up to 50 students |
+
+## Paystack Payment Setup
+
+The app includes Vercel API routes:
+
+```bash
+api/paystack-initialize.js
+api/paystack-verify.js
+```
+
+In Vercel, add this server-side Environment Variable:
+
+```bash
+PAYSTACK_SECRET_KEY=sk_live_your_paystack_secret_key
+```
+
+Then redeploy. The frontend calls `/api/paystack-initialize`, redirects the user to Paystack Checkout, and verifies the returned payment reference through `/api/paystack-verify`.
 
 ## Supabase Setup
 
@@ -124,6 +157,8 @@ Deploy it with Supabase CLI and set `AI_API_KEY` as a Supabase secret. If the fu
 
 - Vite
 - Supabase client
+- Vercel API routes
+- Paystack Checkout integration
 - Tailwind CSS setup
 - Custom responsive CSS components
 
@@ -158,12 +193,14 @@ Output Directory: dist
 
 - Main app file: `src/main.jsx`
 - Main styling file: `src/index.css`
-- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`, `src/avatar.css`, `src/gamification.css`, `src/celebration-ai.css`, `src/school-progress.css`, `src/sound-prep.css`
+- New feature styling files: `src/upgrade.css`, `src/home-admin.css`, `src/smartboard.css`, `src/avatar.css`, `src/gamification.css`, `src/celebration-ai.css`, `src/school-progress.css`, `src/sound-prep.css`, `src/subscription-gate.css`
 - Avatar enhancer: `src/avatar-enhancer.js`
 - Gamification enhancer: `src/gamification-enhancer.js`
 - Celebration and AI Coach enhancer: `src/celebration-ai-coach.js`
 - School leaderboard, teacher dashboard and topic progress enhancer: `src/school-progress-enhancer.js`
 - Sound effects and Mezzopedia Prep enhancer: `src/sound-prep-enhancer.js`
+- Subscription gate and Paystack frontend: `src/subscription-gate-enhancer.js`
+- Paystack API routes: `api/paystack-initialize.js`, `api/paystack-verify.js`
 - Supabase client: `src/supabaseClient.js`
 - Supabase schema: `supabase/schema.sql`
 - Supabase migrations: `supabase/migrations/002_admin_ai_question_tools.sql`, `supabase/migrations/003_smart_board_contests.sql`
