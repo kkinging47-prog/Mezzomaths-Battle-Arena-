@@ -99,13 +99,18 @@ function installReportButtons() {
 }
 function cleanPdfText(value = '') {
   return String(value)
-    .replace(/[•✓✅❌📝🏆🤖📘📊🏟️]/g, '')
-    .replace(/[−]/g, '-')
-    .replace(/[²]/g, '^2')
-    .replace(/[³]/g, '^3')
-    .replace(/[₦₵]/g, '')
-    .replace(/[^	    .replace(/[^\x09
-    .replace(/[^\x09\x0A    .replace(/[^\x09\x0A\x0D     .replace(/[^\x09\x0A\x0D\x20-~    .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '')
+    .replace(/[•✓✅❌📝🏆🤖📘📊🏟️]/gu, '')
+    .replace(/[−–—]/g, '-')
+    .replace(/×/g, 'x')
+    .replace(/÷/g, '/')
+    .replace(/²/g, '^2')
+    .replace(/³/g, '^3')
+    .split('')
+    .filter(char => {
+      const code = char.charCodeAt(0)
+      return code === 9 || code === 10 || code === 13 || (code >= 32 && code <= 126)
+    })
+    .join('')
 }
 function wrapText(text, max = 86) {
   const words = cleanPdfText(text).split(/\s+/).filter(Boolean)
