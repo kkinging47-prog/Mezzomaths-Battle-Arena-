@@ -38,7 +38,9 @@ function shuffle(list) { return [...list].sort(() => Math.random() - 0.5) }
 function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) }
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
 function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
-function currentQuestions() { return session?.questions || [] }
+function markingMode() { return localStorage.getItem('mezzo_bece_marking_mode') || 'cumulative' }
+function setMarkingMode(mode) { localStorage.setItem('mezzo_bece_marking_mode', mode === 'instant' ? 'instant' : 'cumulative') }
+function modeLabel(mode = markingMode()) { return mode === 'instant' ? 'Instant Answer' : 'Cumulative Total Score' }
 function installNavButton() {
   const nav = document.querySelector('.tab-scroll')
   if (!nav || nav.querySelector('[data-bece-page]')) return
@@ -51,24 +53,34 @@ function installNavButton() {
   if (leaderboard) leaderboard.insertAdjacentElement('beforebegin', btn)
   else nav.appendChild(btn)
 }
+function markingModePanel() {
+  const current = markingMode()
+  return `<section class="bece-marking-panel glass-card"><div><strong>Marking Mode</strong><small>Default: cumulative total score at the end.</small></div><select id="beceMarkingMode"><option value="cumulative" ${current === 'cumulative' ? 'selected' : ''}>Cumulative Total Score</option><option value="instant" ${current === 'instant' ? 'selected' : ''}>Instant Answer</option></select></section>`
+}
 function beceHomeHtml() {
   const history = readJson('mezzo_bece_history', [])
   const best = history.reduce((max, h) => Math.max(max, h.score || 0), 0)
   return `<main class="app-shell"><section class="app-frame bece-page">
     <nav class="screen-tabs bece-nav"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>Maths Battle Arena</small></div></div><div class="tab-scroll"><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button><button class="screen-tab active" data-bece-page="true"><span>📘</span>BECE Practice</button><button class="screen-tab" data-target="solo"><span>🧠</span>Solo Practice</button><button class="screen-tab" data-target="auth"><span>🔐</span>Login / Sign Up</button></div></nav>
-    <section class="bece-hero glass-card"><div><span class="bece-kicker">📘 BECE Mathematics Practice</span><h1>BECE Past Questions & Sample Practice</h1><p>Practise BECE-style mathematics questions by topic, get instant marking, explanations, score tracking and revision guidance.</p><div class="bece-actions"><button class="btn btn-gold" data-start-bece="pastStyle">Start Past-Style Practice</button><button class="btn btn-primary" data-start-bece="samples">Start Sample Questions</button></div></div><div class="bece-score-card"><span>🏆</span><strong>${best}</strong><small>Best BECE Score</small></div></section>
+    <section class="bece-hero glass-card"><div><span class="bece-kicker">📘 BECE Mathematics Practice</span><h1>BECE Past Questions & Sample Practice</h1><p>Practise BECE-style mathematics questions by topic, get score tracking, explanations, revision guidance and downloadable AI reports.</p><div class="bece-actions"><button class="btn btn-gold" data-start-bece="pastStyle">Start Past-Style Practice</button><button class="btn btn-primary" data-start-bece="samples">Start Sample Questions</button></div></div><div class="bece-score-card"><span>🏆</span><strong>${best}</strong><small>Best BECE Score</small></div></section>
+    ${markingModePanel()}
     <section class="bece-set-grid"><article class="bece-set-card glass-card"><span>📝</span><h2>BECE Past Questions Practice</h2><p>Past-question style practice for revision. Add official licensed WAEC questions later through the admin question bank.</p><button class="btn btn-gold" data-start-bece="pastStyle">Practice Now</button></article><article class="bece-set-card glass-card"><span>✅</span><h2>Sample BECE Practice Questions</h2><p>Original sample BECE-style questions covering Number, Algebra, Geometry, Statistics, Percentages, Ratio and Word Problems.</p><button class="btn btn-primary" data-start-bece="samples">Try Samples</button></article><article class="bece-set-card glass-card"><span>📊</span><h2>Revision Tracker</h2><p>${history.length ? `You have completed ${history.length} BECE set(s). Latest score: ${history[0].score}/${history[0].total}.` : 'Complete a BECE set to start tracking your revision progress.'}</p><button class="btn btn-blue" data-bece-review="true">View Topics</button></article></section>
   </section></main>`
 }
 function renderBeceHome() { session = null; document.getElementById('root').innerHTML = beceHomeHtml() }
 function startBece(type) {
   const questions = shuffle(beceSets[type] || beceSets.samples).slice(0, 10)
-  session = { type, questions, index: 0, score: 0, answers: [], startedAt: new Date().toISOString() }
+  session = { type, questions, index: 0, score: 0, answers: [], markingMode: markingMode(), startedAt: new Date().toISOString() }
   renderQuestion()
 }
 function renderQuestion() {
   const q = session.questions[session.index]
-  document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-page bece-live"><nav class="screen-tabs bece-nav"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE Practice</small></div></div><div class="tab-scroll"><button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Menu</button><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button></div></nav><section class="bece-quiz-layout"><article class="bece-question-card light-card"><div class="bece-meta"><strong>BECE • Q${session.index + 1}/${session.questions.length}</strong><span>${escapeHtml(q.topic)}</span></div><h2>${escapeHtml(q.q)}</h2><div class="bece-options">${q.options.map((option, idx) => `<button data-bece-answer="${String.fromCharCode(65 + idx)}"><b>${String.fromCharCode(65 + idx)}</b><span>${escapeHtml(option)}</span></button>`).join('')}</div></article><aside class="bece-side glass-card"><div><span>🎯</span><strong>${session.score}</strong><small>Score</small></div><div><span>📚</span><strong>${q.topic}</strong><small>Topic</small></div><div><span>🔁</span><strong>${session.type === 'pastStyle' ? 'Past-style' : 'Sample'}</strong><small>Mode</small></div></aside></section></section></main>`
+  const correctText = q.options['ABCD'.indexOf(q.answer)] || ''
+  const long = q.q.length > 70 ? 'true' : 'false'
+  const veryLong = q.q.length > 115 ? 'true' : 'false'
+  const scoreText = session.markingMode === 'instant' ? session.score : `${session.answers.length}/${session.questions.length}`
+  const scoreLabel = session.markingMode === 'instant' ? 'Live Score' : 'Answered'
+  document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-page bece-live"><nav class="screen-tabs bece-nav"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE Practice</small></div></div><div class="tab-scroll"><button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Menu</button><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button><button class="screen-tab" data-bece-report-page="true"><span>📊</span>AI Report</button></div></nav><section class="bece-quiz-layout"><article class="bece-question-card light-card" data-correct-answer="${q.answer}" data-correct-text="${escapeHtml(correctText)}"><div class="bece-meta"><strong>BECE • Q${session.index + 1}/${session.questions.length}</strong><span>${escapeHtml(q.topic)}</span><em>${modeLabel(session.markingMode)}</em></div><h2 data-long-question="${long}" data-very-long-question="${veryLong}">${escapeHtml(q.q)}</h2><div class="bece-options">${q.options.map((option, idx) => `<button data-bece-answer="${String.fromCharCode(65 + idx)}"><b>${String.fromCharCode(65 + idx)}</b><span>${escapeHtml(option)}</span></button>`).join('')}</div></article><aside class="bece-side glass-card"><div><span>🎯</span><strong>${scoreText}</strong><small>${scoreLabel}</small></div><div><span>📚</span><strong>${escapeHtml(q.topic)}</strong><small>Topic</small></div><div><span>🧾</span><strong>${modeLabel(session.markingMode)}</strong><small>Mode</small></div></aside></section></section></main>`
 }
 function answerBece(letter) {
   if (!session) return
@@ -79,11 +91,16 @@ function answerBece(letter) {
   document.querySelectorAll('[data-bece-answer]').forEach(btn => {
     const picked = btn.dataset.beceAnswer === letter
     const right = btn.dataset.beceAnswer === q.answer
-    if (right) btn.classList.add('bece-correct')
-    if (picked && !correct) btn.classList.add('bece-wrong')
+    if (session.markingMode === 'instant' && right) btn.classList.add('bece-correct')
+    if (session.markingMode === 'instant' && picked && !correct) btn.classList.add('bece-wrong')
+    if (session.markingMode === 'cumulative' && picked) btn.classList.add('bece-selected')
     btn.disabled = true
   })
-  document.querySelector('.bece-question-card')?.insertAdjacentHTML('beforeend', `<div class="bece-feedback ${correct ? 'correct' : 'wrong'}"><strong>${correct ? 'Correct!' : 'Not correct'}</strong><p>${escapeHtml(q.explanation)}</p><button class="btn ${correct ? 'btn-gold' : 'btn-primary'}" data-next-bece="true">${session.index + 1 >= session.questions.length ? 'See Results' : 'Next Question'} ▶</button></div>`)
+  const isLast = session.index + 1 >= session.questions.length
+  const feedback = session.markingMode === 'instant'
+    ? `<div class="bece-feedback ${correct ? 'correct' : 'wrong'}"><strong>${correct ? 'Correct!' : 'Not correct'}</strong><p>${escapeHtml(q.explanation)}</p><button class="btn ${correct ? 'btn-gold' : 'btn-primary'}" data-next-bece="true">${isLast ? 'See Results' : 'Next Question'} ▶</button></div>`
+    : `<div class="bece-feedback cumulative"><strong>Answer recorded</strong><p>Your total score will be calculated at the end of the BECE practice set.</p><button class="btn btn-gold" data-next-bece="true">${isLast ? 'See Total Score' : 'Next Question'} ▶</button></div>`
+  document.querySelector('.bece-question-card')?.insertAdjacentHTML('beforeend', feedback)
 }
 function nextBece() {
   if (!session) return
@@ -94,9 +111,9 @@ function nextBece() {
 function renderResults() {
   const weak = session.answers.filter(a => !a.correct).map(a => a.topic)
   const history = readJson('mezzo_bece_history', [])
-  const record = { type: session.type, score: session.score, total: session.questions.length, date: new Date().toISOString(), weakTopics: weak }
+  const record = { type: session.type, mode: session.markingMode, score: session.score, total: session.questions.length, date: new Date().toISOString(), weakTopics: weak }
   saveJson('mezzo_bece_history', [record, ...history].slice(0, 50))
-  document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-page"><section class="bece-result light-card"><div class="bece-result-icon">${session.score >= 8 ? '🏆' : session.score >= 5 ? '🎓' : '📚'}</div><h1>BECE Practice Complete</h1><p>You scored <b>${session.score}/${session.questions.length}</b>.</p><div class="bece-ai-note"><strong>Revision Advice:</strong> ${weak.length ? `Revise these topics next: ${[...new Set(weak)].map(escapeHtml).join(', ')}.` : 'Excellent work. Try the next set or increase speed.'}</div><div class="bece-actions"><button class="btn btn-gold" data-start-bece="${session.type}">Retry This Mode</button><button class="btn btn-primary" data-bece-page="true">BECE Menu</button><button class="btn btn-blue" data-target="home">Home</button></div></section></section></main>`
+  document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-page"><section class="bece-result light-card"><div class="bece-result-icon">${session.score >= 8 ? '🏆' : session.score >= 5 ? '🎓' : '📚'}</div><h1>BECE Practice Complete</h1><p>You scored <b>${session.score}/${session.questions.length}</b> using <b>${modeLabel(session.markingMode)}</b>.</p><div class="bece-ai-note"><strong>Revision Advice:</strong> ${weak.length ? `Revise these topics next: ${[...new Set(weak)].map(escapeHtml).join(', ')}.` : 'Excellent work. Try the next set or increase speed.'}</div><div class="bece-actions"><button class="btn btn-gold" data-bece-report-page="true">View AI Report</button><button class="btn btn-primary" data-start-bece="${session.type}">Retry This Mode</button><button class="btn btn-blue" data-bece-page="true">BECE Menu</button><button class="btn btn-ghost" data-target="home">Home</button></div></section></section></main>`
 }
 function renderTopicReview() {
   const topics = [...new Set([...beceSets.samples, ...beceSets.pastStyle].map(q => q.topic))]
@@ -113,6 +130,10 @@ document.addEventListener('click', event => {
   if (event.target.closest('[data-next-bece]')) { event.preventDefault(); nextBece(); return }
   if (event.target.closest('[data-bece-review]')) { event.preventDefault(); renderTopicReview(); return }
 }, true)
+
+document.addEventListener('change', event => {
+  if (event.target?.id === 'beceMarkingMode') setMarkingMode(event.target.value)
+})
 
 const observer = new MutationObserver(sync)
 observer.observe(document.body, { childList: true, subtree: true, attributes: false })
