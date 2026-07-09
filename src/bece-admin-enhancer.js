@@ -36,12 +36,15 @@ function filteredBank() {
   const list = bank().map(normalise)
   return y === 'All' ? list : list.filter(q => String(q.year) === String(y))
 }
-function panelHtml() {
+function signature() {
+  return JSON.stringify({ y: selectedYear(), e: editingId, n: bank().length, ids: bank().slice(0, 20).map(q => q.id || q.q).join('|') })
+}
+function panelHtml(sig = signature()) {
   const all = bank().map(normalise)
   const visible = filteredBank()
   const edit = editingId ? all.find(q => q.id === editingId) : null
   const yearValue = edit?.year || (selectedYear() === 'All' ? String(new Date().getFullYear()) : selectedYear())
-  return `<section class="bece-admin-panel glass-card" data-bece-admin-panel="true">
+  return `<section class="bece-admin-panel glass-card" data-bece-admin-panel="true" data-bece-signature="${escapeHtml(sig)}">
     <div class="bece-admin-head"><div><span>📘 BECE Question Bank Admin</span><h2>Upload, Edit, Delete & Select Year</h2><p>Manage BECE Past Questions and Sample BECE Practice Questions by year. Uploaded questions will appear on the BECE Practice page.</p></div><div class="bece-admin-count"><strong>${all.length}</strong><small>Total BECE questions</small></div></div>
     <div class="bece-admin-tools"><label><span>Filter / Select Year</span>${yearSelect('year_filter', selectedYear(), 'beceAdminYearFilter')}</label><label class="file-upload-label"><span>Upload CSV or JSON</span><input id="beceUploadFile" type="file" accept=".csv,.json,application/json,text/csv"></label><button class="btn btn-blue" type="button" data-bece-download-template="true">Download CSV Template</button><button class="btn btn-danger" type="button" data-bece-clear-filter="true">Show All</button></div>
     <form id="beceAdminQuestionForm" class="bece-admin-form"><input type="hidden" name="id" value="${escapeHtml(edit?.id || '')}"><label><span>BECE Year</span>${yearSelect('year', yearValue)}</label><label><span>Question Type</span><select name="type"><option value="pastStyle" ${edit?.type !== 'samples' ? 'selected' : ''}>BECE Past Questions Practice</option><option value="samples" ${edit?.type === 'samples' ? 'selected' : ''}>Sample BECE Practice Questions</option></select></label><label><span>Topic</span><input name="topic" value="${escapeHtml(edit?.topic || '')}" placeholder="e.g. Percentages" required></label><label class="wide"><span>Question</span><textarea name="q" required placeholder="Type the BECE question here">${escapeHtml(edit?.q || '')}</textarea></label>${['A','B','C','D'].map((letter, i) => `<label><span>Option ${letter}</span><input name="option_${letter.toLowerCase()}" value="${escapeHtml(edit?.options?.[i] || '')}" required></label>`).join('')}<label><span>Correct Answer</span><select name="answer">${optionSelect(edit?.answer || 'A')}</select></label><label class="wide"><span>Explanation</span><textarea name="explanation" placeholder="Short solution / explanation">${escapeHtml(edit?.explanation || '')}</textarea></label><button class="btn btn-gold wide" type="submit">${edit ? 'Update BECE Question' : 'Add BECE Question'}</button>${edit ? '<button class="btn btn-ghost wide" type="button" data-bece-cancel-edit="true">Cancel Edit</button>' : ''}</form>
@@ -49,17 +52,19 @@ function panelHtml() {
     <div class="bece-admin-list">${visible.slice(0, 120).map(q => `<article><div><strong>${escapeHtml(q.year)} • ${escapeHtml(q.topic)}</strong><span>${escapeHtml(q.q)}</span><small>${q.type === 'samples' ? 'Sample BECE Practice' : 'BECE Past Questions'} • Answer ${escapeHtml(q.answer)}</small></div><div><button class="btn btn-blue btn-small" type="button" data-bece-edit="${escapeHtml(q.id)}">Edit</button><button class="btn btn-danger btn-small" type="button" data-bece-delete="${escapeHtml(q.id)}">Delete</button></div></article>`).join('') || '<p class="bece-admin-empty">No BECE questions found for this year. Upload or add questions above.</p>'}</div>
   </section>`
 }
-function installPanel() {
+function installPanel(force = false) {
   const admin = document.querySelector('.admin-screen')
   if (!admin || !admin.querySelector('.question-manager')) return
   const old = admin.querySelector('[data-bece-admin-panel]')
-  if (old) old.outerHTML = panelHtml()
-  else admin.insertAdjacentHTML('beforeend', panelHtml())
+  const sig = signature()
+  if (old && !force && old.dataset.beceSignature === sig) return
+  if (old) old.outerHTML = panelHtml(sig)
+  else admin.insertAdjacentHTML('beforeend', panelHtml(sig))
 }
 function queueInstall() {
   if (queued) return
   queued = true
-  requestAnimationFrame(() => { queued = false; installPanel() })
+  requestAnimationFrame(() => { queued = false; installPanel(false) })
 }
 function formPayload(form) {
   const f = Object.fromEntries(new FormData(form).entries())
@@ -73,13 +78,13 @@ function saveQuestion(form) {
   else list.unshift(item)
   editingId = ''
   saveBank(list)
-  installPanel()
+  installPanel(true)
 }
 function deleteQuestion(id) {
   if (!confirm('Delete this BECE question?')) return
   saveBank(bank().map(normalise).filter(q => q.id !== id))
   if (editingId === id) editingId = ''
-  installPanel()
+  installPanel(true)
 }
 function csvRows(text) {
   const rows = []
@@ -97,6 +102,7 @@ function csvRows(text) {
 }
 function importCsv(text) {
   const rows = csvRows(text)
+  if (rows.length < 2) return []
   const headers = rows.shift().map(h => h.trim().toLowerCase())
   return rows.map(row => Object.fromEntries(headers.map((h, i) => [h, row[i] || '']))).map(normalise).filter(q => q.q && q.options.every(Boolean))
 }
@@ -111,7 +117,7 @@ async function handleUpload(file) {
   if (!imported.length) { alert('No valid BECE questions found in the file.'); return }
   saveBank([...imported, ...bank().map(normalise)])
   alert(`${imported.length} BECE question(s) uploaded successfully.`)
-  installPanel()
+  installPanel(true)
 }
 function downloadTemplate() {
   const csv = 'year,type,topic,question,option_a,option_b,option_c,option_d,correct_answer,explanation\n2026,pastStyle,Percentages,"A book costs GHS 80. It is sold at a discount of 10%. What is the discount?",GHS 4,GHS 8,GHS 10,GHS 72,B,"10% of 80 = 8."\n'
@@ -133,16 +139,16 @@ document.addEventListener('submit', event => {
 
 document.addEventListener('click', event => {
   const edit = event.target.closest('[data-bece-edit]')
-  if (edit) { editingId = edit.dataset.beceEdit; installPanel(); return }
+  if (edit) { editingId = edit.dataset.beceEdit; installPanel(true); return }
   const del = event.target.closest('[data-bece-delete]')
   if (del) { deleteQuestion(del.dataset.beceDelete); return }
-  if (event.target.closest('[data-bece-cancel-edit]')) { editingId = ''; installPanel(); return }
+  if (event.target.closest('[data-bece-cancel-edit]')) { editingId = ''; installPanel(true); return }
   if (event.target.closest('[data-bece-download-template]')) { downloadTemplate(); return }
-  if (event.target.closest('[data-bece-clear-filter]')) { setSelectedYear('All'); installPanel(); return }
+  if (event.target.closest('[data-bece-clear-filter]')) { setSelectedYear('All'); installPanel(true); return }
 }, true)
 
 document.addEventListener('change', event => {
-  if (event.target?.id === 'beceAdminYearFilter') { setSelectedYear(event.target.value); installPanel() }
+  if (event.target?.id === 'beceAdminYearFilter') { setSelectedYear(event.target.value); installPanel(true) }
   if (event.target?.id === 'beceUploadFile') handleUpload(event.target.files?.[0])
 })
 
