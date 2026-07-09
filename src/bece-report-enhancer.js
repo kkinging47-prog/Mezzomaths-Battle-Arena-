@@ -61,7 +61,7 @@ function reportHtml() {
     <nav class="screen-tabs bece-nav"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE AI Report</small></div></div><div class="tab-scroll"><button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Practice</button><button class="screen-tab active" data-bece-report-page="true"><span>📊</span>BECE Report</button><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button></div></nav>
     <section class="bece-report-hero glass-card"><div><span class="bece-report-kicker">🤖 AI BECE Performance Report</span><h1>Progress, Strengths & Weaknesses</h1><p>${escapeHtml(p.full_name || 'Student')}, this report analyses your BECE practice answers, topic performance, areas of strength, weak topics and what to improve next.</p></div><div class="report-score-orb"><strong>${stats.percent}%</strong><span>Overall</span></div></section>
     <section class="report-metrics"><div><span>✅</span><strong>${stats.correct}</strong><small>Correct answers</small></div><div><span>❌</span><strong>${stats.wrong}</strong><small>Wrong answers</small></div><div><span>📝</span><strong>${stats.answered}</strong><small>Questions answered</small></div><div><span>🏆</span><strong>${stats.best}%</strong><small>Best set score</small></div></section>
-    <section class="ai-report-card glass-card"><div class="ai-report-head"><span>🤖</span><div><h2>Comprehensive AI Report</h2><p><b>Current level:</b> ${strengthLabel(stats.percent)}. Your strongest area is ${escapeHtml(advice.praise)}. Your immediate improvement focus should be ${escapeHtml(advice.focus)}.</p><p><b>Recommended plan:</b> ${escapeHtml(advice.plan)}</p></div></div><div class="report-actions"><button class="btn btn-gold" data-download-bece-report="html">Download Full Report</button><button class="btn btn-primary" data-download-bece-report="csv">Download CSV</button></div></section>
+    <section class="ai-report-card glass-card"><div class="ai-report-head"><span>🤖</span><div><h2>Comprehensive AI Report</h2><p><b>Current level:</b> ${strengthLabel(stats.percent)}. Your strongest area is ${escapeHtml(advice.praise)}. Your immediate improvement focus should be ${escapeHtml(advice.focus)}.</p><p><b>Recommended plan:</b> ${escapeHtml(advice.plan)}</p></div></div><div class="report-actions"><button class="btn btn-gold" data-download-bece-report="full-pdf">Download Full PDF Report</button><button class="btn btn-primary" data-download-bece-report="answers-pdf">Download Answers PDF</button></div></section>
     <section class="topic-report-grid">${topicRows.map(topic => `<article class="topic-report-card ${topic.percent >= 70 ? 'strong' : topic.percent < 60 ? 'weak' : 'medium'}"><div><h3>${escapeHtml(topic.topic)}</h3><span>${escapeHtml(topic.label)}</span></div><strong>${topic.percent}%</strong><p>${topic.correct}/${topic.answered} correct • ${topic.wrong} wrong</p><i style="width:${topic.percent}%"></i><small>${topic.percent >= 70 ? 'Keep practising to perfect speed and accuracy.' : topic.percent >= 60 ? 'Good foundation. Practise more word problems.' : 'Revise the method and practise direct questions first.'}</small></article>`).join('')}</section>
     <section class="mistake-review glass-card"><h2>Where You Need to Improve</h2>${detailedAnswers().filter(a => !a.correct).slice(0, 12).map(a => `<div class="mistake-row"><b>${escapeHtml(a.topic)}</b><span>${escapeHtml(a.question)}</span><small>Your answer: ${escapeHtml(a.selectedText || a.selected)} • Correct: ${escapeHtml(a.correctText || a.correctAnswer)}</small></div>`).join('') || '<p>No wrong answers recorded yet. Complete BECE practice to populate this section.</p>'}</section>
   </section></main>`
@@ -97,19 +97,114 @@ function installReportButtons() {
   const result = document.querySelector('.bece-result')
   if (result && !result.querySelector('[data-bece-report-page]')) result.querySelector('.bece-actions')?.insertAdjacentHTML('afterbegin', '<button class="btn btn-gold" data-bece-report-page="true">View AI Report</button>')
 }
-function downloadHtmlReport() {
+function cleanPdfText(value = '') {
+  return String(value)
+    .replace(/[•✓✅❌📝🏆🤖📘📊🏟️]/g, '')
+    .replace(/[−]/g, '-')
+    .replace(/[²]/g, '^2')
+    .replace(/[³]/g, '^3')
+    .replace(/[₦₵]/g, '')
+    .replace(/[^	    .replace(/[^\x09
+    .replace(/[^\x09\x0A    .replace(/[^\x09\x0A\x0D     .replace(/[^\x09\x0A\x0D\x20-~    .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '')
+}
+function wrapText(text, max = 86) {
+  const words = cleanPdfText(text).split(/\s+/).filter(Boolean)
+  const lines = []
+  let line = ''
+  words.forEach(word => {
+    if ((line + ' ' + word).trim().length > max) {
+      if (line) lines.push(line)
+      line = word
+    } else line = (line + ' ' + word).trim()
+  })
+  if (line) lines.push(line)
+  return lines.length ? lines : ['']
+}
+function pdfEscape(text) {
+  return cleanPdfText(text).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)')
+}
+function downloadPdf(filename, rawLines) {
+  const pageLines = []
+  rawLines.forEach(line => wrapText(line, 92).forEach(wrapped => pageLines.push(wrapped)))
+  const pages = []
+  for (let i = 0; i < pageLines.length; i += 48) pages.push(pageLines.slice(i, i + 48))
+  if (!pages.length) pages.push(['No report data available.'])
+
+  const objects = []
+  objects.push('<< /Type /Catalog /Pages 2 0 R >>')
+  const kids = pages.map((_, i) => `${4 + i * 2} 0 R`).join(' ')
+  objects.push(`<< /Type /Pages /Kids [${kids}] /Count ${pages.length} >>`)
+  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')
+
+  pages.forEach((lines, index) => {
+    const pageId = 4 + index * 2
+    const contentId = pageId + 1
+    const content = `BT\n/F1 10 Tf\n14 TL\n50 800 Td\n${lines.map(line => `(${pdfEscape(line)}) Tj\nT*`).join('')}ET`
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentId} 0 R >>`)
+    objects.push(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`)
+  })
+
+  let pdf = '%PDF-1.4\n'
+  const offsets = [0]
+  objects.forEach((obj, i) => {
+    offsets.push(pdf.length)
+    pdf += `${i + 1} 0 obj\n${obj}\nendobj\n`
+  })
+  const xref = pdf.length
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
+  offsets.slice(1).forEach(offset => { pdf += `${String(offset).padStart(10, '0')} 00000 n \n` })
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`
+  downloadFile(filename, pdf, 'application/pdf')
+}
+function fullReportLines() {
+  const p = profile()
   const stats = overallStats()
   const advice = aiAdvice(stats)
-  const topics = stats.topics.map(t => `<tr><td>${escapeHtml(t.topic)}</td><td>${t.answered}</td><td>${t.correct}</td><td>${t.wrong}</td><td>${t.percent}%</td><td>${escapeHtml(t.label)}</td></tr>`).join('')
-  const mistakes = detailedAnswers().filter(a => !a.correct).map(a => `<li><b>${escapeHtml(a.topic)}:</b> ${escapeHtml(a.question)}<br>Your answer: ${escapeHtml(a.selectedText || a.selected)} | Correct: ${escapeHtml(a.correctText || a.correctAnswer)}</li>`).join('')
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>BECE AI Report</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#0f172a}h1{color:#1d4ed8}table{width:100%;border-collapse:collapse}td,th{border:1px solid #cbd5e1;padding:8px;text-align:left}.box{background:#eff6ff;padding:16px;border-radius:14px;margin:14px 0}</style></head><body><h1>Mezzo Maths BECE AI Performance Report</h1><p>Date: ${today()}</p><div class="box"><h2>Summary</h2><p>Overall Score: ${stats.percent}%</p><p>Questions Answered: ${stats.answered}</p><p>Correct: ${stats.correct} | Wrong: ${stats.wrong}</p></div><div class="box"><h2>AI Recommendation</h2><p><b>Strength:</b> ${escapeHtml(advice.praise)}</p><p><b>Improve:</b> ${escapeHtml(advice.focus)}</p><p><b>Plan:</b> ${escapeHtml(advice.plan)}</p></div><h2>Topic Breakdown</h2><table><thead><tr><th>Topic</th><th>Answered</th><th>Correct</th><th>Wrong</th><th>Score</th><th>Status</th></tr></thead><tbody>${topics}</tbody></table><h2>Mistake Review</h2><ol>${mistakes || '<li>No mistakes recorded.</li>'}</ol></body></html>`
-  downloadFile('mezzo-bece-ai-report.html', html, 'text/html')
+  const lines = [
+    'MEZZO MATHS BECE AI PERFORMANCE REPORT',
+    `Student: ${p.full_name || 'Student'}`,
+    `Date: ${today()}`,
+    '',
+    'SUMMARY',
+    `Overall Score: ${stats.percent}%`,
+    `Questions Answered: ${stats.answered}`,
+    `Correct Answers: ${stats.correct}`,
+    `Wrong Answers: ${stats.wrong}`,
+    `Best BECE Set Score: ${stats.best}%`,
+    '',
+    'AI RECOMMENDATION',
+    `Strength: ${advice.praise}`,
+    `Improve: ${advice.focus}`,
+    `Plan: ${advice.plan}`,
+    '',
+    'TOPIC BREAKDOWN'
+  ]
+  ;(stats.topics.length ? stats.topics : [{ topic: 'No BECE practice yet', answered: 0, correct: 0, wrong: 0, percent: 0, label: 'Start practice' }]).forEach(t => {
+    lines.push(`${t.topic}: ${t.percent}% | ${t.correct}/${t.answered} correct | ${t.wrong} wrong | ${t.label}`)
+  })
+  lines.push('', 'MISTAKE REVIEW')
+  const mistakes = detailedAnswers().filter(a => !a.correct)
+  if (!mistakes.length) lines.push('No mistakes recorded yet.')
+  mistakes.forEach((a, index) => {
+    lines.push(`${index + 1}. ${a.topic}: ${a.question}`)
+    lines.push(`   Your answer: ${a.selectedText || a.selected} | Correct: ${a.correctText || a.correctAnswer}`)
+  })
+  return lines
 }
-function downloadCsvReport() {
-  const rows = [['Date','Mode','Topic','Question','Selected','Correct Answer','Result'], ...detailedAnswers().map(a => [a.date, a.mode, a.topic, a.question, a.selectedText || a.selected, a.correctText || a.correctAnswer, a.correct ? 'Correct' : 'Wrong'])]
-  const csv = rows.map(row => row.map(cell => `"${String(cell || '').replaceAll('"', '""')}"`).join(',')).join('\n')
-  downloadFile('mezzo-bece-answer-history.csv', csv, 'text/csv')
+function answersReportLines() {
+  const lines = ['MEZZO MATHS BECE ANSWER HISTORY PDF', `Date: ${today()}`, '', 'ANSWER HISTORY']
+  const rows = detailedAnswers()
+  if (!rows.length) lines.push('No BECE answers recorded yet.')
+  rows.forEach((a, index) => {
+    lines.push(`${index + 1}. ${a.date || ''}`)
+    lines.push(`   Mode: ${a.mode || 'BECE Practice'} | Topic: ${a.topic || ''} | Result: ${a.correct ? 'Correct' : 'Wrong'}`)
+    lines.push(`   Question: ${a.question || ''}`)
+    lines.push(`   Selected: ${a.selectedText || a.selected || ''} | Correct Answer: ${a.correctText || a.correctAnswer || ''}`)
+  })
+  return lines
 }
+function downloadFullPdfReport() { downloadPdf('mezzo-bece-ai-report.pdf', fullReportLines()) }
+function downloadAnswersPdfReport() { downloadPdf('mezzo-bece-answer-history.pdf', answersReportLines()) }
 function downloadFile(name, content, type) {
   const blob = new Blob([content], { type })
   const link = document.createElement('a')
@@ -129,7 +224,10 @@ document.addEventListener('click', event => {
   if (answer) captureAnswer(answer)
   if (event.target.closest('[data-bece-report-page]')) { event.preventDefault(); event.stopImmediatePropagation(); document.getElementById('root').innerHTML = reportHtml(); return }
   const download = event.target.closest('[data-download-bece-report]')
-  if (download) { event.preventDefault(); download.dataset.downloadBeceReport === 'csv' ? downloadCsvReport() : downloadHtmlReport() }
+  if (download) {
+    event.preventDefault()
+    download.dataset.downloadBeceReport === 'answers-pdf' ? downloadAnswersPdfReport() : downloadFullPdfReport()
+  }
 }, true)
 
 const observer = new MutationObserver(sync)
