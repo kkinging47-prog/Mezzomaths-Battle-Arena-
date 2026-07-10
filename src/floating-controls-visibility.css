@@ -1,0 +1,38 @@
+/* Floating buttons should stay on the homepage and not cover game controls. */
+body:not(.floating-controls-home) .reward-mini-dock,
+body:not(.floating-controls-home) .sound-toggle{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  transform:translateX(96px) scale(.82)!important;
+  transition:opacity .22s ease, transform .22s ease, visibility .22s ease!important;
+}
+
+/* When a game/result modal genuinely needs them, reveal briefly, then JS hides them again. */
+body.floating-controls-temporary:not(.floating-controls-home) .reward-mini-dock,
+body.floating-controls-temporary:not(.floating-controls-home) .sound-toggle{
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  transform:translateX(0) scale(.9)!important;
+}
+
+body.floating-controls-game .reward-mini-dock,
+body.floating-controls-game .sound-toggle{
+  right:14px!important;
+  bottom:14px!important;
+}
+
+body.floating-controls-home .reward-mini-dock,
+body.floating-controls-home .sound-toggle{
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+
+@media(max-width:720px){
+  body:not(.floating-controls-home) .reward-mini-dock,
+  body:not(.floating-controls-home) .sound-toggle{
+    display:none!important;
+  }
+}
