@@ -8,8 +8,8 @@ function installSubscriptionButtons() {
       const btn = document.createElement('button')
       btn.className = 'screen-tab subscription-nav-button'
       btn.type = 'button'
-      btn.dataset.openSubscriptions = 'true'
-      btn.dataset.subscriptionNavButton = 'true'
+      btn.setAttribute('data-open-subscriptions', 'true')
+      btn.setAttribute('data-subscription-nav-button', 'true')
       btn.innerHTML = '<span>💳</span>Subscription'
       const auth = nav.querySelector('[data-target="auth"]')
       if (auth) auth.insertAdjacentElement('beforebegin', btn)
@@ -31,6 +31,13 @@ function queueInstall() {
     installSubscriptionButtons()
   })
 }
+
+document.addEventListener('click', event => {
+  const button = event.target.closest('[data-open-subscriptions], [data-subscription-nav-button], [data-subscription-hero-button]')
+  if (!button) return
+  event.preventDefault()
+  window.dispatchEvent(new CustomEvent('mezzoOpenSubscriptions'))
+}, true)
 
 const observer = new MutationObserver(queueInstall)
 observer.observe(document.body, { childList: true, subtree: true, attributes: false })
