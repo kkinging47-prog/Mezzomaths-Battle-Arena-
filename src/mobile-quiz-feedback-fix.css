@@ -1,0 +1,100 @@
+@media(max-width:760px){
+  .explanation-card.light-card,
+  .explanation-card{
+    position:fixed!important;
+    left:12px!important;
+    right:12px!important;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 14px)!important;
+    z-index:100180!important;
+    width:auto!important;
+    max-width:none!important;
+    min-width:0!important;
+    min-height:132px!important;
+    max-height:none!important;
+    border-radius:22px!important;
+    overflow:hidden!important;
+  }
+
+  .explanation-card .result-banner{
+    min-height:48px!important;
+    padding:10px 14px!important;
+    gap:8px!important;
+    align-items:center!important;
+  }
+
+  .explanation-card .result-banner strong{
+    font-size:1.05rem!important;
+    white-space:nowrap!important;
+  }
+
+  .explanation-card .result-banner span{
+    font-size:.78rem!important;
+    padding:6px 8px!important;
+    white-space:nowrap!important;
+  }
+
+  .explanation-card p{
+    max-width:100%!important;
+    padding:10px 142px 8px 14px!important;
+    white-space:normal!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    font-size:.82rem!important;
+    line-height:1.25!important;
+    min-height:48px!important;
+  }
+
+  .explanation-card .btn,
+  .explanation-card #nextSolo,
+  .explanation-card #nextBattle{
+    position:absolute!important;
+    right:12px!important;
+    bottom:12px!important;
+    left:auto!important;
+    width:auto!important;
+    min-width:112px!important;
+    max-width:128px!important;
+    min-height:46px!important;
+    padding:10px 12px!important;
+    border-radius:18px!important;
+    font-size:.86rem!important;
+    white-space:nowrap!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+
+  .quiz-layout{
+    grid-template-columns:1fr!important;
+    min-height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+    padding-bottom:160px!important;
+  }
+
+  .score-panel{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    max-height:none!important;
+    height:auto!important;
+  }
+
+  .reward-mini-dock,
+  .sound-toggle{
+    transform:scale(.82)!important;
+    transform-origin:right bottom!important;
+  }
+}
+
+@media(max-width:420px){
+  .explanation-card p{
+    padding-right:118px!important;
+    font-size:.78rem!important;
+  }
+  .explanation-card .btn,
+  .explanation-card #nextSolo,
+  .explanation-card #nextBattle{
+    min-width:96px!important;
+    max-width:106px!important;
+    font-size:.8rem!important;
+  }
+}
