@@ -47,12 +47,12 @@ function planCard(plan, index) { return `<button class="subscription-plan ${inde
 </button>` }
 function trialNoteHtml() {
   const trial = trialStatus()
-  return trial ? `<div class="subscription-trial-note"><strong>Trial active:</strong> Your extended trial is valid until ${new Date(trial.expires_at).toLocaleDateString()}.</div>` : `<div class="subscription-trial-note"><strong>Not ready?</strong> Extend your free trial for 7 more days and return to your dashboard.</div>`
+  return trial ? `<div class="subscription-trial-note"><strong>Trial active:</strong> Your extended trial is valid until ${new Date(trial.expires_at).toLocaleDateString()}. You can still choose a subscription plan anytime.</div>` : `<div class="subscription-trial-note"><strong>Not ready?</strong> Extend your free trial for 7 more days and return to your dashboard.</div>`
 }
 function subscriptionModalHtml() { return `<div class="subscription-gate-overlay" role="dialog" aria-modal="true" aria-label="Subscription plans">
   <section class="subscription-gate-card">
     <button class="subscription-close" type="button" aria-label="Close">×</button>
-    <div class="subscription-head"><div><span class="sub-kicker">🔓 Premium unlock</span><h2>Choose your Mezzo Maths plan</h2><p>You have completed the first 3 game levels. Subscribe to continue premium practice, battles, Mezzopedia Prep, topic tracking, rewards and reports.</p></div><div class="sub-lock">🏆</div></div>
+    <div class="subscription-head"><div><span class="sub-kicker">🔓 Premium unlock</span><h2>Choose your Mezzo Maths plan</h2><p>Subscribe to continue premium practice, battles, Mezzopedia Prep, topic tracking, rewards and reports.</p></div><div class="sub-lock">🏆</div></div>
     <div class="subscription-grid">${PLANS.map(planCard).join('')}</div>
     <div class="subscription-note"><strong>Payments:</strong> Checkout is prepared for Paystack Ghana so parents/schools can pay with Visa/Card or Mobile Money. Add your Paystack secret key in Vercel to activate live payments.</div>
     ${trialNoteHtml()}
@@ -60,7 +60,8 @@ function subscriptionModalHtml() { return `<div class="subscription-gate-overlay
   </section>
 </div>` }
 function showSubscriptionModal(force = false) {
-  if (modalOpen || isSubscribed() || hasTrialExtension()) return
+  if (modalOpen || isSubscribed()) return
+  if (!force && hasTrialExtension()) return
   if (!force && !levelReached()) return
   modalOpen = true
   document.body.insertAdjacentHTML('beforeend', subscriptionModalHtml())
@@ -123,14 +124,15 @@ function queueSync() { if (syncQueued) return; syncQueued = true; requestAnimati
 
 document.addEventListener('click', event => {
   const open = event.target.closest('[data-open-subscriptions]')
-  if (open) { event.preventDefault(); showSubscriptionModal(true); return }
+  if (open) { event.preventDefault(); event.stopImmediatePropagation(); showSubscriptionModal(true); return }
   const plan = event.target.closest('[data-subscribe-plan]')
-  if (plan) { event.preventDefault(); startPayment(plan.dataset.subscribePlan); return }
-  if (event.target.closest('[data-extend-trial]')) { event.preventDefault(); extendTrialAndDashboard(); return }
-  if (event.target.closest('[data-subscription-later]')) { event.preventDefault(); extendTrialAndDashboard(); return }
-  if (event.target.closest('.subscription-close')) { extendTrialAndDashboard(); return }
-})
+  if (plan) { event.preventDefault(); event.stopImmediatePropagation(); startPayment(plan.dataset.subscribePlan); return }
+  if (event.target.closest('[data-extend-trial]')) { event.preventDefault(); event.stopImmediatePropagation(); extendTrialAndDashboard(); return }
+  if (event.target.closest('[data-subscription-later]')) { event.preventDefault(); event.stopImmediatePropagation(); extendTrialAndDashboard(); return }
+  if (event.target.closest('.subscription-close')) { event.preventDefault(); event.stopImmediatePropagation(); extendTrialAndDashboard(); return }
+}, true)
 
+window.addEventListener('mezzoOpenSubscriptions', () => showSubscriptionModal(true))
 const observer = new MutationObserver(queueSync)
 observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: false })
 window.addEventListener('load', () => { verifyPaymentFromUrl(); queueSync() })
