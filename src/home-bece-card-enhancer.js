@@ -13,10 +13,25 @@ function beceCardHtml() {
   </button>`
 }
 
+function findBotCard(grid) {
+  return Array.from(grid.querySelectorAll('.home-mode-card,.game-mode-card')).find(card => {
+    const text = (card.textContent || '').toLowerCase()
+    return card.matches('[data-start-bot]') || text.includes('compete with bot') || text.includes('mathbot') || text.includes('battle mathbot')
+  })
+}
+
 function installBeceHomeCard() {
   const grid = document.querySelector('.home-screen .home-mode-grid')
-  if (!grid || grid.querySelector('.bece-home-card')) return
-  grid.insertAdjacentHTML('beforeend', beceCardHtml())
+  if (!grid) return
+  let bece = grid.querySelector('.bece-home-card')
+  const bot = findBotCard(grid)
+  if (!bece) {
+    if (bot) bot.insertAdjacentHTML('beforebegin', beceCardHtml())
+    else grid.insertAdjacentHTML('beforeend', beceCardHtml())
+    bece = grid.querySelector('.bece-home-card')
+  }
+  if (bece && bot && bece.nextElementSibling !== bot) grid.insertBefore(bece, bot)
+  if (bot && bece && bot !== grid.lastElementChild) grid.appendChild(bot)
 }
 
 function queueInstall() {
