@@ -1,9 +1,13 @@
 const PLANS = {
-  'weekly-starter': { name: 'Weekly Starter', amount: 10, period: 'week' },
-  'monthly-student': { name: 'Student Monthly', amount: 35, period: 'month' },
-  'term-pass': { name: 'Term Pass', amount: 90, period: 'term' },
-  'annual-champion': { name: 'Annual Champion', amount: 300, period: 'year' },
-  'school-pack': { name: 'School Pack', amount: 750, period: 'month' }
+  'weekly-starter': { name: 'Weekly Starter', amount: 10, period: 'week', category: 'individual' },
+  'monthly-student': { name: 'Student Monthly', amount: 35, period: 'month', category: 'individual' },
+  'term-pass': { name: 'Term Pass', amount: 90, period: 'term', category: 'individual' },
+  'annual-champion': { name: 'Annual Champion', amount: 300, period: 'year', category: 'individual' },
+  'school-starter-50': { name: 'School Starter', amount: 750, period: 'month', category: 'school', student_range: '1-50 students' },
+  'school-growth-150': { name: 'School Growth', amount: 1800, period: 'month', category: 'school', student_range: '51-150 students' },
+  'school-pro-300': { name: 'School Pro', amount: 3000, period: 'month', category: 'school', student_range: '151-300 students' },
+  'school-premium-500': { name: 'School Premium', amount: 4500, period: 'month', category: 'school', student_range: '301-500 students' },
+  'school-enterprise-1000': { name: 'School Enterprise', amount: 7500, period: 'month', category: 'school', student_range: '501-1000 students' }
 }
 
 export default async function handler(req, res) {
@@ -34,7 +38,9 @@ export default async function handler(req, res) {
           plan_id,
           plan_name: plan.name,
           customer_name: name || email,
-          period: plan.period
+          period: plan.period,
+          category: plan.category,
+          student_range: plan.student_range || ''
         }
       })
     })
@@ -47,7 +53,9 @@ export default async function handler(req, res) {
       access_code: data.data.access_code,
       reference: data.data.reference,
       plan_id,
-      amount: plan.amount
+      amount: plan.amount,
+      category: plan.category,
+      student_range: plan.student_range || ''
     })
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Payment initialization failed' })
