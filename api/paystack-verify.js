@@ -1,9 +1,13 @@
 const PLANS = {
-  'weekly-starter': { name: 'Weekly Starter', amount: 10, period: 'week' },
-  'monthly-student': { name: 'Student Monthly', amount: 35, period: 'month' },
-  'term-pass': { name: 'Term Pass', amount: 90, period: 'term' },
-  'annual-champion': { name: 'Annual Champion', amount: 300, period: 'year' },
-  'school-pack': { name: 'School Pack', amount: 750, period: 'month' }
+  'weekly-starter': { name: 'Weekly Starter', amount: 10, period: 'week', category: 'individual' },
+  'monthly-student': { name: 'Student Monthly', amount: 35, period: 'month', category: 'individual' },
+  'term-pass': { name: 'Term Pass', amount: 90, period: 'term', category: 'individual' },
+  'annual-champion': { name: 'Annual Champion', amount: 300, period: 'year', category: 'individual' },
+  'school-starter-50': { name: 'School Starter', amount: 750, period: 'month', category: 'school', student_range: '1-50 students' },
+  'school-growth-150': { name: 'School Growth', amount: 1800, period: 'month', category: 'school', student_range: '51-150 students' },
+  'school-pro-300': { name: 'School Pro', amount: 3000, period: 'month', category: 'school', student_range: '151-300 students' },
+  'school-premium-500': { name: 'School Premium', amount: 4500, period: 'month', category: 'school', student_range: '301-500 students' },
+  'school-enterprise-1000': { name: 'School Enterprise', amount: 7500, period: 'month', category: 'school', student_range: '501-1000 students' }
 }
 
 async function sendReceiptEmail({ transaction, plan, planId, reference }) {
@@ -15,6 +19,7 @@ async function sendReceiptEmail({ transaction, plan, planId, reference }) {
   const amount = (Number(transaction.amount || 0) / 100).toFixed(2)
   const paidAt = transaction.paid_at || new Date().toISOString()
   const customerName = transaction?.metadata?.customer_name || transaction?.customer?.first_name || 'Student'
+  const studentRange = plan.student_range ? `<tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Student Range</strong></td><td style="border:1px solid #cbd5e1;padding:8px">${plan.student_range}</td></tr>` : ''
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -25,7 +30,7 @@ async function sendReceiptEmail({ transaction, plan, planId, reference }) {
       from,
       to: email,
       subject: `Receipt: ${plan.name} - Mezzo Maths`,
-      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a"><h1 style="color:#1d4ed8">Payment Receipt</h1><p>Hello ${customerName},</p><p>Thank you for subscribing to Mezzo Maths Battle Arena.</p><table style="border-collapse:collapse;width:100%;max-width:560px"><tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Plan</strong></td><td style="border:1px solid #cbd5e1;padding:8px">${plan.name}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Amount</strong></td><td style="border:1px solid #cbd5e1;padding:8px">GHS ${amount}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Reference</strong></td><td style="border:1px solid #cbd5e1;padding:8px">${reference}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Paid At</strong></td><td style="border:1px solid #cbd5e1;padding:8px">${paidAt}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Plan ID</strong></td><td style="border:1px solid #cbd5e1;padding:8px">${planId}</td></tr></table><p>Your subscription is now active. Keep practising and building your maths confidence.</p><p>Mezzo Maths Team</p></div>`
+      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a"><h1 style="color:#1d4ed8">Payment Receipt</h1><p>Hello ${customerName},</p><p>Thank you for subscribing to Mezzo Maths Battle Arena.</p><table style="border-collapse:collapse;width:100%;max-width:560px"><tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Plan</strong></td><td style="border:1px solid #cbd5e1;padding:8px">${plan.name}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Category</strong></td><td style="border:1px solid #cbd5e1;padding:8px">${plan.category}</td></tr>${studentRange}<tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Amount</strong></td><td style="border:1px solid #cbd5e1;padding:8px">GHS ${amount}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Reference</strong></td><td style="border:1px solid #cbd5e1;padding:8px">${reference}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Paid At</strong></td><td style="border:1px solid #cbd5e1;padding:8px">${paidAt}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:8px"><strong>Plan ID</strong></td><td style="border:1px solid #cbd5e1;padding:8px">${planId}</td></tr></table><p>Your subscription is now active. Keep practising and building your maths confidence.</p><p>Mezzo Maths Team</p></div>`
     })
   })
   const data = await response.json().catch(() => ({}))
@@ -64,6 +69,8 @@ export default async function handler(req, res) {
       plan_id: planId,
       plan_name: plan.name,
       amount: plan.amount,
+      category: plan.category,
+      student_range: plan.student_range || '',
       currency: transaction.currency,
       paid_at: transaction.paid_at,
       receipt_email: receipt
