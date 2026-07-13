@@ -3,7 +3,7 @@ import './admin-staff-branding.css'
 const ROLE_OPTIONS = [['student', 'Student'], ['teacher', 'Teacher'], ['mezzo_staff', 'Mezzo Staff'], ['admin', 'Admin']]
 const ACCESS_KEY = 'mezzo_staff_access'
 const LOGO_KEY = 'mezzo_custom_logo'
-const DEFAULT_ACCESS = { home: true, dashboard: true, leaderboard: true, smartboard: false, battle: false, solo: false, bece: false, prep: false, courses: true }
+const DEFAULT_ACCESS = { home: true, dashboard: true, leaderboard: true, smartboard: false, battle: false, solo: false, bece: false, brain: true, prep: false, courses: true }
 let queued = false
 
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
@@ -43,6 +43,7 @@ function adminSettingsHtml() {
     ['battle', 'Online 1v1 / Compete With Bot'],
     ['solo', 'Solo Practice / Daily Practice'],
     ['bece', 'BECE Practice'],
+    ['brain', 'Brain Test Session'],
     ['courses', 'Course Sessions'],
     ['prep', 'Mezzopedia Prep'],
     ['leaderboard', 'Leaderboards']
@@ -86,6 +87,7 @@ function saveStaffAccessFromPanel() {
 }
 function modeFromElement(el) {
   if (!el) return ''
+  if (el.closest('[data-brain-test-page], [data-start-brain], [data-brain-answer]')) return 'brain'
   if (el.closest('[data-courses-page], [data-open-course]')) return 'courses'
   if (el.closest('[data-prep-open], [data-prep-stage]')) return 'prep'
   if (el.closest('[data-bece-page], [data-start-bece], [data-bece-report-page]')) return 'bece'
@@ -95,6 +97,7 @@ function modeFromElement(el) {
   if (['smartboard', 'battle', 'solo', 'leaderboard', 'dashboard', 'home'].includes(target)) return target
   const card = el.closest('.game-mode-card, .home-mode-card')
   const text = card?.textContent?.toLowerCase() || ''
+  if (text.includes('brain')) return 'brain'
   if (text.includes('course')) return 'courses'
   if (text.includes('bece')) return 'bece'
   if (text.includes('mezzopedia prep')) return 'prep'
@@ -110,7 +113,7 @@ function enforceStaffAccess() {
     return
   }
   const access = staffAccess()
-  document.querySelectorAll('[data-target], [data-courses-page], [data-open-course], [data-prep-open], [data-bece-page], [data-start-bece], [data-start-bot], #startBotBattle, #startBattle, #startBattle2, [data-start-daily], .game-mode-card, .home-mode-card').forEach(el => {
+  document.querySelectorAll('[data-target], [data-brain-test-page], [data-start-brain], [data-courses-page], [data-open-course], [data-prep-open], [data-bece-page], [data-start-bece], [data-start-bot], #startBotBattle, #startBattle, #startBattle2, [data-start-daily], .game-mode-card, .home-mode-card').forEach(el => {
     const mode = modeFromElement(el)
     if (!mode || access[mode] !== false) return
     el.classList.add('staff-mode-locked')
