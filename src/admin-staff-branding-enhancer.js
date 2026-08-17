@@ -49,9 +49,9 @@ function adminSettingsHtml() {
     ['leaderboard', 'Leaderboards']
   ]
   return `<section class="admin-brand-staff-panel glass-card" data-admin-brand-staff-panel="true">
-    <div class="admin-brand-head"><div><span>⚙️ Admin Settings</span><h2>Branding & Mezzo Staff Access</h2><p>Upload the official logo and choose which game modes Mezzo Staff accounts can use.</p></div>${logo ? `<img src="${logo}" alt="Uploaded logo preview">` : '<div class="logo-preview-empty">Logo</div>'}</div>
+    <div class="admin-brand-head"><div><span>⚙️ Admin Settings</span><h2>Branding & Mezzo Staff Access</h2><p>Choose the official logo, click Save Logo, and choose which game modes Mezzo Staff accounts can use.</p></div>${logo ? `<img src="${logo}" alt="Uploaded logo preview">` : '<div class="logo-preview-empty">Logo</div>'}</div>
     <div class="admin-settings-grid">
-      <article><h3>Logo Upload</h3><p>Upload once and every Mezzo logo mark in the app will use it automatically.</p><label class="logo-upload-box"><input type="file" id="mezzoLogoUpload" accept="image/*"><span>📤 Upload Logo</span></label><button class="btn btn-ghost btn-small" type="button" data-clear-custom-logo="true">Remove Uploaded Logo</button></article>
+      <article><h3>Logo Upload</h3><p>Choose the logo image, preview it, then click Save Logo. This prevents failed auto-saving on large image files.</p><label class="logo-upload-box"><input type="file" id="mezzoLogoUpload" accept="image/*"><span>📤 Choose Logo File</span></label><div class="logo-save-preview" data-live-logo-preview>${logo ? `<img src="${logo}" alt="Saved logo">` : '<span>No saved logo yet</span>'}</div><button class="btn btn-gold" type="button" data-save-custom-logo="true">Save Logo</button><button class="btn btn-ghost btn-small" type="button" data-clear-custom-logo="true">Remove Uploaded Logo</button></article>
       <article><h3>Mezzo Staff Game Access</h3><p>Staff can log in from Login / Sign Up, but can only open the modes selected here.</p><div class="staff-access-list">${modes.map(([key, label]) => `<label><input type="checkbox" data-staff-access-key="${key}" ${access[key] ? 'checked' : ''}> <span>${escapeHtml(label)}</span></label>`).join('')}</div><button class="btn btn-gold" type="button" data-save-staff-access="true">Save Staff Access</button></article>
     </div>
   </section>`
@@ -72,10 +72,13 @@ function applyCustomLogo() {
     mark.classList.add('custom-logo-mark')
     mark.innerHTML = `<img src="${logo}" alt="Mezzo logo" class="custom-logo-img">`
   })
+  document.querySelectorAll('[data-live-logo-preview]').forEach(box => { box.innerHTML = `<img src="${logo}" alt="Saved logo">` })
 }
 function clearCustomLogo() {
   localStorage.removeItem(LOGO_KEY)
+  localStorage.removeItem('mezzo_pending_logo_preview')
   document.querySelectorAll('.custom-logo-mark').forEach(mark => { mark.classList.remove('custom-logo-mark'); mark.textContent = '♛' })
+  document.querySelectorAll('[data-live-logo-preview]').forEach(box => { box.innerHTML = '<span>No saved logo yet</span>' })
   toast('Uploaded logo removed.')
 }
 function saveStaffAccessFromPanel() {
@@ -153,16 +156,6 @@ document.addEventListener('click', event => {
     if (mode && !allowed(mode)) { event.preventDefault(); event.stopImmediatePropagation(); toast('This game mode is locked for Mezzo Staff. Ask the admin to allow access.'); return }
   }
 }, true)
-
-document.addEventListener('change', event => {
-  if (event.target?.id === 'mezzoLogoUpload') {
-    const file = event.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => { localStorage.setItem(LOGO_KEY, String(reader.result || '')); toast('Logo uploaded. App logo updated.'); syncAll() }
-    reader.readAsDataURL(file)
-  }
-})
 
 const observer = new MutationObserver(syncAll)
 observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: false })
