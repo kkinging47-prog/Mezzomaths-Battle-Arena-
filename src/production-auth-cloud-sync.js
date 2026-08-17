@@ -1,5 +1,5 @@
 import './production-auth-cloud-sync.css'
-import { supabase, isSupabaseConfigured } from './supabaseClient.js'
+import { supabase, isSupabaseConfigured, checkSupabaseConnection, supabaseConfig } from './supabaseClient.js'
 
 const PROFILE_KEY = 'mezzo_profile'
 const CLOUD_SIG_KEY = 'mezzo_cloud_sync_signatures'
@@ -23,10 +23,31 @@ let syncTimer = null
 function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])) }
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
 function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
-function toast(message, type = 'info') {
+function toast(message, type = 'info', timeout = 7600) {
   document.querySelector('.production-auth-toast')?.remove()
   document.body.insertAdjacentHTML('beforeend', `<div class="production-auth-toast ${type}">${escapeHtml(message)}</div>`)
-  setTimeout(() => document.querySelector('.production-auth-toast')?.remove(), 5200)
+  setTimeout(() => document.querySelector('.production-auth-toast')?.remove(), timeout)
+}
+function failedFetchMessage(prefix = 'Login') {
+  return `${prefix} cannot reach Supabase. Check Vercel env: VITE_SUPABASE_URL must be https://project-ref.supabase.co and VITE_SUPABASE_ANON_KEY must be the public anon/publishable key. Current URL: ${supabaseConfig.maskedUrl}. Redeploy after saving env variables.`
+}
+function authErrorMessage(error, prefix = 'Login') {
+  const msg = error?.message || String(error || 'Unknown error')
+  if (/failed to fetch|networkerror|load failed|fetch/i.test(msg)) return failedFetchMessage(prefix)
+  if (/invalid api key|api key/i.test(msg)) return `${prefix} failed because the Supabase anon/publishable key is invalid. Copy the correct key from Supabase Project Settings → API and redeploy Vercel.`
+  return `${prefix} failed: ${msg}`
+}
+async function ensureSupabaseReachable(prefix = 'Login') {
+  if (!isSupabaseConfigured || !supabase) {
+    toast(`${prefix} is not connected to Supabase. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.`, 'error')
+    return false
+  }
+  const check = await checkSupabaseConnection()
+  if (!check.ok) {
+    toast(`${prefix} blocked: ${check.message} Current URL: ${supabaseConfig.maskedUrl}.`, 'error', 9000)
+    return false
+  }
+  return true
 }
 function ageFromDob(dob) {
   if (!dob) return null
@@ -79,53 +100,63 @@ async function loadProfile(user) {
   return await upsertProfile(profilePayload({}, user))
 }
 async function handleSignup(form) {
-  if (!isSupabaseConfigured || !supabase) { toast('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY before live launch.', 'error'); return false }
-  const f = Object.fromEntries(new FormData(form).entries())
-  const email = String(f.email || '').trim().toLowerCase()
-  const password = String(f.password || '')
-  if (!email || password.length < 6) { toast('Enter a valid email and a password of at least 6 characters.', 'error'); return false }
-  const role = cleanRole(f.role, email)
-  const metadata = { ...f, role }
-  delete metadata.password
-  const { data, error } = await supabase.auth.signUp({ email, password, options: { data: metadata } })
-  if (error) { toast(`Signup failed: ${error.message}`, 'error'); return false }
-  if (!data.session) { toast('Account created. Check email to confirm, then log in.', 'warn'); return true }
-  const profile = await upsertProfile(profilePayload({ ...f, role }, data.user))
-  activateLocalProfile(profile)
-  toast(`Welcome ${profile.full_name}. Your account is now saved in Supabase.`, 'success')
-  document.querySelector('[data-target="dashboard"]')?.click()
-  queueCloudSync()
-  return true
+  try {
+    if (!(await ensureSupabaseReachable('Signup'))) return false
+    const f = Object.fromEntries(new FormData(form).entries())
+    const email = String(f.email || '').trim().toLowerCase()
+    const password = String(f.password || '')
+    if (!email || password.length < 6) { toast('Enter a valid email and a password of at least 6 characters.', 'error'); return false }
+    const role = cleanRole(f.role, email)
+    const metadata = { ...f, role }
+    delete metadata.password
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: metadata } })
+    if (error) { toast(authErrorMessage(error, 'Signup'), 'error'); return false }
+    if (!data.session) { toast('Account created. Check email to confirm, then log in.', 'warn'); return true }
+    const profile = await upsertProfile(profilePayload({ ...f, role }, data.user))
+    activateLocalProfile(profile)
+    toast(`Welcome ${profile.full_name}. Your account is now saved in Supabase.`, 'success')
+    document.querySelector('[data-target="dashboard"]')?.click()
+    queueCloudSync()
+    return true
+  } catch (error) {
+    toast(authErrorMessage(error, 'Signup'), 'error')
+    return false
+  }
 }
 async function handleLogin(form) {
-  if (!isSupabaseConfigured || !supabase) { toast('Supabase is not configured. This build cannot use live database login yet.', 'error'); return false }
-  const f = Object.fromEntries(new FormData(form).entries())
-  const email = String(f.email || '').trim().toLowerCase()
-  const password = String(f.password || '')
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) { toast(`Login failed: ${error.message}`, 'error'); return false }
-  let profile = await loadProfile(data.user)
-  const wantedRole = cleanRole(f.role || profile?.role, email)
-  if (profile && wantedRole !== profile.role && (wantedRole !== 'admin' || ADMIN_EMAILS.has(email))) {
-    profile = await upsertProfile({ ...profile, role: wantedRole })
+  try {
+    if (!(await ensureSupabaseReachable('Login'))) return false
+    const f = Object.fromEntries(new FormData(form).entries())
+    const email = String(f.email || '').trim().toLowerCase()
+    const password = String(f.password || '')
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { toast(authErrorMessage(error, 'Login'), 'error'); return false }
+    let profile = await loadProfile(data.user)
+    const wantedRole = cleanRole(f.role || profile?.role, email)
+    if (profile && wantedRole !== profile.role && (wantedRole !== 'admin' || ADMIN_EMAILS.has(email))) {
+      profile = await upsertProfile({ ...profile, role: wantedRole })
+    }
+    activateLocalProfile(profile)
+    toast(`Live login successful as ${profile.role}.`, 'success')
+    document.querySelector(`[data-target="${profile.role === 'admin' ? 'admin' : 'dashboard'}"]`)?.click()
+    queueCloudSync()
+    return true
+  } catch (error) {
+    toast(authErrorMessage(error, 'Login'), 'error')
+    return false
   }
-  activateLocalProfile(profile)
-  toast(`Live login successful as ${profile.role}.`, 'success')
-  document.querySelector(`[data-target="${profile.role === 'admin' ? 'admin' : 'dashboard'}"]`)?.click()
-  queueCloudSync()
-  return true
 }
 async function restoreSession() {
   if (!supabase) return
-  const { data } = await supabase.auth.getSession()
-  const user = data?.session?.user
-  if (!user) return
   try {
+    const { data } = await supabase.auth.getSession()
+    const user = data?.session?.user
+    if (!user) return
     const profile = await loadProfile(user)
     activateLocalProfile(profile)
     queueCloudSync()
   } catch (error) {
-    toast(`Profile sync warning: ${error.message}`, 'warn')
+    console.warn('Session restore skipped:', error)
   }
 }
 async function logout() {
@@ -210,10 +241,15 @@ function addLogoutAndStatus() {
   const dash = document.querySelector('.dashboard-screen .dashboard-hero, .admin-screen .dashboard-hero')
   if (dash && profile && !dash.querySelector('[data-live-account-status]')) dash.insertAdjacentHTML('beforeend', `<div class="live-account-status" data-live-account-status="true"><b>✅ Live database account</b><span>${escapeHtml(profile.email || '')} • ${escapeHtml(profile.role || 'student')}</span></div>`)
 }
+function addLoginDiagnostic() {
+  const form = document.getElementById('loginForm') || document.getElementById('signupForm')
+  if (!form || form.querySelector('[data-supabase-login-diagnostic]')) return
+  form.insertAdjacentHTML('beforeend', `<div class="live-auth-diagnostic" data-supabase-login-diagnostic="true"><b>Live DB:</b> ${isSupabaseConfigured ? 'configured' : 'not configured'} • URL: ${escapeHtml(supabaseConfig.maskedUrl)}<br><small>Failed to fetch means this browser cannot reach Supabase Auth. Check Vercel environment variables and redeploy.</small></div>`)
+}
 function sync() {
   if (queued) return
   queued = true
-  requestAnimationFrame(() => { queued = false; addLogoutAndStatus() })
+  requestAnimationFrame(() => { queued = false; addLogoutAndStatus(); addLoginDiagnostic() })
 }
 
 document.addEventListener('submit', async event => {
