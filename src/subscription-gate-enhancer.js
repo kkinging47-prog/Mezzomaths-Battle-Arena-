@@ -16,13 +16,15 @@ const PLANS = [
 let modalOpen = false
 let syncQueued = false
 let paymentBusy = false
+const FREE_ACCESS_END = new Date('2026-12-31T23:59:59Z')
 
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
 function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
 function profile() { return readJson('mezzo_profile', null) || {} }
 function stats() { return readJson('mezzo_player_stats', {}) || {} }
 function isSignedIn() { const p = profile(); return Boolean(p.email || p.full_name || p.role) }
-function isSubscribed() { const sub = readJson('mezzo_subscription', null); return Boolean(sub?.active && (!sub.expires_at || new Date(sub.expires_at) > new Date())) }
+function freeAccessActive() { return new Date() <= FREE_ACCESS_END }
+function isSubscribed() { if (freeAccessActive() && isSignedIn()) return true; const sub = readJson('mezzo_subscription', null); return Boolean(sub?.active && (!sub.expires_at || new Date(sub.expires_at) > new Date())) }
 function trialStatus() { const trial = readJson('mezzo_trial_extension', null); return trial?.active && trial?.expires_at && new Date(trial.expires_at) > new Date() ? trial : null }
 function hasTrialExtension() { return Boolean(trialStatus()) }
 function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) }
@@ -62,7 +64,7 @@ function trialNoteHtml() {
 function subscriptionModalHtml() { return `<div class="subscription-gate-overlay" role="dialog" aria-modal="true" aria-label="Subscription plans">
   <section class="subscription-gate-card school-subscription-card">
     <button class="subscription-close" type="button" aria-label="Close">×</button>
-    <div class="subscription-head"><div><span class="sub-kicker">🔓 Premium unlock</span><h2>Choose your Mezzo Maths plan</h2><p>Subscribe as an individual learner or choose a school package based on the number of students you want to enrol.</p></div><div class="sub-lock">🏆</div></div>
+    <div class="subscription-head"><div><span class="sub-kicker">🔓 ${freeAccessActive() ? 'Free access period' : 'Premium unlock'}</span><h2>${freeAccessActive() ? 'Every feature is free through 31 December 2026' : 'Choose your Mezzo Maths plan'}</h2><p>${freeAccessActive() ? 'Create or sign in to a free account. Plans remain visible for future pricing, but no payment is required during this period.' : 'Subscribe as an individual learner or choose a school package based on the number of students you want to enrol.'}</p></div><div class="sub-lock">🏆</div></div>
     ${planSection('Individual Student Plans', 'For single learners, parents and contest preparation.', 'individual')}
     ${planSection('Special School Subscription Plans', 'For schools, learning centres and grouped student access. Select the range that matches your student population.', 'school')}
     <div class="school-custom-note"><strong>More than 1,000 students?</strong> Contact Mezzo Maths for a custom institutional package, onboarding and reporting support.</div>
@@ -72,7 +74,7 @@ function subscriptionModalHtml() { return `<div class="subscription-gate-overlay
   </section>
 </div>` }
 function showSubscriptionModal(force = false) {
-  if (modalOpen || isSubscribed()) return
+  if (modalOpen || (!force && isSubscribed())) return
   if (!force && hasTrialExtension()) return
   if (!force && !levelReached()) return
   modalOpen = true
@@ -81,10 +83,11 @@ function showSubscriptionModal(force = false) {
 function installPlanButton() {
   const home = document.querySelector('.home-screen')
   if (home && !home.querySelector('.subscription-promo-banner')) {
-    home.insertAdjacentHTML('beforeend', `<section class="subscription-promo-banner glass-card"><div><span>💳 Premium Access</span><h2>Subscription Plans</h2><p>Unlock individual or school access with student-range packages and Mobile Money/Card payments.</p></div><button class="btn btn-gold" data-open-subscriptions="true">View Plans</button></section>`)
+    home.insertAdjacentHTML('beforeend', `<section class="subscription-promo-banner glass-card"><div><span>${freeAccessActive() ? '🎁 FREE ACCESS' : '💳 Premium Access'}</span><h2>${freeAccessActive() ? 'All features free until 31 December 2026' : 'Subscription Plans'}</h2><p>${freeAccessActive() ? 'Sign up for a free account to use every feature. No payment is required.' : 'Unlock individual or school access with student-range packages and Mobile Money/Card payments.'}</p></div><button class="btn btn-gold" data-open-subscriptions="true">View Plans</button></section>`)
   }
 }
 async function startPayment(planId) {
+  if (freeAccessActive()) { showToast('No payment is needed. Sign in to your free account for full access through 31 December 2026.'); return }
   if (paymentBusy) return
   const plan = planById(planId)
   const p = profile()

@@ -4,6 +4,7 @@ const SECTIONS = [
   { key: 'overview', icon: '▦', label: 'Overview', description: 'Admin summary and shortcuts' },
   { key: 'questions', icon: '✦', label: 'Questions', description: 'Generate, upload and manage questions' },
   { key: 'courses', icon: '▤', label: 'Courses', description: 'Course builder, access and analytics' },
+  { key: 'impact', icon: '◉', label: 'Donor Impact', description: 'Reach, equity and learning outcomes' },
   { key: 'bece', icon: '◎', label: 'BECE', description: 'BECE bank and assessment settings' },
   { key: 'people', icon: '♙', label: 'Staff & Brand', description: 'Branding and staff permissions' },
   { key: 'system', icon: '◈', label: 'System', description: 'Readiness and database checks' }
@@ -19,6 +20,7 @@ const SELECTORS = {
     '[data-course-admin-panel]', '.course-admin-panel', '#courseAdminForm', '.course-commerce-admin',
     '.course-analytics-panel', '#courseCouponForm', '#courseGrantForm'
   ],
+  impact: ['[data-donor-impact-dashboard]'],
   bece: ['[data-bece-admin-panel]', '.bece-admin-panel', '[data-bece-settings-panel]', '.bece-settings-panel'],
   people: ['[data-admin-brand-staff-panel]', '.admin-brand-staff-panel', '[data-learner-intelligence-admin]'],
   system: ['[data-admin-health-panel]', '.admin-health-panel', '[data-production-readiness]', '.production-readiness-panel']
