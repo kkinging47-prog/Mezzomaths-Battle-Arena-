@@ -255,7 +255,13 @@ function patchLocalStorage() {
 function addLogoutAndStatus() {
   const profile = readJson(PROFILE_KEY, null)
   document.querySelectorAll('.tab-scroll').forEach(nav => {
+    nav.querySelectorAll('[data-target="auth"]').forEach(button => {
+      button.hidden = Boolean(profile)
+      button.setAttribute('aria-hidden', profile ? 'true' : 'false')
+      button.tabIndex = profile ? -1 : 0
+    })
     if (profile && !nav.querySelector('[data-live-logout]')) nav.insertAdjacentHTML('beforeend', '<button class="screen-tab live-logout-button" data-live-logout="true"><span>🚪</span>Logout</button>')
+    if (!profile) nav.querySelectorAll('[data-live-logout]').forEach(button => button.remove())
   })
   const dash = document.querySelector('.dashboard-screen .dashboard-hero, .admin-screen .dashboard-hero')
   if (dash && profile && !dash.querySelector('[data-live-account-status]')) dash.insertAdjacentHTML('beforeend', `<div class="live-account-status" data-live-account-status="true"><b>✅ Live database account</b><span>${escapeHtml(profile.email || '')} • ${escapeHtml(profile.role || 'student')}</span></div>`)
