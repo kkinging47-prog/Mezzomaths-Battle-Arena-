@@ -1,4 +1,6 @@
 import './bece-admin.css'
+import './bece-year-upload.css'
+import * as XLSX from 'xlsx'
 
 const STORE_KEY = 'mezzo_bece_admin_bank'
 const YEAR_KEY = 'mezzo_bece_admin_year_filter'
@@ -10,6 +12,7 @@ function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback }
 }
 function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
+function isAdmin() { return (readJson('mezzo_profile', {}) || {}).role === 'admin' }
 function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) }
 function uid() { return `bece_${Date.now()}_${Math.random().toString(16).slice(2)}` }
 function bank() { return readJson(STORE_KEY, []) }
@@ -44,17 +47,20 @@ function panelHtml(sig = signature()) {
   const visible = filteredBank()
   const edit = editingId ? all.find(q => q.id === editingId) : null
   const yearValue = edit?.year || (selectedYear() === 'All' ? String(new Date().getFullYear()) : selectedYear())
+  const yearCounts = [...new Set(all.map(q => q.year))].sort((a,b) => Number(b)-Number(a)).map(year => [year, all.filter(q => q.year === year).length])
   return `<section class="bece-admin-panel glass-card" data-bece-admin-panel="true" data-bece-signature="${escapeHtml(sig)}">
-    <div class="bece-admin-head"><div><span>📘 BECE Question Bank Admin</span><h2>Upload, Edit, Delete & Select Year</h2><p>Manage BECE Past Questions and Sample BECE Practice Questions by year. Uploaded questions will appear on the BECE Practice page.</p></div><div class="bece-admin-count"><strong>${all.length}</strong><small>Total BECE questions</small></div></div>
-    <div class="bece-admin-tools"><label><span>Filter / Select Year</span>${yearSelect('year_filter', selectedYear(), 'beceAdminYearFilter')}</label><label class="file-upload-label"><span>Upload CSV or JSON</span><input id="beceUploadFile" type="file" accept=".csv,.json,application/json,text/csv"></label><button class="btn btn-blue" type="button" data-bece-download-template="true">Download CSV Template</button><button class="btn btn-danger" type="button" data-bece-clear-filter="true">Show All</button></div>
+    <div class="bece-admin-head"><div><span>📘 BECE OBJECTIVE QUESTIONS</span><h2>Year-by-Year Upload Centre</h2><p>Upload complete objective-test files for each BECE year, then review, edit or delete individual questions. Uploaded questions automatically appear in BECE Practice.</p></div><div class="bece-admin-count"><strong>${all.length}</strong><small>Total objective questions</small></div></div>
+    <div class="bece-year-summary"><button type="button" data-bece-year-card="All" class="${selectedYear()==='All'?'active':''}"><strong>${all.length}</strong><span>All years</span></button>${yearCounts.map(([year,count])=>`<button type="button" data-bece-year-card="${escapeHtml(year)}" class="${selectedYear()===year?'active':''}"><strong>${count}</strong><span>${escapeHtml(year)}</span></button>`).join('')}</div>
+    <div class="bece-upload-zone"><div><b>Upload a BECE objective-test file</b><span>Accepted: Excel (.xlsx/.xls), CSV or JSON. The year column keeps every paper organised separately.</span></div><label class="file-upload-label"><span>Choose File</span><input id="beceUploadFile" type="file" accept=".xlsx,.xls,.csv,.json,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></label></div>
+    <div class="bece-admin-tools"><label><span>View Questions for Year</span>${yearSelect('year_filter', selectedYear(), 'beceAdminYearFilter')}</label><button class="btn btn-blue" type="button" data-bece-download-template="true">Download Upload Template</button><button class="btn btn-danger" type="button" data-bece-clear-filter="true">Show All Years</button></div>
     <form id="beceAdminQuestionForm" class="bece-admin-form"><input type="hidden" name="id" value="${escapeHtml(edit?.id || '')}"><label><span>BECE Year</span>${yearSelect('year', yearValue)}</label><label><span>Question Type</span><select name="type"><option value="pastStyle" ${edit?.type !== 'samples' ? 'selected' : ''}>BECE Past Questions Practice</option><option value="samples" ${edit?.type === 'samples' ? 'selected' : ''}>Sample BECE Practice Questions</option></select></label><label><span>Topic</span><input name="topic" value="${escapeHtml(edit?.topic || '')}" placeholder="e.g. Percentages" required></label><label class="wide"><span>Question</span><textarea name="q" required placeholder="Type the BECE question here">${escapeHtml(edit?.q || '')}</textarea></label>${['A','B','C','D'].map((letter, i) => `<label><span>Option ${letter}</span><input name="option_${letter.toLowerCase()}" value="${escapeHtml(edit?.options?.[i] || '')}" required></label>`).join('')}<label><span>Correct Answer</span><select name="answer">${optionSelect(edit?.answer || 'A')}</select></label><label class="wide"><span>Explanation</span><textarea name="explanation" placeholder="Short solution / explanation">${escapeHtml(edit?.explanation || '')}</textarea></label><button class="btn btn-gold wide" type="submit">${edit ? 'Update BECE Question' : 'Add BECE Question'}</button>${edit ? '<button class="btn btn-ghost wide" type="button" data-bece-cancel-edit="true">Cancel Edit</button>' : ''}</form>
-    <div class="bece-admin-note"><b>CSV format:</b> year,type,topic,question,option_a,option_b,option_c,option_d,correct_answer,explanation. Use type <b>pastStyle</b> for BECE Past Questions or <b>samples</b> for Sample BECE Practice Questions.</div>
+    <div class="bece-admin-note"><b>Required columns:</b> year, type, topic, question, option_a, option_b, option_c, option_d, correct_answer, explanation. Use <b>pastStyle</b> for official year papers and <b>samples</b> for original practice questions.</div>
     <div class="bece-admin-list">${visible.slice(0, 120).map(q => `<article><div><strong>${escapeHtml(q.year)} • ${escapeHtml(q.topic)}</strong><span>${escapeHtml(q.q)}</span><small>${q.type === 'samples' ? 'Sample BECE Practice' : 'BECE Past Questions'} • Answer ${escapeHtml(q.answer)}</small></div><div><button class="btn btn-blue btn-small" type="button" data-bece-edit="${escapeHtml(q.id)}">Edit</button><button class="btn btn-danger btn-small" type="button" data-bece-delete="${escapeHtml(q.id)}">Delete</button></div></article>`).join('') || '<p class="bece-admin-empty">No BECE questions found for this year. Upload or add questions above.</p>'}</div>
   </section>`
 }
 function installPanel(force = false) {
   const admin = document.querySelector('.admin-screen')
-  if (!admin || !admin.querySelector('.question-manager')) return
+  if (!admin || !isAdmin()) return
   const old = admin.querySelector('[data-bece-admin-panel]')
   const sig = signature()
   if (old && !force && old.dataset.beceSignature === sig) return
@@ -108,12 +114,16 @@ function importCsv(text) {
 }
 async function handleUpload(file) {
   if (!file) return
-  const text = await file.text()
   let imported = []
-  if (file.name.toLowerCase().endsWith('.json')) {
+  if (/\.(xlsx|xls)$/i.test(file.name)) {
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' })
+    const sheet = workbook.Sheets[workbook.SheetNames[0]]
+    imported = XLSX.utils.sheet_to_json(sheet, { defval: '' }).map(normalise).filter(q => q.q && q.options.every(Boolean))
+  } else if (file.name.toLowerCase().endsWith('.json')) {
+    const text = await file.text()
     const data = JSON.parse(text)
     imported = Array.isArray(data) ? data.map(normalise) : []
-  } else imported = importCsv(text)
+  } else imported = importCsv(await file.text())
   if (!imported.length) { alert('No valid BECE questions found in the file.'); return }
   saveBank([...imported, ...bank().map(normalise)])
   alert(`${imported.length} BECE question(s) uploaded successfully.`)
@@ -145,6 +155,8 @@ document.addEventListener('click', event => {
   if (event.target.closest('[data-bece-cancel-edit]')) { editingId = ''; installPanel(true); return }
   if (event.target.closest('[data-bece-download-template]')) { downloadTemplate(); return }
   if (event.target.closest('[data-bece-clear-filter]')) { setSelectedYear('All'); installPanel(true); return }
+  const yearCard = event.target.closest('[data-bece-year-card]')
+  if (yearCard) { setSelectedYear(yearCard.dataset.beceYearCard); installPanel(true); return }
 }, true)
 
 document.addEventListener('change', event => {

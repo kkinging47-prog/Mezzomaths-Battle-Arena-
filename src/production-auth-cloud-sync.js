@@ -10,6 +10,7 @@ const ADMIN_EMAILS = new Set([
 const SYNC_KEYS = [
   'mezzo_smart_leaderboards',
   'mezzo_bece_history',
+  'mezzo_bece_admin_bank',
   'mezzo_brain_test_results',
   'mezzo_course_progress',
   'mezzo_course_enrollments',
