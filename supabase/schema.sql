@@ -11,8 +11,10 @@ create table if not exists public.profiles (
   age integer,
   school_name text,
   location text,
+  region text,
   class_level text check (class_level in ('Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','JHS 1','JHS 2','JHS 3','SHS 1','SHS 2','SHS 3')),
   curriculum text check (curriculum in ('GES','Cambridge','Pearson Edexcel')),
+  academic_term text default 'Term 1',
   role text default 'student' check (role in ('student','admin')),
   avatar_url text,
   coins integer default 0,
@@ -20,6 +22,9 @@ create table if not exists public.profiles (
   streak_count integer default 0,
   created_at timestamptz default now()
 );
+
+alter table public.profiles add column if not exists region text;
+alter table public.profiles add column if not exists academic_term text default 'Term 1';
 
 create table if not exists public.question_bank (
   id uuid primary key default gen_random_uuid(),
@@ -116,6 +121,37 @@ create table if not exists public.student_progress (
   unique(student_id, class_level, curriculum, topic)
 );
 
+create table if not exists public.auth_access_records (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade,
+  event_type text not null check (event_type in ('signup','login','logout')),
+  email text, school_name text, location text, region text, class_level text, academic_term text,
+  occurred_at timestamptz default now()
+);
+
+create table if not exists public.academic_progress_records (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references public.profiles(id) on delete cascade,
+  academic_year text not null, academic_term text not null, class_level text not null, curriculum text,
+  topic text, course_id text,
+  assessment_type text check (assessment_type in ('pretest','posttest','practice','course')),
+  score integer default 0, total integer default 0, percent numeric(5,2), learning_mode text,
+  metadata jsonb default '{}'::jsonb, completed_at timestamptz default now()
+);
+
+create table if not exists public.learning_style_profiles (
+  student_id uuid primary key references public.profiles(id) on delete cascade,
+  reading_score integer default 0, video_score integer default 0, interactive_score integer default 0,
+  practice_score integer default 0, dominant_style text, evidence jsonb default '{}'::jsonb,
+  ai_summary text, updated_at timestamptz default now()
+);
+
+create table if not exists public.career_guidance_results (
+  id uuid primary key default gen_random_uuid(), student_id uuid references public.profiles(id) on delete cascade,
+  stage integer not null check (stage between 1 and 3), answers jsonb default '{}'::jsonb,
+  recommendations jsonb default '[]'::jsonb, summary text, completed_at timestamptz default now()
+);
+
 alter table public.profiles enable row level security;
 alter table public.question_bank enable row level security;
 alter table public.practice_sessions enable row level security;
@@ -123,6 +159,10 @@ alter table public.session_answers enable row level security;
 alter table public.leaderboard_entries enable row level security;
 alter table public.daily_challenges enable row level security;
 alter table public.student_progress enable row level security;
+alter table public.auth_access_records enable row level security;
+alter table public.academic_progress_records enable row level security;
+alter table public.learning_style_profiles enable row level security;
+alter table public.career_guidance_results enable row level security;
 
 create policy "Users can read own profile" on public.profiles for select using (auth.uid() = id);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
@@ -141,3 +181,9 @@ create policy "Leaderboard readable by users" on public.leaderboard_entries for 
 create policy "Daily challenges readable" on public.daily_challenges for select using (is_active = true);
 create policy "Students read own progress" on public.student_progress for select using (student_id = auth.uid());
 create policy "Students update own progress" on public.student_progress for all using (student_id = auth.uid()) with check (student_id = auth.uid());
+create policy "Users write own access records" on public.auth_access_records for insert with check (user_id = auth.uid());
+create policy "Admins read access records" on public.auth_access_records for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+create policy "Students manage academic progress" on public.academic_progress_records for all using (student_id = auth.uid()) with check (student_id = auth.uid());
+create policy "Admins read academic progress" on public.academic_progress_records for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+create policy "Students manage learning styles" on public.learning_style_profiles for all using (student_id = auth.uid()) with check (student_id = auth.uid());
+create policy "Students manage career guidance" on public.career_guidance_results for all using (student_id = auth.uid()) with check (student_id = auth.uid());

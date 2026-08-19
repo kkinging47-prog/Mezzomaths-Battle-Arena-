@@ -76,17 +76,27 @@ function profilePayload(formData = {}, user = null) {
     age: ageFromDob(dob),
     school_name: formData.school_name || formData.school || user?.user_metadata?.school_name || '',
     location: formData.location || user?.user_metadata?.location || '',
+    region: formData.region || user?.user_metadata?.region || '',
     class_level: formData.class_level || user?.user_metadata?.class_level || 'Grade 4',
     curriculum: formData.curriculum || user?.user_metadata?.curriculum || 'GES',
+    academic_term: formData.academic_term || user?.user_metadata?.academic_term || 'Term 1',
     role,
     avatar_url: user?.user_metadata?.avatar_url || null
   }
 }
 async function upsertProfile(payload) {
   if (!supabase || !payload.id) return payload
-  const { data, error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' }).select().single()
+  let { data, error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' }).select().single()
+  if (error && /region|academic_term|column|schema cache/i.test(error.message || '')) {
+    const compatible = { ...payload }
+    delete compatible.region
+    delete compatible.academic_term
+    const retry = await supabase.from('profiles').upsert(compatible, { onConflict: 'id' }).select().single()
+    data = retry.data
+    error = retry.error
+  }
   if (error) throw error
-  return data || payload
+  return { ...payload, ...(data || {}) }
 }
 function activateLocalProfile(profile) {
   saveJson(PROFILE_KEY, profile)
@@ -113,6 +123,7 @@ async function handleSignup(form) {
     if (error) { toast(authErrorMessage(error, 'Signup'), 'error'); return false }
     if (!data.session) { toast('Account created. Check email to confirm, then log in.', 'warn'); return true }
     const profile = await upsertProfile(profilePayload({ ...f, role }, data.user))
+    await recordAccessEvent(data.user, profile, 'signup')
     activateLocalProfile(profile)
     toast(`Welcome ${profile.full_name}. Your account is now saved in Supabase.`, 'success')
     document.querySelector('[data-target="dashboard"]')?.click()
@@ -122,6 +133,13 @@ async function handleSignup(form) {
     toast(authErrorMessage(error, 'Signup'), 'error')
     return false
   }
+}
+async function recordAccessEvent(user, profile, eventType) {
+  const item = { user_id: user?.id || null, event_type: eventType, email: profile?.email || user?.email || '', school_name: profile?.school_name || '', location: profile?.location || '', region: profile?.region || '', class_level: profile?.class_level || '', academic_term: profile?.academic_term || 'Term 1', occurred_at: new Date().toISOString() }
+  saveJson('mezzo_access_records', [item, ...readJson('mezzo_access_records', [])].slice(0, 2000))
+  if (!supabase || !user?.id) return
+  const { error } = await supabase.from('auth_access_records').insert(item)
+  if (error) console.warn('Access record cloud save skipped:', error.message)
 }
 async function handleLogin(form) {
   try {
@@ -137,6 +155,7 @@ async function handleLogin(form) {
       profile = await upsertProfile({ ...profile, role: wantedRole })
     }
     activateLocalProfile(profile)
+    await recordAccessEvent(data.user, profile, 'login')
     toast(`Live login successful as ${profile.role}.`, 'success')
     document.querySelector(`[data-target="${profile.role === 'admin' ? 'admin' : 'dashboard'}"]`)?.click()
     queueCloudSync()

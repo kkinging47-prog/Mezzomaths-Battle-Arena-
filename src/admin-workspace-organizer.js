@@ -20,7 +20,7 @@ const SELECTORS = {
     '.course-analytics-panel', '#courseCouponForm', '#courseGrantForm'
   ],
   bece: ['[data-bece-admin-panel]', '.bece-admin-panel', '[data-bece-settings-panel]', '.bece-settings-panel'],
-  people: ['[data-admin-brand-staff-panel]', '.admin-brand-staff-panel'],
+  people: ['[data-admin-brand-staff-panel]', '.admin-brand-staff-panel', '[data-learner-intelligence-admin]'],
   system: ['[data-admin-health-panel]', '.admin-health-panel', '[data-production-readiness]', '.production-readiness-panel']
 }
 
