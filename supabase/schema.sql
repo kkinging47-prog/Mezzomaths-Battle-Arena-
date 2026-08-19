@@ -181,6 +181,29 @@ alter table public.career_guidance_results enable row level security;
 alter table public.learner_monitoring_profiles enable row level security;
 alter table public.program_monitoring_events enable row level security;
 
+-- Policies are dropped first so this complete schema can be run repeatedly.
+drop policy if exists "Users can read own profile" on public.profiles;
+drop policy if exists "Users can update own profile" on public.profiles;
+drop policy if exists "Users can insert own profile" on public.profiles;
+drop policy if exists "Active questions are readable" on public.question_bank;
+drop policy if exists "Admins manage questions" on public.question_bank;
+drop policy if exists "Students manage own sessions" on public.practice_sessions;
+drop policy if exists "Students manage own answers" on public.session_answers;
+drop policy if exists "Leaderboard readable by users" on public.leaderboard_entries;
+drop policy if exists "Daily challenges readable" on public.daily_challenges;
+drop policy if exists "Students read own progress" on public.student_progress;
+drop policy if exists "Students update own progress" on public.student_progress;
+drop policy if exists "Users write own access records" on public.auth_access_records;
+drop policy if exists "Admins read access records" on public.auth_access_records;
+drop policy if exists "Students manage academic progress" on public.academic_progress_records;
+drop policy if exists "Admins read academic progress" on public.academic_progress_records;
+drop policy if exists "Students manage learning styles" on public.learning_style_profiles;
+drop policy if exists "Students manage career guidance" on public.career_guidance_results;
+drop policy if exists "Students manage monitoring profile" on public.learner_monitoring_profiles;
+drop policy if exists "Students write monitoring events" on public.program_monitoring_events;
+drop policy if exists "Admins read monitoring profiles" on public.learner_monitoring_profiles;
+drop policy if exists "Admins read monitoring events" on public.program_monitoring_events;
+
 create policy "Users can read own profile" on public.profiles for select using (auth.uid() = id);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
 create policy "Users can insert own profile" on public.profiles for insert with check (auth.uid() = id);
