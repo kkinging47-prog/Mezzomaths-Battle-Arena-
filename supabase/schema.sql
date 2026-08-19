@@ -152,6 +152,21 @@ create table if not exists public.career_guidance_results (
   recommendations jsonb default '[]'::jsonb, summary text, completed_at timestamptz default now()
 );
 
+create table if not exists public.learner_monitoring_profiles (
+  student_id uuid primary key references public.profiles(id) on delete cascade,
+  gender text, support_need text, access_device text, connectivity text,
+  consented_at timestamptz, updated_at timestamptz default now()
+);
+
+create table if not exists public.program_monitoring_events (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references public.profiles(id) on delete cascade,
+  event_type text not null, school_name text, location text, region text,
+  class_level text, academic_term text, course_id text, topic text,
+  learning_mode text, metadata jsonb default '{}'::jsonb,
+  occurred_at timestamptz default now()
+);
+
 alter table public.profiles enable row level security;
 alter table public.question_bank enable row level security;
 alter table public.practice_sessions enable row level security;
@@ -163,6 +178,8 @@ alter table public.auth_access_records enable row level security;
 alter table public.academic_progress_records enable row level security;
 alter table public.learning_style_profiles enable row level security;
 alter table public.career_guidance_results enable row level security;
+alter table public.learner_monitoring_profiles enable row level security;
+alter table public.program_monitoring_events enable row level security;
 
 create policy "Users can read own profile" on public.profiles for select using (auth.uid() = id);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
@@ -187,3 +204,7 @@ create policy "Students manage academic progress" on public.academic_progress_re
 create policy "Admins read academic progress" on public.academic_progress_records for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
 create policy "Students manage learning styles" on public.learning_style_profiles for all using (student_id = auth.uid()) with check (student_id = auth.uid());
 create policy "Students manage career guidance" on public.career_guidance_results for all using (student_id = auth.uid()) with check (student_id = auth.uid());
+create policy "Students manage monitoring profile" on public.learner_monitoring_profiles for all using (student_id = auth.uid()) with check (student_id = auth.uid());
+create policy "Students write monitoring events" on public.program_monitoring_events for insert with check (student_id = auth.uid());
+create policy "Admins read monitoring profiles" on public.learner_monitoring_profiles for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+create policy "Admins read monitoring events" on public.program_monitoring_events for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
