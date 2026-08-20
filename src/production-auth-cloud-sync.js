@@ -273,6 +273,33 @@ function addLogoutAndStatus() {
   const dash = document.querySelector('.dashboard-screen .dashboard-hero, .admin-screen .dashboard-hero')
   if (dash && profile && !dash.querySelector('[data-live-account-status]')) dash.insertAdjacentHTML('beforeend', `<div class="live-account-status" data-live-account-status="true"><b>✅ Live database account</b><span>${escapeHtml(profile.email || '')} • ${escapeHtml(profile.role || 'student')}</span></div>`)
 }
+function displayName(profile) {
+  const fullName = String(profile?.full_name || '').trim()
+  if (fullName) return fullName.split(/\s+/)[0]
+  const emailName = String(profile?.email || '').split('@')[0].trim()
+  return emailName || 'Learner'
+}
+function profileContext(profile) {
+  const role = String(profile?.role || 'student').replaceAll('_', ' ')
+  if (role === 'student' && profile?.class_level) return profile.class_level
+  return role.replace(/\b\w/g, letter => letter.toUpperCase())
+}
+function addSignedInIdentity() {
+  const profile = readJson(PROFILE_KEY, null)
+  const existing = document.querySelector('[data-live-user-identity]')
+  const state = profile
+    ? `${profile.id || profile.email || profile.full_name || 'signed-in'}:${profile.full_name || ''}:${profile.class_level || ''}:${profile.role || ''}`
+    : 'guest'
+  if (existing?.dataset.identityState === state) return
+  existing?.remove()
+  if (profile) {
+    const name = displayName(profile)
+    const initial = name.charAt(0).toUpperCase() || 'M'
+    document.body.insertAdjacentHTML('beforeend', `<aside class="live-user-identity signed-in" data-live-user-identity data-identity-state="${escapeHtml(state)}" aria-label="Signed in as ${escapeHtml(name)}"><span class="live-user-avatar" aria-hidden="true">${escapeHtml(initial)}</span><span class="live-user-copy"><small>Signed in</small><b>Welcome, ${escapeHtml(name)}</b><em>${escapeHtml(profileContext(profile))}</em></span><i class="live-user-dot" aria-hidden="true"></i></aside>`)
+    return
+  }
+  document.body.insertAdjacentHTML('beforeend', '<button type="button" class="live-user-identity signed-out" data-live-user-identity data-live-sign-in data-identity-state="guest" aria-label="Not signed in. Open login"><span class="live-user-avatar" aria-hidden="true">?</span><span class="live-user-copy"><small>Guest session</small><b>Not signed in</b><em>Sign in to save progress</em></span></button>')
+}
 function addLoginDiagnostic() {
   const form = document.getElementById('loginForm') || document.getElementById('signupForm')
   if (!form || form.querySelector('[data-supabase-login-diagnostic]')) return
@@ -281,7 +308,7 @@ function addLoginDiagnostic() {
 function sync() {
   if (queued) return
   queued = true
-  requestAnimationFrame(() => { queued = false; addLogoutAndStatus(); addLoginDiagnostic() })
+  requestAnimationFrame(() => { queued = false; addLogoutAndStatus(); addSignedInIdentity(); addLoginDiagnostic() })
 }
 
 document.addEventListener('submit', async event => {
@@ -291,6 +318,7 @@ document.addEventListener('submit', async event => {
 
 document.addEventListener('click', event => {
   if (event.target.closest('[data-live-logout]')) { event.preventDefault(); event.stopImmediatePropagation(); logout(); return }
+  if (event.target.closest('[data-live-sign-in]')) { event.preventDefault(); document.querySelector('[data-target="auth"]')?.click(); return }
 }, true)
 
 patchLocalStorage()
@@ -298,6 +326,7 @@ restoreSession()
 setInterval(queueCloudSync, 45000)
 window.addEventListener('online', queueCloudSync)
 window.addEventListener('storage', queueCloudSync)
+window.addEventListener('mezzoProfileUpdated', sync)
 const observer = new MutationObserver(sync)
 observer.observe(document.body, { childList: true, subtree: true, attributes: false })
 window.addEventListener('load', () => { sync(); queueCloudSync() })
