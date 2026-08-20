@@ -3,6 +3,7 @@ import './admin-workspace-organizer.css'
 const SECTIONS = [
   { key: 'overview', icon: '▦', label: 'Overview', description: 'Admin summary and shortcuts' },
   { key: 'questions', icon: '✦', label: 'Questions', description: 'Generate, upload and manage questions' },
+  { key: 'junior', icon: '★', label: 'Junior', description: 'KG–Grade 2 questions and classroom tools' },
   { key: 'courses', icon: '▤', label: 'Courses', description: 'Course builder, access and analytics' },
   { key: 'impact', icon: '◉', label: 'Donor Impact', description: 'Reach, equity and learning outcomes' },
   { key: 'bece', icon: '◎', label: 'BECE', description: 'BECE bank and assessment settings' },
@@ -16,6 +17,7 @@ const SELECTORS = {
     '[data-exact-workbook-importer]', '[data-admin-topic-uploader]', '[data-excel-question-upload]',
     '[data-workbook-question-selector]', '.workbook-seed-summary', '.excel-question-upload-panel'
   ],
+  junior: ['[data-junior-admin]'],
   courses: [
     '[data-course-admin-panel]', '.course-admin-panel', '#courseAdminForm', '.course-commerce-admin',
     '.course-analytics-panel', '#courseCouponForm', '#courseGrantForm'

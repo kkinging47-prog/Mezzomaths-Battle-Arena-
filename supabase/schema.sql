@@ -167,6 +167,62 @@ create table if not exists public.program_monitoring_events (
   occurred_at timestamptz default now()
 );
 
+create table if not exists public.junior_questions (
+  id text primary key, level text not null check (level in ('Kindergarten','Grade 1','Grade 2')),
+  topic text not null, skill text not null, activity_type text not null,
+  difficulty text default 'Easy', status text default 'Draft', prompt text not null,
+  spoken text, options jsonb default '[]'::jsonb, correct_answer text,
+  explanation text, image_url text, image_alt text, audio_url text,
+  visual jsonb default '{}'::jsonb, created_by uuid references public.profiles(id),
+  created_at timestamptz default now(), updated_at timestamptz default now()
+);
+
+create table if not exists public.junior_activity_sessions (
+  id text primary key, user_id uuid references public.profiles(id) on delete cascade,
+  class_level text not null, topic text not null, assessment_type text not null,
+  score integer default 0, total integer default 0, percent numeric(5,2),
+  game_mode text default 'Individual', started_at timestamptz, completed_at timestamptz default now()
+);
+
+create table if not exists public.junior_responses (
+  id uuid primary key default gen_random_uuid(), session_id text references public.junior_activity_sessions(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete cascade, question_id text,
+  prompt text, answer text, correct_answer text, correct boolean, skill text,
+  activity text, response_ms integer, created_at timestamptz default now()
+);
+
+create table if not exists public.junior_skill_progress (
+  id uuid primary key default gen_random_uuid(), user_id uuid references public.profiles(id) on delete cascade,
+  class_level text not null, topic text not null, skill text not null,
+  correct_count integer default 0, wrong_count integer default 0, mastery numeric(5,2) default 0,
+  help_uses integer default 0, voice_replays integer default 0, updated_at timestamptz default now(),
+  unique(user_id,class_level,topic,skill)
+);
+
+create table if not exists public.junior_rewards (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  stars integer default 0, stickers jsonb default '[]'::jsonb, badges jsonb default '[]'::jsonb,
+  puzzle_pieces integer default 0, updated_at timestamptz default now()
+);
+
+create table if not exists public.junior_classroom_sessions (
+  id uuid primary key default gen_random_uuid(), teacher_id uuid references public.profiles(id) on delete cascade,
+  class_level text not null, topic text, activity_type text, game_mode text,
+  configuration jsonb default '{}'::jsonb, team_results jsonb default '{}'::jsonb,
+  started_at timestamptz default now(), completed_at timestamptz
+);
+
+create table if not exists public.junior_media_assets (
+  id uuid primary key default gen_random_uuid(), owner_id uuid references public.profiles(id),
+  asset_type text check (asset_type in ('image','audio','video')), url text not null,
+  alt_text text, metadata jsonb default '{}'::jsonb, created_at timestamptz default now()
+);
+
+create index if not exists junior_questions_lookup_idx on public.junior_questions(level,activity_type,status);
+create index if not exists junior_sessions_user_idx on public.junior_activity_sessions(user_id,completed_at desc);
+create index if not exists junior_responses_user_idx on public.junior_responses(user_id,created_at desc);
+create index if not exists junior_classrooms_teacher_idx on public.junior_classroom_sessions(teacher_id,started_at desc);
+
 alter table public.profiles enable row level security;
 alter table public.question_bank enable row level security;
 alter table public.practice_sessions enable row level security;
@@ -180,6 +236,13 @@ alter table public.learning_style_profiles enable row level security;
 alter table public.career_guidance_results enable row level security;
 alter table public.learner_monitoring_profiles enable row level security;
 alter table public.program_monitoring_events enable row level security;
+alter table public.junior_questions enable row level security;
+alter table public.junior_activity_sessions enable row level security;
+alter table public.junior_responses enable row level security;
+alter table public.junior_skill_progress enable row level security;
+alter table public.junior_rewards enable row level security;
+alter table public.junior_classroom_sessions enable row level security;
+alter table public.junior_media_assets enable row level security;
 
 -- Policies are dropped first so this complete schema can be run repeatedly.
 drop policy if exists "Users can read own profile" on public.profiles;
@@ -203,6 +266,15 @@ drop policy if exists "Students manage monitoring profile" on public.learner_mon
 drop policy if exists "Students write monitoring events" on public.program_monitoring_events;
 drop policy if exists "Admins read monitoring profiles" on public.learner_monitoring_profiles;
 drop policy if exists "Admins read monitoring events" on public.program_monitoring_events;
+drop policy if exists "Published junior questions are readable" on public.junior_questions;
+drop policy if exists "Admins manage junior questions" on public.junior_questions;
+drop policy if exists "Learners manage junior sessions" on public.junior_activity_sessions;
+drop policy if exists "Learners manage junior responses" on public.junior_responses;
+drop policy if exists "Learners manage junior progress" on public.junior_skill_progress;
+drop policy if exists "Learners manage junior rewards" on public.junior_rewards;
+drop policy if exists "Teachers manage junior classrooms" on public.junior_classroom_sessions;
+drop policy if exists "Junior media is readable" on public.junior_media_assets;
+drop policy if exists "Admins manage junior media" on public.junior_media_assets;
 
 create policy "Users can read own profile" on public.profiles for select using (auth.uid() = id);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
@@ -231,3 +303,12 @@ create policy "Students manage monitoring profile" on public.learner_monitoring_
 create policy "Students write monitoring events" on public.program_monitoring_events for insert with check (student_id = auth.uid());
 create policy "Admins read monitoring profiles" on public.learner_monitoring_profiles for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
 create policy "Admins read monitoring events" on public.program_monitoring_events for select using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+create policy "Published junior questions are readable" on public.junior_questions for select using (status = 'Published' or created_by = auth.uid());
+create policy "Admins manage junior questions" on public.junior_questions for all using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')) with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+create policy "Learners manage junior sessions" on public.junior_activity_sessions for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "Learners manage junior responses" on public.junior_responses for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "Learners manage junior progress" on public.junior_skill_progress for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "Learners manage junior rewards" on public.junior_rewards for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "Teachers manage junior classrooms" on public.junior_classroom_sessions for all using (teacher_id = auth.uid()) with check (teacher_id = auth.uid());
+create policy "Junior media is readable" on public.junior_media_assets for select using (true);
+create policy "Admins manage junior media" on public.junior_media_assets for all using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')) with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
