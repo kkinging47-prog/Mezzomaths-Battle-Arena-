@@ -1,0 +1,14 @@
+select private.generate_workbook_topic_questions('KG2','Count, Color and Match');
+select private.generate_workbook_topic_questions('KG2','Numbers Before and After');
+select private.generate_workbook_topic_questions('KG2','Multiplication Table (1 – 5)');
+select private.generate_workbook_topic_questions('KG2','Multiplication Trials');
+select private.generate_workbook_topic_questions('KG2','Adding with Numbers');
+select private.generate_workbook_topic_questions('KG2','Class Activities');
+select private.generate_workbook_topic_questions('KG2','Multiplication Table (1 – 7)');
+select private.generate_workbook_topic_questions('KG2','Addition using objects');
+select private.generate_workbook_topic_questions('KG2','Add and Color');
+select private.generate_workbook_topic_questions('KG2','Addition of Single Digits');
+select private.generate_workbook_topic_questions('KG2','Complete the patterns');
+select private.generate_workbook_topic_questions('KG2','Multiplying Trials');
+select private.generate_workbook_topic_questions('KG2','Subtraction Number Stories');
+select private.generate_workbook_topic_questions('KG2','Take Away');
