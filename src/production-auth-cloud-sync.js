@@ -3,10 +3,6 @@ import { supabase, isSupabaseConfigured, checkSupabaseConnection, supabaseConfig
 
 const PROFILE_KEY = 'mezzo_profile'
 const CLOUD_SIG_KEY = 'mezzo_cloud_sync_signatures'
-const ADMIN_EMAILS = new Set([
-  'hayfordevans@gmail.com',
-  ...(String(import.meta.env.VITE_MEZZO_ADMIN_EMAILS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean))
-])
 const SYNC_KEYS = [
   'mezzo_smart_leaderboards',
   'mezzo_bece_history',
@@ -74,11 +70,9 @@ function ageFromDob(dob) {
   if (m < 0 || (m === 0 && today.getDate() < born.getDate())) age -= 1
   return Number.isFinite(age) ? age : null
 }
-function cleanRole(role, email) {
-  const wanted = String(role || 'student').toLowerCase()
-  const lower = String(email || '').toLowerCase()
-  if (wanted === 'admin' && !ADMIN_EMAILS.has(lower)) return 'student'
-  if (['student', 'teacher', 'mezzo_staff', 'admin'].includes(wanted)) return wanted
+function cleanRole() {
+  // The public client cannot choose a privileged role. Existing roles are
+  // loaded from the protected database profile after authentication.
   return 'student'
 }
 function profilePayload(formData = {}, user = null) {
