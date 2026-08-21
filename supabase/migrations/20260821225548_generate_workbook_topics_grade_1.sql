@@ -1,0 +1,13 @@
+select private.generate_workbook_topic_questions('Grade 1','Addition Table (SD)');
+select private.generate_workbook_topic_questions('Grade 1','Multiplication Table (1 – 6)');
+select private.generate_workbook_topic_questions('Grade 1','Multiplication Worksheet');
+select private.generate_workbook_topic_questions('Grade 1','Investigating Pattern');
+select private.generate_workbook_topic_questions('Grade 1','Multiplication Table (1 – 9)');
+select private.generate_workbook_topic_questions('Grade 1','Subtraction of numbers (SD)');
+select private.generate_workbook_topic_questions('Grade 1','Subtraction Worksheets');
+select private.generate_workbook_topic_questions('Grade 1','Multiplication table (1 - 12)');
+select private.generate_workbook_topic_questions('Grade 1','Addition of numbers (2d + 1)');
+select private.generate_workbook_topic_questions('Grade 1','Subtraction of numbers');
+select private.generate_workbook_topic_questions('Grade 1','Doubling (SD)');
+select private.generate_workbook_topic_questions('Grade 1','Investigating Patterns');
+select private.generate_workbook_topic_questions('Grade 1','Maths Worksheets');

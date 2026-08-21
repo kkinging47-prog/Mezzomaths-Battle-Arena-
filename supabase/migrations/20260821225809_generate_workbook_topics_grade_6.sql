@@ -1,0 +1,17 @@
+select private.generate_workbook_topic_questions('Grade 6','Addition & Subtraction of No’s');
+select private.generate_workbook_topic_questions('Grade 6','Multiplication by 11');
+select private.generate_workbook_topic_questions('Grade 6','Squaring no’s ending with 0');
+select private.generate_workbook_topic_questions('Grade 6','Squaring no’s ending with 1');
+select private.generate_workbook_topic_questions('Grade 6','Sharing in fives (5)');
+select private.generate_workbook_topic_questions('Grade 6','Multiplication by nine (9)');
+select private.generate_workbook_topic_questions('Grade 6','Summary Worksheet');
+select private.generate_workbook_topic_questions('Grade 6','Multiplying no’s between 10 & 20');
+select private.generate_workbook_topic_questions('Grade 6','Fast Track Subtraction');
+select private.generate_workbook_topic_questions('Grade 6','Multiplicatoin by five (5)');
+select private.generate_workbook_topic_questions('Grade 6','Squaring no’s between 30 & 50');
+select private.generate_workbook_topic_questions('Grade 6','Multiplying No’s with a difference of 2');
+select private.generate_workbook_topic_questions('Grade 6','Multiplication by ten (10)');
+select private.generate_workbook_topic_questions('Grade 6','Division by ten (10)');
+select private.generate_workbook_topic_questions('Grade 6','Squaring no’s between 50 & 70');
+select private.generate_workbook_topic_questions('Grade 6','Division by twenty – five (25)');
+select private.generate_workbook_topic_questions('Grade 6','Summary Worksheet & Sample B.E.C.E');

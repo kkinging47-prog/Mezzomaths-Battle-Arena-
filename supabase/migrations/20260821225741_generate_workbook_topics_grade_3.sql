@@ -1,0 +1,10 @@
+select private.generate_workbook_topic_questions('Grade 3','Multiplication by Two (2)');
+select private.generate_workbook_topic_questions('Grade 3','Multiplying no.s ending with 0');
+select private.generate_workbook_topic_questions('Grade 3','Graphical Multiplication');
+select private.generate_workbook_topic_questions('Grade 3','Summary Worksheet');
+select private.generate_workbook_topic_questions('Grade 3','Subtraction of numbers');
+select private.generate_workbook_topic_questions('Grade 3','Sharing in ten’s');
+select private.generate_workbook_topic_questions('Grade 3','Sharing in two’s');
+select private.generate_workbook_topic_questions('Grade 3','Lattice Multiplication');
+select private.generate_workbook_topic_questions('Grade 3','Multiplying no’s ending with 1');
+select private.generate_workbook_topic_questions('Grade 3','Investigating Patterns');

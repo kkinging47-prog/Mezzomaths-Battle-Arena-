@@ -1,0 +1,16 @@
+select private.generate_workbook_topic_questions('Grade 2','Addition of numbers (2d + 1)');
+select private.generate_workbook_topic_questions('Grade 2','Multiplication by 2');
+select private.generate_workbook_topic_questions('Grade 2','Subtraction of numbers (2d – 1)');
+select private.generate_workbook_topic_questions('Grade 2','Graphical multiplication (1 x 1)');
+select private.generate_workbook_topic_questions('Grade 2','Multiplication Table');
+select private.generate_workbook_topic_questions('Grade 2','Investigating Patterns');
+select private.generate_workbook_topic_questions('Grade 2','Addition of Numbers');
+select private.generate_workbook_topic_questions('Grade 2','Graphical Mult. (1x1,1x2)');
+select private.generate_workbook_topic_questions('Grade 2','Addition Table (2d + 1)');
+select private.generate_workbook_topic_questions('Grade 2','Doubling (2D)');
+select private.generate_workbook_topic_questions('Grade 2','Multiplication by 11 (2dwoc)');
+select private.generate_workbook_topic_questions('Grade 2','Multiplication Trials');
+select private.generate_workbook_topic_questions('Grade 2','Multiplication table (2 – 12)');
+select private.generate_workbook_topic_questions('Grade 2','Addition of numbers (2d + 2)');
+select private.generate_workbook_topic_questions('Grade 2','Addition Table (2d + 2)');
+select private.generate_workbook_topic_questions('Grade 2','Multiplication by 11');

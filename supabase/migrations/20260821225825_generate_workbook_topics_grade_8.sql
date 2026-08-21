@@ -1,0 +1,18 @@
+select private.generate_workbook_topic_questions('Grade 8','Addition & Subtraction of numbers');
+select private.generate_workbook_topic_questions('Grade 8','Multiplying no.s between 100 & 110');
+select private.generate_workbook_topic_questions('Grade 8','Mezzoscopic Tens and Ones');
+select private.generate_workbook_topic_questions('Grade 8','Percentages');
+select private.generate_workbook_topic_questions('Grade 8','Squaring No’s between 30 & 50');
+select private.generate_workbook_topic_questions('Grade 8','Multiplying no’s with a difference of 2');
+select private.generate_workbook_topic_questions('Grade 8','Summary Worksheet');
+select private.generate_workbook_topic_questions('Grade 8','Addition and Subtraction of Numbers');
+select private.generate_workbook_topic_questions('Grade 8','Multiplying numbers between 10 & 20');
+select private.generate_workbook_topic_questions('Grade 8','Squaring No’s between 50 & 70');
+select private.generate_workbook_topic_questions('Grade 8','Multiplying numbers close to 100');
+select private.generate_workbook_topic_questions('Grade 8','Fast track subtraction');
+select private.generate_workbook_topic_questions('Grade 8','Fractions');
+select private.generate_workbook_topic_questions('Grade 8','Divisibility Test (2 – 12)');
+select private.generate_workbook_topic_questions('Grade 8','General Multiplication');
+select private.generate_workbook_topic_questions('Grade 8','General Division');
+select private.generate_workbook_topic_questions('Grade 8','General Squaring');
+select private.generate_workbook_topic_questions('Grade 8','Mezzo Friendly B.E.C.E sample');

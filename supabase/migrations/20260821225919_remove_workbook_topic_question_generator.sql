@@ -1,0 +1,1 @@
+drop function if exists private.generate_workbook_topic_questions(text,text);
