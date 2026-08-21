@@ -19,9 +19,10 @@ function clean(value, limit = 160) {
   return String(value || '').trim().slice(0, limit)
 }
 
-function safeRole(role, email) {
-  const requested = clean(role, 30).toLowerCase()
-  return ['student', 'teacher', 'mezzo_staff'].includes(requested) ? requested : 'student'
+function safeRole() {
+  // Public signup never grants privileged roles. Administrators can promote
+  // verified accounts later from the protected admin workflow.
+  return 'student'
 }
 
 export default async function handler(req, res) {
@@ -38,7 +39,7 @@ export default async function handler(req, res) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address.' })
   if (password.length < 6 || password.length > 128) return res.status(400).json({ error: 'Password must contain 6 to 128 characters.' })
 
-  const role = safeRole(body.role, email)
+  const role = safeRole()
   const metadata = {
     full_name: clean(body.full_name),
     school_name: clean(body.school_name),
