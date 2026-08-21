@@ -20,7 +20,8 @@ function makeRolePicker(select) {
   const wrap = document.createElement('div')
   wrap.className = 'auth-role-picker'
   wrap.dataset.rolePicker = 'true'
-  wrap.innerHTML = `<div class="role-picker-title">Choose account type</div><div class="role-chip-grid">${ROLES.map(([value, label, icon]) => `<button type="button" class="role-chip ${select.value === value ? 'active' : ''}" data-auth-role-choice="${value}"><span>${icon}</span><strong>${label}</strong></button>`).join('')}</div><small class="role-picker-current">Selected: ${roleLabel(select.value || 'student')}</small>`
+  const available=Array.from(select.options).map(o=>{const role=ROLES.find(([value])=>value===o.value)||[o.value,o.textContent,'👤'];return[role[0],o.textContent,role[2]]})
+  wrap.innerHTML = `<div class="role-picker-title">Choose account type</div><div class="role-chip-grid">${available.map(([value, label, icon]) => `<button type="button" class="role-chip ${select.value === value ? 'active' : ''}" data-auth-role-choice="${value}"><span>${icon}</span><strong>${label}</strong></button>`).join('')}</div><small class="role-picker-current">Selected: ${roleLabel(select.value || 'student')}</small>`
   select.closest('label')?.insertAdjacentElement('afterend', wrap)
 }
 

@@ -2,7 +2,8 @@ import { supabase } from './supabaseClient.js'
 
 const TOPIC_AREAS = ['Multiplication', 'Division', 'Addition', 'Subtraction']
 const SKILL_LEVELS = ['Easy', 'Medium', 'Difficult', 'Advanced']
-const ROLE_OPTIONS = [['student', 'Student'], ['teacher', 'Teacher'], ['mezzo_staff', 'Mezzo Staff'], ['admin', 'Admin']]
+const SIGNUP_ROLE_OPTIONS = [['student', 'Student'], ['teacher', 'Teacher'], ['mezzo_staff', 'Mezzo Staff — approval required']]
+const LOGIN_ROLE_OPTIONS = [['student', 'Student'], ['teacher', 'Teacher'], ['mezzo_staff', 'Mezzo Staff'], ['admin', 'Admin']]
 const FALLBACK_TOPICS = ['Addition', 'Subtraction', 'Multiplication', 'Division', 'Squaring', 'Fractions', 'Percentages', 'Word Problems', 'Algebra', 'Geometry', 'Statistics']
 let syncQueued = false
 let saving = false
@@ -76,7 +77,8 @@ function enhanceAdminForms() {
 function syncAuthRoles() {
   document.querySelectorAll('#signupForm select[name="role"], #loginForm select[name="role"]').forEach(select => {
     const current = select.value || 'student'
-    const desired = ROLE_OPTIONS.map(([value,label]) => `<option value="${value}" ${value === current ? 'selected' : ''}>${label}</option>`).join('')
+    const roles = select.closest('#signupForm') ? SIGNUP_ROLE_OPTIONS : LOGIN_ROLE_OPTIONS
+    const desired = roles.map(([value,label]) => `<option value="${value}" ${value === current ? 'selected' : ''}>${label}</option>`).join('')
     if (select.innerHTML !== desired) select.innerHTML = desired
     const label = select.closest('label')
     if (label?.querySelector('span')) label.querySelector('span').textContent = 'Account Type'

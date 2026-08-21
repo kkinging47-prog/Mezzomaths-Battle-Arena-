@@ -1,6 +1,7 @@
 import './admin-staff-branding.css'
 
-const ROLE_OPTIONS = [['student', 'Student'], ['teacher', 'Teacher'], ['mezzo_staff', 'Mezzo Staff'], ['admin', 'Admin']]
+const SIGNUP_ROLE_OPTIONS = [['student', 'Student'], ['teacher', 'Teacher'], ['mezzo_staff', 'Mezzo Staff — approval required']]
+const LOGIN_ROLE_OPTIONS = [['student', 'Student'], ['teacher', 'Teacher'], ['mezzo_staff', 'Mezzo Staff'], ['admin', 'Admin']]
 const ACCESS_KEY = 'mezzo_staff_access'
 const LOGO_KEY = 'mezzo_custom_logo'
 const DEFAULT_ACCESS = { home: true, dashboard: true, leaderboard: true, smartboard: false, battle: false, solo: false, bece: false, brain: true, prep: false, courses: true }
@@ -13,12 +14,13 @@ function isAdmin() { return profile().role === 'admin' }
 function isStaff() { return profile().role === 'mezzo_staff' }
 function staffAccess() { return { ...DEFAULT_ACCESS, ...readJson(ACCESS_KEY, DEFAULT_ACCESS) } }
 function escapeHtml(value = '') { return String(value).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])) }
-function roleOptionsHtml(selected = 'student') { return ROLE_OPTIONS.map(([value, label]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${label}</option>`).join('') }
+function roleOptionsHtml(options, selected = 'student') { return options.map(([value, label]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${label}</option>`).join('') }
 function toast(message) { const old = document.querySelector('.staff-admin-toast'); if (old) old.remove(); const node = document.createElement('div'); node.className = 'staff-admin-toast'; node.textContent = message; document.body.appendChild(node); setTimeout(() => node.remove(), 4200) }
 function syncAuthRoleOptions() {
   document.querySelectorAll('#signupForm select[name="role"], #loginForm select[name="role"]').forEach(select => {
     const current = select.value || 'student'
-    const next = roleOptionsHtml(current)
+    const options = select.closest('#signupForm') ? SIGNUP_ROLE_OPTIONS : LOGIN_ROLE_OPTIONS
+    const next = roleOptionsHtml(options, current)
     if (select.innerHTML !== next) select.innerHTML = next
     const label = select.closest('label')?.querySelector('span')
     if (label) label.textContent = 'Account Type'
@@ -26,7 +28,7 @@ function syncAuthRoleOptions() {
   const loginTitle = document.querySelector('#loginForm h2')
   if (loginTitle) loginTitle.textContent = 'Login as Student, Staff or Admin'
   const signupTitle = document.querySelector('#signupForm h2')
-  if (signupTitle) signupTitle.textContent = 'Student / Staff / Admin Sign Up'
+  if (signupTitle) signupTitle.textContent = 'Student, Teacher or Mezzo Staff Sign Up'
 }
 function hideAdminNavButton() {
   document.querySelectorAll('[data-target="admin"], [data-role-button="admin"], [data-role-button="teacher"]').forEach(btn => {

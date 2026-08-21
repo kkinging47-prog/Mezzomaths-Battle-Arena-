@@ -22,7 +22,7 @@ The app is designed for competitive mathematics learning: students practise math
 - Added a visible **Subscription** button in the main navigation and homepage hero actions.
 - Added online 1v1 matchmaking scan before each online match. The app searches for a live learner on the same class/curriculum/topic, then falls back to MathBot if no live participant is found.
 - Added optional Supabase `battle_match_queue` migration for live online participant discovery.
-- Added welcome email sending after student sign-up through a Vercel email endpoint.
+- New accounts are auto-confirmed securely on the server and receive immediate access without a confirmation email.
 - Added automatic payment receipt emails after successful Paystack verification.
 - Added subscription pop-ups after the player completes the first **3 game levels** or 3 completed sets.
 - Added five subscription plans: Weekly Starter, Student Monthly, Term Pass, Annual Champion and School Pack.
@@ -115,13 +115,7 @@ Then redeploy. The frontend calls `/api/paystack-initialize`, redirects the user
 
 ## Email Setup
 
-The app includes:
-
-```bash
-api/send-welcome-email.js
-```
-
-It also sends Paystack receipts from:
+Signup does not send a confirmation or welcome email. Paystack can still send payment receipts from:
 
 ```bash
 api/paystack-verify.js
@@ -134,7 +128,7 @@ RESEND_API_KEY=re_your_resend_api_key
 RESEND_FROM_EMAIL=Mezzo Maths <noreply@yourdomain.com>
 ```
 
-If `RESEND_API_KEY` is missing, sign-up and payment will still work, but emails will be skipped.
+If `RESEND_API_KEY` is missing, sign-up will still work and payment receipts will be skipped.
 
 ## Supabase Setup
 
@@ -169,7 +163,11 @@ supabase/migrations/004_battle_match_queue.sql
 ```bash
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-public-anon-key
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-server-only-service-role-key
 ```
+
+`SUPABASE_SERVICE_ROLE_KEY` is used only by Vercel server functions to create auto-confirmed accounts without sending confirmation emails and to score protected assignments. Never prefix this secret with `VITE_` or expose it in browser code.
 
 8. Redeploy the latest commit.
 
@@ -239,7 +237,7 @@ Output Directory: dist
 - Online matchmaking enhancer: `src/online-matchmaking-enhancer.js`
 - Sign-up email enhancer: `src/signup-email-enhancer.js`
 - Paystack API routes: `api/paystack-initialize.js`, `api/paystack-verify.js`
-- Welcome email API route: `api/send-welcome-email.js`
+- Signup accounts are auto-confirmed server-side without an email confirmation step.
 - Supabase client: `src/supabaseClient.js`
 - Supabase schema: `supabase/schema.sql`
 - Supabase migrations: `supabase/migrations/002_admin_ai_question_tools.sql`, `supabase/migrations/003_smart_board_contests.sql`, `supabase/migrations/004_battle_match_queue.sql`
