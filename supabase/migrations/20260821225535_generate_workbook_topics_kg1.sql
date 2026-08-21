@@ -1,0 +1,11 @@
+select private.generate_workbook_topic_questions('KG1','Identify and Count');
+select private.generate_workbook_topic_questions('KG1','Count and recognize');
+select private.generate_workbook_topic_questions('KG1','Numbers before and after');
+select private.generate_workbook_topic_questions('KG1','Multiply and Color');
+select private.generate_workbook_topic_questions('KG1','Number Identification');
+select private.generate_workbook_topic_questions('KG1','Finger Counting');
+select private.generate_workbook_topic_questions('KG1','Counting Numbers');
+select private.generate_workbook_topic_questions('KG1','Count and Color');
+select private.generate_workbook_topic_questions('KG1','Multiplication Table');
+select private.generate_workbook_topic_questions('KG1','Adding with Objects');
+select private.generate_workbook_topic_questions('KG1','Trace and Add');
