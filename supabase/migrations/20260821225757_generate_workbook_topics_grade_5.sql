@@ -1,0 +1,16 @@
+select private.generate_workbook_topic_questions('Grade 5','Multiplying no’s ending with 0');
+select private.generate_workbook_topic_questions('Grade 5','Multiplying no’s ending with 1');
+select private.generate_workbook_topic_questions('Grade 5','Sharing in twos (2)');
+select private.generate_workbook_topic_questions('Grade 5','Sharing in nines (9)');
+select private.generate_workbook_topic_questions('Grade 5','Squaring no’s ending with 5');
+select private.generate_workbook_topic_questions('Grade 5','Squaring no’s ending with 4');
+select private.generate_workbook_topic_questions('Grade 5','Multiplying no’s between 100 & 110');
+select private.generate_workbook_topic_questions('Grade 5','Addition of consecutive no’s (5 & 6)');
+select private.generate_workbook_topic_questions('Grade 5','Divisibility Test (2,3 & 4)');
+select private.generate_workbook_topic_questions('Grade 5','Multiplying No’s close to 100');
+select private.generate_workbook_topic_questions('Grade 5','Multiplication by 22');
+select private.generate_workbook_topic_questions('Grade 5','Divisibility Rules ( 5 – 8)');
+select private.generate_workbook_topic_questions('Grade 5','Multiplication by four (4)');
+select private.generate_workbook_topic_questions('Grade 5','Multiplication by 0.5');
+select private.generate_workbook_topic_questions('Grade 5','Division by 0.5');
+select private.generate_workbook_topic_questions('Grade 5','Powers of Ten');
