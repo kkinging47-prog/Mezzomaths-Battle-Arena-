@@ -34,7 +34,7 @@ function syncPicker(select) {
 }
 
 function installRolePickers() {
-  document.querySelectorAll('#loginForm select[name="role"], #signupForm select[name="role"]').forEach(select => {
+  document.querySelectorAll('#signupForm select[name="role"]').forEach(select => {
     makeRolePicker(select)
     syncPicker(select)
   })
@@ -62,7 +62,7 @@ document.addEventListener('click', event => {
 }, true)
 
 document.addEventListener('change', event => {
-  if (event.target?.matches?.('#loginForm select[name="role"], #signupForm select[name="role"]')) syncPicker(event.target)
+  if (event.target?.matches?.('#signupForm select[name="role"]')) syncPicker(event.target)
 })
 
 const observer = new MutationObserver(queueInstall)
