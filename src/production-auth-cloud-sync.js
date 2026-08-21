@@ -44,6 +44,16 @@ function authErrorMessage(error, prefix = 'Login') {
   if (/invalid api key|api key/i.test(msg)) return `${prefix} failed because the Supabase anon/publishable key is invalid. Copy the correct key from Supabase Project Settings → API and redeploy Vercel.`
   return `${prefix} failed: ${msg}`
 }
+async function createAccountWithoutConfirmationEmail(fields) {
+  const response = await fetch('/api/create-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(fields)
+  })
+  const result = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(result.error || 'The account could not be created.')
+  return result
+}
 async function ensureSupabaseReachable(prefix = 'Login') {
   if (!isSupabaseConfigured || !supabase) {
     toast(`${prefix} is not connected to Supabase. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.`, 'error')
@@ -88,6 +98,7 @@ function profilePayload(formData = {}, user = null) {
     curriculum: formData.curriculum || user?.user_metadata?.curriculum || 'GES',
     academic_term: formData.academic_term || user?.user_metadata?.academic_term || 'Term 1',
     role,
+    approval_status: role === 'mezzo_staff' ? (formData.approval_status || user?.user_metadata?.approval_status || 'pending') : 'approved',
     avatar_url: user?.user_metadata?.avatar_url || null
   }
 }
@@ -124,14 +135,27 @@ async function handleSignup(form) {
     const password = String(f.password || '')
     if (!email || password.length < 6) { toast('Enter a valid email and a password of at least 6 characters.', 'error'); return false }
     const role = cleanRole(f.role, email)
-    const metadata = { ...f, role }
-    delete metadata.password
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: metadata } })
+    toast('Creating your free account…', 'info')
+    try {
+      await createAccountWithoutConfirmationEmail({ ...f, email, password, role })
+    } catch (createError) {
+      const setup = /not configured/i.test(createError.message || '')
+      toast(setup ? 'Account creation is not configured. Add SUPABASE_SERVICE_ROLE_KEY to Vercel.' : `Signup failed: ${createError.message}`, 'error', 10000)
+      return false
+    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { toast(authErrorMessage(error, 'Signup'), 'error'); return false }
-    if (!data.session) { toast('Account created. Check email to confirm, then log in.', 'warn'); return true }
+    if (!data.session) { toast('Account created, but automatic login was not completed. Please sign in.', 'warn'); return true }
     const profile = await upsertProfile(profilePayload({ ...f, role }, data.user))
     await recordAccessEvent(data.user, profile, 'signup')
     activateLocalProfile(profile)
+    if (profile.role === 'mezzo_staff' && profile.approval_status !== 'approved') {
+      await supabase.auth.signOut()
+      localStorage.removeItem(PROFILE_KEY)
+      toast('Your Mezzo Staff account was created and is awaiting administrator approval.', 'warn', 10000)
+      document.querySelector('[data-target="auth"]')?.click()
+      return true
+    }
     toast(`Welcome ${profile.full_name}. Your account is now saved in Supabase.`, 'success')
     document.querySelector('[data-target="dashboard"]')?.click()
     queueCloudSync()
@@ -156,10 +180,12 @@ async function handleLogin(form) {
     const password = String(f.password || '')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { toast(authErrorMessage(error, 'Login'), 'error'); return false }
-    let profile = await loadProfile(data.user)
-    const wantedRole = cleanRole(f.role || profile?.role, email)
-    if (profile && wantedRole !== profile.role && (wantedRole !== 'admin' || ADMIN_EMAILS.has(email))) {
-      profile = await upsertProfile({ ...profile, role: wantedRole })
+    const profile = await loadProfile(data.user)
+    if (profile?.role === 'mezzo_staff' && profile?.approval_status !== 'approved') {
+      await supabase.auth.signOut()
+      localStorage.removeItem(PROFILE_KEY)
+      toast('Your Mezzo Staff account is awaiting administrator approval. Please contact Mezzo Maths.', 'warn', 10000)
+      return false
     }
     activateLocalProfile(profile)
     await recordAccessEvent(data.user, profile, 'login')
