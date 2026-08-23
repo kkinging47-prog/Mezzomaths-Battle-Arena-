@@ -3,8 +3,15 @@ import { createClient } from '@supabase/supabase-js'
 const cleanEnv = value => String(value || '').trim()
 const placeholder = value => !value || /your-|project-ref|anon-key|publishable-key/i.test(value)
 
-export const supabaseUrl = cleanEnv(import.meta.env.VITE_SUPABASE_URL)
-export const supabaseAnonKey = cleanEnv(import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+// These are public browser credentials for the Mezzo Maths project. Keeping a
+// checked-in fallback prevents a Vercel build with missing VITE variables from
+// silently disabling Auth. RLS remains the authorization boundary; elevated
+// service/secret keys must never be added here.
+const MEZZO_SUPABASE_URL = 'https://dnxzjtnrbvrrtfnwwcvp.supabase.co'
+const MEZZO_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_TK_TuzfRclOIYZXaM3dStA_MeFpzv5f'
+
+export const supabaseUrl = cleanEnv(import.meta.env.VITE_SUPABASE_URL || MEZZO_SUPABASE_URL)
+export const supabaseAnonKey = cleanEnv(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || MEZZO_SUPABASE_PUBLISHABLE_KEY)
 
 export const supabaseConfig = {
   url: supabaseUrl,
