@@ -19,10 +19,10 @@ function clean(value, limit = 160) {
   return String(value || '').trim().slice(0, limit)
 }
 
-function safeRole() {
-  // Public signup never grants privileged roles. Administrators can promote
-  // verified accounts later from the protected admin workflow.
-  return 'student'
+function safeRole(value) {
+  // Public signup may create learner and teaching accounts, but can never
+  // create an administrator. Mezzo tutors remain blocked pending approval.
+  return ['student', 'teacher', 'mezzo_staff'].includes(value) ? value : 'student'
 }
 
 export default async function handler(req, res) {
@@ -39,7 +39,8 @@ export default async function handler(req, res) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address.' })
   if (password.length < 6 || password.length > 128) return res.status(400).json({ error: 'Password must contain 6 to 128 characters.' })
 
-  const role = safeRole()
+  const role = safeRole(clean(body.role, 40))
+  const approvalStatus = role === 'mezzo_staff' ? 'pending' : 'approved'
   const metadata = {
     full_name: clean(body.full_name),
     school_name: clean(body.school_name),
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
     const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
       method: 'POST',
       headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, email_confirm: true, user_metadata: metadata })
+      body: JSON.stringify({ email, password, email_confirm: true, user_metadata: metadata, app_metadata: { mezzo_role: role } })
     })
     const result = await response.json().catch(() => ({}))
     if (!response.ok) {
@@ -68,7 +69,16 @@ export default async function handler(req, res) {
       const status = /already|registered|exists/i.test(message) ? 409 : response.status
       return res.status(status).json({ error: status === 409 ? 'An account already exists for this email. Please sign in.' : message })
     }
-    return res.status(201).json({ created: true, user: { id: result.id, email: result.email } })
+    const profileResponse = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(result.id)}`, {
+      method: 'PATCH',
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ role, approval_status: approvalStatus })
+    })
+    if (!profileResponse.ok) {
+      const profileError = await profileResponse.json().catch(() => ({}))
+      return res.status(500).json({ error: profileError.message || 'Account was created, but its account type could not be saved. Contact Mezzo support.' })
+    }
+    return res.status(201).json({ created: true, role, approval_status: approvalStatus, user: { id: result.id, email: result.email } })
   } catch (error) {
     return res.status(502).json({ error: error.message || 'Account service is temporarily unavailable.' })
   }
