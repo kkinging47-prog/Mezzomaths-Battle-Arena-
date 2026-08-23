@@ -1,6 +1,6 @@
 import './admin-staff-branding.css'
 
-const SIGNUP_ROLE_OPTIONS = [['student', 'Student'], ['teacher', 'Teacher'], ['mezzo_staff', 'Mezzo Staff — approval required']]
+const SIGNUP_ROLE_OPTIONS = [['student', 'Student'], ['teacher', 'School Teacher'], ['mezzo_staff', 'Mezzo Tutor — approval required']]
 const ACCESS_KEY = 'mezzo_staff_access'
 const LOGO_KEY = 'mezzo_custom_logo'
 const DEFAULT_ACCESS = { home: true, dashboard: true, leaderboard: true, smartboard: false, battle: false, solo: false, bece: false, brain: true, prep: false, courses: true }
@@ -16,6 +16,12 @@ function escapeHtml(value = '') { return String(value).replace(/[&<>"]/g, c => (
 function roleOptionsHtml(options, selected = 'student') { return options.map(([value, label]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${label}</option>`).join('') }
 function toast(message) { const old = document.querySelector('.staff-admin-toast'); if (old) old.remove(); const node = document.createElement('div'); node.className = 'staff-admin-toast'; node.textContent = message; document.body.appendChild(node); setTimeout(() => node.remove(), 4200) }
 function syncAuthRoleOptions() {
+  document.querySelectorAll('#signupForm input[type="hidden"][name="role"]').forEach(input => {
+    const label = document.createElement('label')
+    label.className = 'field-group auth-account-type-field'
+    label.innerHTML = `<span>Account Type</span><select name="role">${roleOptionsHtml(SIGNUP_ROLE_OPTIONS, input.value || 'student')}</select><small>Mezzo Tutor accounts require administrator approval.</small>`
+    input.replaceWith(label)
+  })
   document.querySelectorAll('#signupForm select[name="role"]').forEach(select => {
     const current = select.value || 'student'
     const next = roleOptionsHtml(SIGNUP_ROLE_OPTIONS, current)
@@ -24,7 +30,7 @@ function syncAuthRoleOptions() {
     if (label) label.textContent = 'Account Type'
   })
   const signupTitle = document.querySelector('#signupForm h2')
-  if (signupTitle) signupTitle.textContent = 'Student, Teacher or Mezzo Staff Sign Up'
+  if (signupTitle) signupTitle.textContent = 'Student, Teacher or Mezzo Tutor Sign Up'
 }
 function hideAdminNavButton() {
   document.querySelectorAll('[data-target="admin"], [data-role-button="admin"], [data-role-button="teacher"]').forEach(btn => {

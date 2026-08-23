@@ -2,8 +2,8 @@ import './mobile-auth-role-fix.css'
 
 const ROLES = [
   ['student', 'Student', '🎓'],
-  ['teacher', 'Teacher', '👩🏾‍🏫'],
-  ['mezzo_staff', 'Mezzo Staff', '🧑🏾‍💼'],
+  ['teacher', 'School Teacher', '👩🏾‍🏫'],
+  ['mezzo_staff', 'Mezzo Tutor', '🧑🏾‍💼'],
   ['admin', 'Admin', '🛠️']
 ]
 
