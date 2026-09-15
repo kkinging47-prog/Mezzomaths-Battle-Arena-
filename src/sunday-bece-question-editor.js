@@ -283,7 +283,8 @@ async function saveQuestion() {
     if (result.error) throw result.error
     selectedId = result.data.id
     await loadQuestions(false)
-    document.querySelector('[data-sunday-question-editor]')?.outerHTML = editorHtml()
+    const panel = document.querySelector('[data-sunday-question-editor]')
+    if (panel) panel.outerHTML = editorHtml()
     renderList()
     toast('Sunday BECE question saved with maths symbols and images.', 'success')
   } catch (error) {
@@ -297,7 +298,8 @@ async function archiveQuestion() {
   if (error) { toast(`Archive failed: ${error.message}`, 'error'); return }
   selectedId = null
   await loadQuestions(false)
-  document.querySelector('[data-sunday-question-editor]')?.outerHTML = editorHtml()
+  const panel = document.querySelector('[data-sunday-question-editor]')
+  if (panel) panel.outerHTML = editorHtml()
   renderList()
   toast('Question archived.', 'success')
 }
