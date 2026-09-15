@@ -4,6 +4,22 @@
 create extension if not exists pgcrypto;
 
 -- 1) One official attempt per candidate contact per week.
+-- If duplicate attempts already exist, keep the best score/fastest time before adding the unique rule.
+with ranked_attempts as (
+  select
+    id,
+    row_number() over (
+      partition by week_start, lower(trim(contact))
+      order by score desc, time_taken_seconds asc nulls last, created_at asc
+    ) as rn
+  from public.bece_sunday_trial_attempts
+  where contact is not null and trim(contact) <> ''
+)
+delete from public.bece_sunday_trial_attempts a
+using ranked_attempts r
+where a.id = r.id
+  and r.rn > 1;
+
 create unique index if not exists bece_sunday_trial_one_contact_per_week_idx
   on public.bece_sunday_trial_attempts (week_start, lower(trim(contact)))
   where contact is not null and trim(contact) <> '';
