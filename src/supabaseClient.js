@@ -3,15 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 const cleanEnv = value => String(value || '').trim()
 const placeholder = value => !value || /your-|project-ref|anon-key|publishable-key/i.test(value)
 
-// These are public browser credentials for the Mezzo Maths project. Keeping a
-// checked-in fallback prevents a Vercel build with missing VITE variables from
-// silently disabling Auth. RLS remains the authorization boundary; elevated
-// service/secret keys must never be added here.
-const MEZZO_SUPABASE_URL = 'https://dnxzjtnrbvrrtfnwwcvp.supabase.co'
-const MEZZO_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_TK_TuzfRclOIYZXaM3dStA_MeFpzv5f'
-
-export const supabaseUrl = cleanEnv(import.meta.env.VITE_SUPABASE_URL || MEZZO_SUPABASE_URL)
-export const supabaseAnonKey = cleanEnv(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || MEZZO_SUPABASE_PUBLISHABLE_KEY)
+export const supabaseUrl = cleanEnv(import.meta.env.VITE_SUPABASE_URL)
+export const supabaseAnonKey = cleanEnv(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY)
 
 export const supabaseConfig = {
   url: supabaseUrl,
@@ -28,6 +21,7 @@ export const supabaseConfig = {
 export const isSupabaseConfigured = Boolean(
   supabaseConfig.hasUrl &&
   supabaseConfig.hasKey &&
+  supabaseConfig.validUrl &&
   !supabaseConfig.urlLooksLikePlaceholder &&
   !supabaseConfig.keyLooksLikePlaceholder
 )
@@ -46,14 +40,7 @@ export async function checkSupabaseConnection() {
   if (!isSupabaseConfigured || !supabase) {
     return {
       ok: false,
-      message: 'Supabase environment variables are missing or still contain placeholder values.',
-      config: supabaseConfig
-    }
-  }
-  if (!supabaseConfig.validUrl) {
-    return {
-      ok: false,
-      message: 'VITE_SUPABASE_URL does not look like a Supabase project URL. It must be like https://your-project-ref.supabase.co',
+      message: 'Supabase environment variables are missing, invalid, or still contain placeholder values. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.',
       config: supabaseConfig
     }
   }
