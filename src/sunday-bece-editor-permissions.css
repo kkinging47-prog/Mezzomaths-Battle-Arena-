@@ -1,0 +1,301 @@
+.sunday-editor-permission-panel,
+.sunday-special-admin-editor {
+  margin: 24px 0;
+  border: 1px solid rgba(59, 130, 246, .24);
+  box-shadow: 0 22px 55px rgba(15, 23, 42, .16);
+}
+
+.sunday-editor-permission-head,
+.sunday-special-editor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.sunday-editor-permission-head span,
+.sunday-special-editor-head span {
+  display: inline-flex;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(250, 204, 21, .18);
+  color: #92400e;
+  font-weight: 800;
+  font-size: .78rem;
+}
+
+.sunday-editor-permission-head h2,
+.sunday-special-editor-head h2 {
+  margin: 8px 0 6px;
+  color: #0f172a;
+}
+
+.sunday-editor-permission-grid,
+.sunday-special-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.sunday-editor-permission-grid label,
+.sunday-special-form-grid label {
+  display: grid;
+  gap: 6px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.sunday-editor-permission-grid label span,
+.sunday-special-form-grid label span {
+  font-size: .82rem;
+  color: #475569;
+}
+
+.sunday-editor-permission-grid input,
+.sunday-editor-permission-grid textarea,
+.sunday-special-form-grid input,
+.sunday-special-form-grid select,
+.sunday-special-form-grid textarea,
+.sunday-special-filter input,
+.sunday-special-filter select {
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px 13px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  width: 100%;
+}
+
+.sunday-editor-permission-grid textarea,
+.sunday-special-form-grid textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.sunday-editor-permission-grid .wide,
+.sunday-special-form-grid .wide,
+.sunday-special-form-grid .full {
+  grid-column: 1 / -1;
+}
+
+.sunday-editor-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.sunday-editor-row,
+.sunday-special-question-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .86);
+}
+
+.sunday-editor-row small,
+.sunday-special-question-row small {
+  display: block;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.sunday-editor-row em {
+  font-style: normal;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+.sunday-editor-row em.active { background: #dcfce7; color: #166534; }
+.sunday-editor-row em.revoked { background: #fee2e2; color: #991b1b; }
+
+.sunday-special-toolbar {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(59, 130, 246, .22);
+  border-radius: 18px;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(239,246,255,.9), rgba(255,251,235,.9));
+}
+
+.sunday-special-toolbar strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+
+.sunday-symbol-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.sunday-symbol-group {
+  display: grid;
+  gap: 6px;
+}
+
+.sunday-symbol-group span {
+  color: #475569;
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+.sunday-symbol-group div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sunday-symbol-group button,
+.sunday-mini-button {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: white;
+  color: #0f172a;
+  font-weight: 900;
+  min-width: 38px;
+  padding: 7px 9px;
+  cursor: pointer;
+}
+
+.sunday-special-image-preview,
+.sunday-special-live-preview {
+  grid-column: 1 / -1;
+  border: 1px dashed #94a3b8;
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(248,250,252,.85);
+}
+
+.sunday-special-image-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.sunday-special-image-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.sunday-special-image-card img {
+  width: 100%;
+  height: 92px;
+  object-fit: contain;
+  background: #f8fafc;
+}
+
+.sunday-special-image-card b {
+  display: block;
+  padding: 7px;
+  font-size: .75rem;
+}
+
+.sunday-special-actions,
+.sunday-editor-permission-actions,
+.sunday-special-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.sunday-special-filter {
+  justify-content: space-between;
+}
+
+.sunday-special-filter input { max-width: 360px; }
+.sunday-special-filter select { max-width: 220px; }
+
+.sunday-special-preview-question {
+  font-size: 1.08rem;
+  line-height: 1.65;
+  color: #0f172a;
+  white-space: pre-wrap;
+}
+
+.sunday-special-preview-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.sunday-special-preview-options span {
+  padding: 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+}
+
+.sunday-special-question-list {
+  display: grid;
+  gap: 10px;
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.sunday-special-question-row strong {
+  color: #0f172a;
+}
+
+.sunday-special-question-row p {
+  margin: 4px 0 0;
+  color: #475569;
+  max-width: 780px;
+}
+
+.sunday-editor-lock {
+  padding: 16px;
+  border-radius: 18px;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  font-weight: 800;
+}
+
+.sunday-editor-permission-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 99999;
+  max-width: 360px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #0f172a;
+  color: white;
+  box-shadow: 0 18px 45px rgba(15,23,42,.35);
+  font-weight: 800;
+}
+
+.sunday-editor-permission-toast.success { background: #166534; }
+.sunday-editor-permission-toast.error { background: #991b1b; }
+.sunday-editor-permission-toast.warn { background: #92400e; }
+
+@media (max-width: 860px) {
+  .sunday-editor-permission-head,
+  .sunday-special-editor-head,
+  .sunday-editor-row,
+  .sunday-special-question-row,
+  .sunday-special-filter {
+    display: grid;
+  }
+  .sunday-editor-permission-grid,
+  .sunday-special-form-grid,
+  .sunday-symbol-groups,
+  .sunday-special-image-grid,
+  .sunday-special-preview-options {
+    grid-template-columns: 1fr;
+  }
+}
