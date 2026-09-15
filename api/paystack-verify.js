@@ -1,13 +1,13 @@
 const PLANS = {
-  'weekly-starter': { name: 'Weekly Starter', amount: 10, period: 'week', category: 'individual' },
-  'monthly-student': { name: 'Student Monthly', amount: 35, period: 'month', category: 'individual' },
-  'term-pass': { name: 'Term Pass', amount: 90, period: 'term', category: 'individual' },
-  'annual-champion': { name: 'Annual Champion', amount: 300, period: 'year', category: 'individual' },
-  'school-starter-50': { name: 'School Starter', amount: 750, period: 'month', category: 'school', student_range: '1-50 students' },
-  'school-growth-150': { name: 'School Growth', amount: 1800, period: 'month', category: 'school', student_range: '51-150 students' },
-  'school-pro-300': { name: 'School Pro', amount: 3000, period: 'month', category: 'school', student_range: '151-300 students' },
-  'school-premium-500': { name: 'School Premium', amount: 4500, period: 'month', category: 'school', student_range: '301-500 students' },
-  'school-enterprise-1000': { name: 'School Enterprise', amount: 7500, period: 'month', category: 'school', student_range: '501-1000 students' }
+  'weekly-starter': { name: 'Weekly Starter', amount: 10, period: 'week', category: 'individual', days: 7 },
+  'monthly-student': { name: 'Student Monthly', amount: 35, period: 'month', category: 'individual', days: 30 },
+  'term-pass': { name: 'Term Pass', amount: 90, period: 'term', category: 'individual', days: 90 },
+  'annual-champion': { name: 'Annual Champion', amount: 300, period: 'year', category: 'individual', days: 365 },
+  'school-starter-50': { name: 'School Starter', amount: 750, period: 'month', category: 'school', student_range: '1-50 students', days: 30 },
+  'school-growth-150': { name: 'School Growth', amount: 1800, period: 'month', category: 'school', student_range: '51-150 students', days: 30 },
+  'school-pro-300': { name: 'School Pro', amount: 3000, period: 'month', category: 'school', student_range: '151-300 students', days: 30 },
+  'school-premium-500': { name: 'School Premium', amount: 4500, period: 'month', category: 'school', student_range: '301-500 students', days: 30 },
+  'school-enterprise-1000': { name: 'School Enterprise', amount: 7500, period: 'month', category: 'school', student_range: '501-1000 students', days: 30 }
 }
 
 async function sendReceiptEmail({ transaction, plan, planId, reference }) {
@@ -38,6 +38,53 @@ async function sendReceiptEmail({ transaction, plan, planId, reference }) {
   return { sent: true, id: data.id }
 }
 
+function expiryFrom(plan, paidAt) {
+  const start = paidAt ? new Date(paidAt) : new Date()
+  if (!Number.isFinite(start.getTime())) return null
+  start.setUTCDate(start.getUTCDate() + Number(plan.days || 30))
+  return start.toISOString()
+}
+
+async function saveSubscriptionRecord({ transaction, plan, planId, reference }) {
+  const supabaseUrl = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim().replace(/\/$/, '')
+  const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
+  if (!supabaseUrl || !serviceKey) return { saved: false, skipped: 'SUPABASE_SERVICE_ROLE_KEY is not configured' }
+
+  const email = String(transaction?.customer?.email || transaction?.metadata?.email || '').trim().toLowerCase()
+  if (!email) return { saved: false, skipped: 'No payment email found' }
+
+  const paidAt = transaction.paid_at || new Date().toISOString()
+  const payload = {
+    email,
+    reference,
+    plan_id: planId,
+    plan_name: plan.name,
+    category: plan.category,
+    student_range: plan.student_range || '',
+    amount: plan.amount,
+    currency: transaction.currency || 'GHS',
+    status: 'active',
+    paid_at: paidAt,
+    expires_at: expiryFrom(plan, paidAt),
+    raw_transaction: transaction,
+    updated_at: new Date().toISOString()
+  }
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/subscription_records`, {
+    method: 'POST',
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=representation'
+    },
+    body: JSON.stringify(payload)
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) return { saved: false, error: data.message || 'Subscription record could not be saved' }
+  return { saved: true, record: Array.isArray(data) ? data[0] : data }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
   const secret = process.env.PAYSTACK_SECRET_KEY
@@ -60,6 +107,9 @@ export default async function handler(req, res) {
     if (transaction.status !== 'success') return res.status(200).json({ status: transaction.status, reference })
     if (Number(transaction.amount) !== plan.amount * 100) return res.status(400).json({ error: 'Payment amount does not match selected plan' })
 
+    let subscription = { saved: false }
+    try { subscription = await saveSubscriptionRecord({ transaction, plan, planId, reference }) } catch (subscriptionError) { subscription = { saved: false, error: subscriptionError.message } }
+
     let receipt = { sent: false }
     try { receipt = await sendReceiptEmail({ transaction, plan, planId, reference }) } catch (emailError) { receipt = { sent: false, error: emailError.message } }
 
@@ -73,6 +123,8 @@ export default async function handler(req, res) {
       student_range: plan.student_range || '',
       currency: transaction.currency,
       paid_at: transaction.paid_at,
+      expires_at: subscription.record?.expires_at || expiryFrom(plan, transaction.paid_at),
+      subscription_record: subscription,
       receipt_email: receipt
     })
   } catch (error) {
