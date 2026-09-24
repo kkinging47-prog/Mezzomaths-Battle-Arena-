@@ -1,5 +1,5 @@
 import './role-safe-signup-handler.css'
-import { supabase, isSupabaseConfigured, checkSupabaseConnection, supabaseConfig } from './supabaseClient.js'
+import { supabase, isSupabaseConfigured, checkSupabaseConnection } from './supabaseClient.js'
 
 const PROFILE_KEY = 'mezzo_profile'
 const ADMIN_EMAILS = new Set([
@@ -58,12 +58,12 @@ function profileFromFields(fields, user, fallback = {}) {
 }
 async function ensureReachable() {
   if (!supabase || !isSupabaseConfigured) {
-    toast('Signup is not connected to Supabase. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.', 'error')
+    toast('Account services are temporarily unavailable. Please try again shortly.', 'error')
     return false
   }
   const check = await checkSupabaseConnection()
   if (!check.ok) {
-    toast(`Signup cannot reach Supabase: ${check.message} Current URL: ${supabaseConfig.maskedUrl}.`, 'error')
+    toast(check.message || 'Account services are temporarily unavailable. Please try again shortly.', 'error')
     return false
   }
   return true
