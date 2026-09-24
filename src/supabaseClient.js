@@ -40,7 +40,7 @@ export async function checkSupabaseConnection() {
   if (!isSupabaseConfigured || !supabase) {
     return {
       ok: false,
-      message: 'Supabase environment variables are missing, invalid, or still contain placeholder values. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.',
+      message: 'The online service is temporarily unavailable. Please try again shortly.',
       config: supabaseConfig
     }
   }
@@ -53,13 +53,13 @@ export async function checkSupabaseConnection() {
       }
     })
     if (!response.ok && ![401, 403, 404].includes(response.status)) {
-      return { ok: false, message: `Supabase responded with HTTP ${response.status}.`, config: supabaseConfig }
+      return { ok: false, message: 'The online service is temporarily unavailable. Please try again shortly.', config: supabaseConfig }
     }
-    return { ok: true, message: `Supabase Auth is reachable at ${supabaseConfig.maskedUrl}.`, config: supabaseConfig }
+    return { ok: true, message: 'Online services are available.', config: supabaseConfig }
   } catch (error) {
     return {
       ok: false,
-      message: `Browser cannot reach Supabase Auth: ${error.message || 'network request failed'}.`,
+      message: 'The online service is temporarily unavailable. Check your internet connection and try again.',
       config: supabaseConfig
     }
   }
