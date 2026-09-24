@@ -1,5 +1,5 @@
 import './production-auth-cloud-sync.css'
-import { supabase, isSupabaseConfigured, checkSupabaseConnection, supabaseConfig } from './supabaseClient.js'
+import { supabase, isSupabaseConfigured, checkSupabaseConnection } from './supabaseClient.js'
 
 const PROFILE_KEY = 'mezzo_profile'
 const CLOUD_SIG_KEY = 'mezzo_cloud_sync_signatures'
@@ -37,7 +37,7 @@ function failedFetchMessage(prefix = 'Login') {
 function authErrorMessage(error, prefix = 'Login') {
   const msg = error?.message || String(error || 'Unknown error')
   if (/failed to fetch|networkerror|load failed|fetch/i.test(msg)) return failedFetchMessage(prefix)
-  if (/invalid api key|api key/i.test(msg)) return `${prefix} failed because the Supabase anon/publishable key is invalid. Copy the correct key from Supabase Project Settings → API and redeploy Vercel.`
+  if (/invalid api key|api key/i.test(msg)) return `${prefix} is temporarily unavailable. Please try again shortly.`
   return `${prefix} failed: ${msg}`
 }
 async function createAccountWithoutConfirmationEmail(fields) {
@@ -52,12 +52,12 @@ async function createAccountWithoutConfirmationEmail(fields) {
 }
 async function ensureSupabaseReachable(prefix = 'Login') {
   if (!isSupabaseConfigured || !supabase) {
-    toast(`${prefix} is not connected to Supabase. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.`, 'error')
+    toast(`${prefix} is temporarily unavailable. Please try again shortly.`, 'error')
     return false
   }
   const check = await checkSupabaseConnection()
   if (!check.ok) {
-    toast(`${prefix} blocked: ${check.message} Current URL: ${supabaseConfig.maskedUrl}.`, 'error', 9000)
+    toast(check.message || `${prefix} is temporarily unavailable. Please try again shortly.`, 'error', 9000)
     return false
   }
   return true
@@ -134,7 +134,7 @@ async function handleSignup(form) {
       await createAccountWithoutConfirmationEmail({ ...f, email, password, role })
     } catch (createError) {
       const setup = /not configured/i.test(createError.message || '')
-      toast(setup ? 'Account creation is not configured. Add SUPABASE_SERVICE_ROLE_KEY to Vercel.' : `Signup failed: ${createError.message}`, 'error', 10000)
+      toast(setup ? 'Account creation is temporarily unavailable. Please try again shortly.' : `Signup failed: ${createError.message}`, 'error', 10000)
       return false
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -150,7 +150,7 @@ async function handleSignup(form) {
       document.querySelector('[data-target="auth"]')?.click()
       return true
     }
-    toast(`Welcome ${profile.full_name}. Your account is now saved in Supabase.`, 'success')
+    toast(`Welcome ${profile.full_name}. Your account is ready.`, 'success')
     document.querySelector('[data-target="dashboard"]')?.click()
     queueCloudSync()
     return true
@@ -183,7 +183,7 @@ async function handleLogin(form) {
     }
     activateLocalProfile(profile)
     await recordAccessEvent(data.user, profile, 'login')
-    toast(`Live login successful as ${profile.role}.`, 'success')
+    toast(`Login successful as ${profile.role}.`, 'success')
     document.querySelector(`[data-target="${profile.role === 'admin' ? 'admin' : 'dashboard'}"]`)?.click()
     queueCloudSync()
     return true
@@ -291,7 +291,7 @@ function addLogoutAndStatus() {
     if (!profile) nav.querySelectorAll('[data-live-logout]').forEach(button => button.remove())
   })
   const dash = document.querySelector('.dashboard-screen .dashboard-hero, .admin-screen .dashboard-hero')
-  if (dash && profile && !dash.querySelector('[data-live-account-status]')) dash.insertAdjacentHTML('beforeend', `<div class="live-account-status" data-live-account-status="true"><b>✅ Live database account</b><span>${escapeHtml(profile.email || '')} • ${escapeHtml(profile.role || 'student')}</span></div>`)
+  if (dash && profile && !dash.querySelector('[data-live-account-status]')) dash.insertAdjacentHTML('beforeend', `<div class="live-account-status" data-live-account-status="true"><b>✅ Account connected</b><span>${escapeHtml(profile.email || '')} • ${escapeHtml(profile.role || 'student')}</span></div>`)
 }
 function displayName(profile) {
   const fullName = String(profile?.full_name || '').trim()
