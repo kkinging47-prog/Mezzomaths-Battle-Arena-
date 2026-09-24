@@ -123,7 +123,7 @@ async function startTrial() {
     saveJson(ACTIVE_KEY, active)
     renderQuestion()
   } catch (error) {
-    shell(`<section class="sunday-report light-card"><h2>Trial could not start</h2><p>${esc(error.message || 'Please try again shortly.')}</p><button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button></section>`)
+    shell(`<section class="sunday-report light-card"><h2>Trial temporarily unavailable</h2><p>We could not start the trial right now. Please check your connection and try again shortly.</p><button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button></section>`)
   }
 }
 function renderQuestion() {
@@ -160,7 +160,7 @@ async function answer(letter) {
     active.selected = ''
     active.feedback = null
     saveJson(ACTIVE_KEY, active)
-    alert(error.message || 'Unable to verify this answer. Please try again.')
+    alert('We could not verify your answer right now. Please check your connection and try again.')
     renderQuestion()
   }
 }
