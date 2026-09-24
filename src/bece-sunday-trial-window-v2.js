@@ -39,54 +39,18 @@ function fmt(ms) {
 function candidate() { return readJson(CANDIDATE_KEY, null) }
 function attempts() { return readJson(ATTEMPTS_KEY, []) }
 function currentAttempt() { return attempts().find(a => a.week_start === weekStartIso()) }
-function normalise(q = {}) {
-  const options = q.options || [q.option_a, q.option_b, q.option_c, q.option_d]
-  return {
-    id: q.id || `q_${Math.random().toString(16).slice(2)}`,
-    topic: q.topic || 'BECE Mathematics',
-    topic_area: q.topic_area || q.topic || 'BECE Mathematics',
-    question_text: q.question_text || q.q || q.question || '',
-    question_image_url: q.question_image_url || q.image_url || '',
-    options: [options?.[0] || '', options?.[1] || '', options?.[2] || '', options?.[3] || ''],
-    option_image_urls: q.option_image_urls || [q.option_a_image_url || '', q.option_b_image_url || '', q.option_c_image_url || '', q.option_d_image_url || ''],
-    correct_answer: String(q.correct_answer || q.answer || 'A').toUpperCase().slice(0, 1),
-    explanation: q.explanation || 'Review the method and practise similar BECE objective questions.'
-  }
-}
-function localPool() {
-  const bece = readJson('mezzo_bece_admin_bank', []).map(normalise)
-  const bank = readJson('mezzo_question_bank', [])
-    .filter(q => /grade 9|jhs 3|basic 9/i.test(q.class_level || '') || /bece|algebra|geometry|statistics|aptitude|mental/i.test(q.topic || ''))
-    .map(normalise)
-  const pool = [...bece, ...bank].filter(q => q.question_text && q.options.every(Boolean))
-  if (pool.length) return pool
-  const sample = [
-    ['Algebra','If 3x + 5 = 20, find x.',['3','5','7','15'],'B','3x = 15, so x = 5.'],
-    ['Number','Simplify 24 ÷ 6 × 2.',['2','4','8','12'],'C','24 ÷ 6 = 4 and 4 × 2 = 8.'],
-    ['Geometry','The sum of angles in a triangle is',['90°','180°','270°','360°'],'B','Angles in a triangle add up to 180°.'],
-    ['Statistics','Find the mode of 2, 3, 3, 4, 5.',['2','3','4','5'],'B','The mode is the value that appears most often.'],
-    ['Fractions','1/2 + 1/4 =',['1/6','2/6','3/4','1/8'],'C','1/2 is 2/4, so 2/4 + 1/4 = 3/4.'],
-    ['Percentages','25% of 80 =',['15','20','25','30'],'B','25% is one quarter and one quarter of 80 is 20.'],
-    ['Aptitude','What comes next: 4, 8, 12, 16, ...',['18','20','22','24'],'B','The pattern adds 4 each time.'],
-    ['Measurement','Convert 3.5 km to metres.',['35 m','350 m','3500 m','35000 m'],'C','1 km = 1000 m, so 3.5 km = 3500 m.']
-  ]
-  return sample.map(([topic, question_text, options, correct_answer, explanation]) => normalise({ topic, topic_area: topic, question_text, options, correct_answer, explanation }))
-}
 async function loadTrialQuestions() {
-  let pool = []
-  if (supabase && isSupabaseConfigured) {
-    try {
-      const a = await supabase.from('bece_question_bank').select('*').limit(400)
-      if (!a.error && a.data?.length) pool.push(...a.data.map(x => normalise({ ...x, question_text: x.question_text, correct_answer: x.correct_answer })))
-    } catch {}
-    try {
-      const b = await supabase.from('question_bank').select('*').eq('is_active', true).or('class_level.eq.Grade 9,class_level.eq.JHS 3,class_level.eq.Basic 9,topic.ilike.%BECE%,topic.ilike.%Algebra%,topic.ilike.%Geometry%,topic.ilike.%Statistics%,topic.ilike.%Aptitude%').limit(600)
-      if (!b.error && b.data?.length) pool.push(...b.data.map(normalise))
-    } catch {}
+  const response = await fetch('/api/bece-sunday-start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ week_start: weekStartIso() })
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(data.error || 'Unable to load the secured Sunday BECE questions.')
+  return {
+    questions: Array.isArray(data.questions) ? data.questions : [],
+    sessionToken: data.session_token || ''
   }
-  pool = [...pool, ...localPool()].filter(q => q.question_text && q.options.every(Boolean))
-  while (pool.length && pool.length < QUESTION_COUNT) pool.push(...shuffle(pool).slice(0, Math.min(pool.length, QUESTION_COUNT - pool.length)))
-  return shuffle(pool).slice(0, QUESTION_COUNT)
 }
 function analyse(attempt) {
   const byTopic = {}
@@ -152,25 +116,53 @@ async function startTrial() {
   if (!trialWindow().open) return renderSundayHome()
   if (!candidate()) return renderSundayHome()
   if (currentAttempt()) return renderReport(currentAttempt())
-  active = { id: `trial_${Date.now()}`, week_start: weekStartIso(), candidate: candidate(), questions: await loadTrialQuestions(), index: 0, selected: '', score: 0, answers: [], started_at: Date.now() }
-  saveJson(ACTIVE_KEY, active)
-  renderQuestion()
+  try {
+    const secured = await loadTrialQuestions()
+    if (!secured.questions.length || !secured.sessionToken) throw new Error('The secured question service returned no questions.')
+    active = { id: `trial_${Date.now()}`, week_start: weekStartIso(), candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: 0, selected: '', feedback: null, score: 0, answers: [], started_at: Date.now() }
+    saveJson(ACTIVE_KEY, active)
+    renderQuestion()
+  } catch (error) {
+    shell(`<section class="sunday-report light-card"><h2>Trial could not start</h2><p>${esc(error.message || 'Please try again shortly.')}</p><button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button></section>`)
+  }
 }
 function renderQuestion() {
   active ||= readJson(ACTIVE_KEY, null)
   if (!active) return renderSundayHome()
   const q = active.questions[active.index]
-  shell(`<section class="sunday-live"><div class="sunday-live-top glass-card"><span>Question ${active.index + 1}/${active.questions.length}</span><strong>${esc(q.topic_area || q.topic)}</strong><em>${fmt(Date.now() - active.started_at)}</em></div><article class="sunday-question light-card"><h2>${esc(q.question_text)}</h2>${q.question_image_url ? `<img class="sunday-question-img" src="${q.question_image_url}" alt="Question diagram">` : ''}<div class="sunday-options">${q.options.map((op, i) => { const letter = String.fromCharCode(65 + i); const cls = active.selected === letter ? (letter === q.correct_answer ? 'correct' : 'wrong') : ''; return `<button class="${cls}" data-sunday-answer="${letter}"><b>${letter}</b>${q.option_image_urls?.[i] ? `<img src="${q.option_image_urls[i]}" alt="Option ${letter}">` : ''}<span>${esc(op)}</span></button>` }).join('')}</div></article>${active.selected ? `<section class="sunday-feedback ${active.selected === q.correct_answer ? 'correct' : 'wrong'}"><strong>${active.selected === q.correct_answer ? 'Correct' : 'Not correct'}</strong><p>Answer: ${esc(q.correct_answer)}. ${esc(q.explanation)}</p><button class="btn btn-gold" data-sunday-next="true">${active.index + 1 >= active.questions.length ? 'Finish Trial' : 'Next Question'} ▶</button></section>` : ''}</section>`)
+  const feedback = active.feedback
+  shell(`<section class="sunday-live"><div class="sunday-live-top glass-card"><span>Question ${active.index + 1}/${active.questions.length}</span><strong>${esc(q.topic_area || q.topic)}</strong><em>${fmt(Date.now() - active.started_at)}</em></div><article class="sunday-question light-card"><h2>${esc(q.question_text)}</h2>${q.question_image_url ? `<img class="sunday-question-img" src="${q.question_image_url}" alt="Question diagram">` : ''}<div class="sunday-options">${q.options.map((op, i) => { const letter = String.fromCharCode(65 + i); const cls = active.selected === letter && feedback ? (feedback.correct ? 'correct' : 'wrong') : ''; return `<button class="${cls}" data-sunday-answer="${letter}" ${active.selected ? 'disabled' : ''}><b>${letter}</b>${q.option_image_urls?.[i] ? `<img src="${q.option_image_urls[i]}" alt="Option ${letter}">` : ''}<span>${esc(op)}</span></button>` }).join('')}</div></article>${feedback ? `<section class="sunday-feedback ${feedback.correct ? 'correct' : 'wrong'}"><strong>${feedback.correct ? 'Correct' : 'Not correct'}</strong><p>Answer: ${esc(feedback.correct_answer)}. ${esc(feedback.explanation)}</p><button class="btn btn-gold" data-sunday-next="true">${active.index + 1 >= active.questions.length ? 'Finish Trial' : 'Next Question'} ▶</button></section>` : ''}</section>`)
 }
-function answer(letter) {
+async function answer(letter) {
   if (!active || active.selected) return
   const q = active.questions[active.index]
-  const correct = letter === q.correct_answer
-  if (correct) active.score++
   active.selected = letter
-  active.answers.push({ question_id: q.id, question_text: q.question_text, topic: q.topic, topic_area: q.topic_area, selected_answer: letter, correct_answer: q.correct_answer, correct })
-  saveJson(ACTIVE_KEY, active)
   renderQuestion()
+  try {
+    const response = await fetch('/api/bece-sunday-answer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_token: active.session_token, question_id: q.id, selected_answer: letter })
+    })
+    const result = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(result.error || 'Unable to verify this answer.')
+    if (result.correct) active.score++
+    active.session_token = result.session_token
+    active.feedback = {
+      correct: Boolean(result.correct),
+      correct_answer: result.correct_answer,
+      explanation: result.explanation
+    }
+    active.answers.push({ question_id: q.id, question_text: q.question_text, topic: q.topic, topic_area: q.topic_area, selected_answer: letter, correct_answer: result.correct_answer, correct: Boolean(result.correct) })
+    saveJson(ACTIVE_KEY, active)
+    renderQuestion()
+  } catch (error) {
+    active.selected = ''
+    active.feedback = null
+    saveJson(ACTIVE_KEY, active)
+    alert(error.message || 'Unable to verify this answer. Please try again.')
+    renderQuestion()
+  }
 }
 async function nextQuestion() {
   active ||= readJson(ACTIVE_KEY, null)
@@ -178,6 +170,7 @@ async function nextQuestion() {
   if (active.index + 1 >= active.questions.length) return finishTrial()
   active.index++
   active.selected = ''
+  active.feedback = null
   saveJson(ACTIVE_KEY, active)
   renderQuestion()
 }
