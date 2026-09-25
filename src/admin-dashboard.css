@@ -44,6 +44,8 @@
 .admin-filters label{display:grid;gap:6px;min-width:180px;color:#445b78;font-size:.78rem;font-weight:800}
 .admin-filters label:first-child{flex:1}
 .admin-filters input,.admin-filters select,.admin-user-fields input,.admin-user-fields select{width:100%;min-width:0;border:1px solid #c9d6e8;border-radius:8px;padding:10px;color:#1b2c44;background:#fff;font:inherit}
+.admin-dashboard select{color-scheme:light;color:#1b2c44!important;background-color:#fff!important}
+.admin-dashboard select option,.admin-dashboard select optgroup{color:#14243b!important;background-color:#fff!important}
 .admin-users{display:grid;gap:12px}
 .admin-users form{border:1px solid #dce5f1;border-radius:13px;padding:18px;background:#fff}
 .admin-user-label{display:grid;gap:4px;margin-bottom:15px}.admin-user-label strong{color:#142d50}.admin-user-label small{color:#61738b}
