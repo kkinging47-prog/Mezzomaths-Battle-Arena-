@@ -5,6 +5,7 @@ const areas = [
   ['overview','Overview','A snapshot of the app'],
   ['users','Users & roles','Edit accounts and status'],
   ['editors','BECE editors','Assign question editors'],
+  ['sunday','Sunday BECE sets','Plan, edit and schedule Sunday sets'],
   ['bece','BECE questions','Upload and edit questions'],
   ['control','Control centre','Settings and health'],
   ['questions','Question bank','Create and edit questions'],
@@ -36,7 +37,7 @@ function shell() {
 const stat = (value,label,sub='') => `<article class="admin-stat"><strong>${esc(value)}</strong><span>${esc(label)}</span><small>${esc(sub)}</small></article>`
 const warning = () => !isSupabaseConfigured ? '<p class="admin-note">The database is not connected; live figures and user editing are unavailable.</p>' : error ? `<p class="admin-note">${esc(error)}</p>` : ''
 function overview() {
-  return `${warning()}<div class="admin-stats">${stat(loaded?users.length:'—','Registered users')}${stat(loaded?users.filter(u=>u.role==='student').length:'—','Students')}${stat(loaded?users.filter(u=>['teacher','mezzo_staff'].includes(u.role)).length:'—','Teachers & tutors')}${stat(loaded?sessions.length:'—','Recent sessions','Latest 200')}</div><h2>Manage the platform</h2><div class="admin-links">${areas.slice(1,9).map(([key,label,desc])=>`<button type="button" data-admin-go="${key}"><strong>${esc(label)}</strong><span>${esc(desc)}</span><b>Open →</b></button>`).join('')}</div>`
+  return `${warning()}<div class="admin-stats">${stat(loaded?users.length:'—','Registered users')}${stat(loaded?users.filter(u=>u.role==='student').length:'—','Students')}${stat(loaded?users.filter(u=>['teacher','mezzo_staff'].includes(u.role)).length:'—','Teachers & tutors')}${stat(loaded?sessions.length:'—','Recent sessions','Latest 200')}</div><h2>Manage the platform</h2><div class="admin-links">${areas.slice(1,10).map(([key,label,desc])=>`<button type="button" data-admin-go="${key}"><strong>${esc(label)}</strong><span>${esc(desc)}</span><b>Open →</b></button>`).join('')}</div>`
 }
 function people() {
   const match=users.filter(u=>(filter==='all'||u.role===filter)&&[u.full_name,u.email,u.school_name,u.location].some(v=>String(v||'').toLowerCase().includes(search.toLowerCase())))
@@ -81,7 +82,7 @@ function show(root) {
     const m=mappings.find(([selector])=>child.matches(selector)||child.querySelector(selector))
     if(m)child.dataset.adminPanel=m[1]
     else if(!child.dataset.adminPanel)child.dataset.adminPanel='control'
-    child.hidden=child.matches('[data-sunday-permission-mount]') ? !['editors','bece'].includes(current) : child.dataset.adminPanel!==current
+    child.hidden=child.matches('[data-sunday-permission-mount]') ? !['editors','sunday'].includes(current) : child.dataset.adminPanel!==current
   }
 }
 function install(){
