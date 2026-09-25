@@ -66,6 +66,17 @@
 .admin-dashboard .question-manager .section-row span{color:#50698f}
 .admin-dashboard[data-area="editors"] [data-sunday-permission-mount] .sunday-set-manager,.admin-dashboard[data-area="editors"] [data-sunday-permission-mount] .sunday-set-editor-details{display:none!important}
 .admin-dashboard[data-area="sunday"] [data-sunday-permission-mount] [data-sunday-editor-admin-root]{display:none!important}
+.admin-screen:has([data-admin-dashboard]) > [data-donor-impact-dashboard]{display:none!important}
+.admin-dashboard:not([data-area="impact"]) [data-donor-impact-dashboard]{display:none!important}
+.admin-dashboard .question-manager .bank-row p,.admin-dashboard .question-manager .bank-row span{color:#243b5a!important}
+.admin-dashboard .question-manager .bank-row strong{color:#132d56!important}
+.admin-dashboard .question-manager .bank-row small{color:#405a7c!important}
+.admin-dashboard .professional-course-studio .course-studio-section,.admin-dashboard .professional-course-studio .course-studio-section h3{color:#172b49}
+.admin-dashboard .professional-course-studio .course-studio-section p{color:#475569}
+.admin-dashboard .sunday-set-editor-details .sunday-special-admin-editor{color:#172b49;background:#fff}
+.admin-dashboard .sunday-set-editor-details .sunday-special-editor-head p{color:#475569}
+.admin-dashboard .donor-impact h2,.admin-dashboard .donor-impact h3{color:#172b49}
+.admin-dashboard .donor-impact p,.admin-dashboard .donor-impact small{color:#475569}
 @media(max-width:850px){.admin-dashboard{grid-template-columns:1fr}.admin-side{padding:14px}.admin-brand{margin:0 0 10px;padding:0 0 10px}.admin-side nav{display:flex;overflow-x:auto;gap:3px}.admin-side button{white-space:nowrap;width:auto}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1100px){.admin-dashboard .exact-workbook-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-dashboard .course-studio-fields{grid-template-columns:1fr}}
 @media(max-width:850px){.admin-dashboard .course-studio-shell{grid-template-columns:1fr}.admin-dashboard .course-studio-shell>aside{display:none}}

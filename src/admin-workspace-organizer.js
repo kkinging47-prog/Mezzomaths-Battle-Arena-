@@ -65,6 +65,15 @@ function applyActive(root) {
 function install() {
   const root = document.querySelector('.admin-screen')
   if (!root || !isAdmin()) return
+  if (root.querySelector('[data-admin-dashboard]')) {
+    root.querySelector('[data-admin-workspace]')?.remove()
+    root.querySelectorAll('.admin-workspace-panel-hidden').forEach(node => {
+      node.classList.remove('admin-workspace-panel-hidden')
+      node.removeAttribute('aria-hidden')
+      node.removeAttribute('data-admin-workspace-group')
+    })
+    return
+  }
   root.querySelector('[data-admin-control-hub]')?.classList.add('admin-legacy-hub-hidden')
   if (!root.querySelector('[data-admin-workspace]')) {
     const hero = root.querySelector('.dashboard-hero') || root.firstElementChild
