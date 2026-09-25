@@ -69,9 +69,12 @@ function show(root) {
   root.querySelector('[data-admin-subtitle]').textContent=meta[2]
   root.querySelectorAll('[data-admin-go]').forEach(b=>{b.classList.toggle('active',b.dataset.adminGo===current);if(b.dataset.adminGo===current)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')})
   const content=root.querySelector('[data-admin-content]')
+  const slot=root.querySelector('[data-admin-parking]')
+  const sundayMount=root.parentElement.querySelector('[data-sunday-permission-mount]')
+  // Keep the live editor DOM when changing pages; replacing the page content would destroy it.
+  if(sundayMount && sundayMount.parentElement!==slot)slot.appendChild(sundayMount)
   const signature=[current,loaded,users.length,sessions.length,events.length,pageViewCount,search,filter,page,error].join('|')
   if(content.dataset.signature!==signature){content.innerHTML=current==='overview'?overview():current==='users'?people():current==='audience'?audience():current==='performance'?performance():current==='export'?exportsPage():toolPage();content.dataset.signature=signature}
-  const slot=root.querySelector('[data-admin-parking]')
   const screen=root.parentElement
   for(const child of [...screen.children]){
     if(child===root||child.classList.contains('dashboard-hero')||child.matches('[data-admin-control-hub]'))continue
@@ -82,7 +85,12 @@ function show(root) {
     const m=mappings.find(([selector])=>child.matches(selector)||child.querySelector(selector))
     if(m)child.dataset.adminPanel=m[1]
     else if(!child.dataset.adminPanel)child.dataset.adminPanel='control'
-    child.hidden=child.matches('[data-sunday-permission-mount]') ? !['editors','sunday'].includes(current) : child.dataset.adminPanel!==current
+    child.hidden=child.dataset.adminPanel!==current
+  }
+  if(['editors','sunday'].includes(current)){
+    const destination=content.querySelector(`[data-admin-tool-slot="${current}"]`)
+    const mount=screen.querySelector('[data-sunday-permission-mount]')
+    if(destination&&mount){destination.appendChild(mount);mount.hidden=false}
   }
 }
 function install(){

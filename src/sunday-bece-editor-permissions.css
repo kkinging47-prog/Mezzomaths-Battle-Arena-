@@ -114,6 +114,7 @@
 }
 
 .sunday-editor-row em.active { background: #dcfce7; color: #166534; }
+.sunday-editor-row strong,.sunday-special-question-row strong{color:#172b49}
 .sunday-editor-row em.revoked { background: #fee2e2; color: #991b1b; }
 
 .sunday-special-toolbar {
