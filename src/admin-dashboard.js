@@ -31,7 +31,7 @@ let current='overview', users=[], sessions=[], events=[], pageViews=[], pageView
 let lastTracked='', lastGuestAt=0, tracking=false
 
 function shell() {
-  return `<section class="admin-dashboard" data-admin-dashboard><aside class="admin-side"><div class="admin-brand"><span>MEZZO MATHS</span><strong>Administration</strong><small>Battle Arena</small></div><nav aria-label="Admin sections">${areas.map(([key,label])=>`<button type="button" data-admin-go="${key}">${esc(label)}</button>`).join('')}</nav></aside><div class="admin-main"><header class="admin-header"><div><small>ADMINISTRATION / <span data-admin-crumb>OVERVIEW</span></small><h1 data-admin-title>Overview</h1><p data-admin-subtitle>A snapshot of the app</p></div><button type="button" data-admin-reload>Refresh data</button></header><div data-admin-content></div><div data-admin-parking></div></div></section>`
+  return `<section class="admin-dashboard" data-admin-dashboard><aside class="admin-side"><div class="admin-brand"><span>MEZZO MATHS</span><strong>Administration</strong><small>Battle Arena · Admin workspace</small></div><nav aria-label="Admin sections">${areas.map(([key,label])=>`<button type="button" data-admin-go="${key}">${esc(label)}</button>`).join('')}</nav></aside><div class="admin-main"><header class="admin-header"><div><small>ADMINISTRATOR WORKSPACE / <span data-admin-crumb>OVERVIEW</span></small><h1 data-admin-title>Overview</h1><p data-admin-subtitle>A snapshot of the app</p></div><div class="admin-header-actions"><button type="button" data-admin-reload>Refresh data</button><button type="button" class="admin-open-app" data-admin-open-app>Open web app ↗</button></div></header><div data-admin-content></div><div data-admin-parking></div></div></section>`
 }
 const stat = (value,label,sub='') => `<article class="admin-stat"><strong>${esc(value)}</strong><span>${esc(label)}</span><small>${esc(sub)}</small></article>`
 const warning = () => !isSupabaseConfigured ? '<p class="admin-note">The database is not connected; live figures and user editing are unavailable.</p>' : error ? `<p class="admin-note">${esc(error)}</p>` : ''
@@ -145,6 +145,7 @@ async function trackNavigation(){
   }catch(e){console.warn('Page tracking unavailable',e?.message)}finally{tracking=false}
 }
 document.addEventListener('click',e=>{
+  if(e.target.closest('[data-admin-open-app]')){e.preventDefault();document.querySelector('.screen-tabs [data-target="home"]')?.click();return}
   const go=e.target.closest('[data-admin-go]');if(go){e.preventDefault();current=go.dataset.adminGo;page=0;queue();return}
   if(e.target.closest('[data-admin-reload]')){loaded=false;load();return}
   const p=e.target.closest('[data-admin-page]');if(p){page=Math.max(0,page+(p.dataset.adminPage==='next'?1:-1));queue();return}
