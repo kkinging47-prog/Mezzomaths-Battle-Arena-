@@ -312,7 +312,9 @@
 .sunday-set-schedule label { display: grid; gap: 6px; color: #213956; font-weight: 700; }
 .sunday-set-schedule input { width: 190px; max-width: 100%; padding: 9px; border: 1px solid #c5d3e5; border-radius: 10px; background: #fff; }
 .sunday-set-schedule small { flex-basis: 100%; color: #52657d; }
-.sunday-set-question-list { display: grid; gap: 0; max-height: 660px; overflow: auto; }
+.sunday-set-question-list { display: grid; gap: 0; }
+.sunday-set-detail .btn-ghost{color:#174478;background:#eff6ff;border:1px solid #bfdbfe}
+.sunday-set-detail .btn-ghost:hover{background:#dbeafe;color:#102f5a}
 .sunday-set-question-list article { display: flex; gap: 12px; align-items: center; min-width: 0; padding: 13px 4px; border-bottom: 1px solid #edf0f5; }
 .sunday-set-question-list article > b { flex: 0 0 33px; text-align: center; color: #275bae; }
 .sunday-set-question-list article > div { min-width: 0; flex: 1; }
