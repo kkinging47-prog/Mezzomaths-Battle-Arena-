@@ -64,9 +64,10 @@ function toolPage() {
 function show(root) {
   const meta=areas.find(([key])=>key===current)||areas[0]
   root.dataset.area=current
-  root.querySelector('[data-admin-title]').textContent=meta[1]
-  root.querySelector('[data-admin-crumb]').textContent=meta[1].toUpperCase()
-  root.querySelector('[data-admin-subtitle]').textContent=meta[2]
+  const title=root.querySelector('[data-admin-title]'),crumb=root.querySelector('[data-admin-crumb]'),subtitle=root.querySelector('[data-admin-subtitle]')
+  if(title.textContent!==meta[1])title.textContent=meta[1]
+  if(crumb.textContent!==meta[1].toUpperCase())crumb.textContent=meta[1].toUpperCase()
+  if(subtitle.textContent!==meta[2])subtitle.textContent=meta[2]
   root.querySelectorAll('[data-admin-go]').forEach(b=>{b.classList.toggle('active',b.dataset.adminGo===current);if(b.dataset.adminGo===current)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')})
   const content=root.querySelector('[data-admin-content]')
   const slot=root.querySelector('[data-admin-parking]')
