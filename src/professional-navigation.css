@@ -1,0 +1,27 @@
+.screen-tabs.app-nav-ready{position:relative;display:flex;align-items:center;gap:18px;padding:14px 18px;overflow:visible}
+.app-nav-ready .brand-chip{flex:0 0 auto}
+.app-nav-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0;flex:1}
+.app-nav-primary{display:flex;gap:6px;align-items:center}
+.app-nav-primary button,.app-nav-more,.app-nav-account>button{border:1px solid rgba(255,255,255,.16);border-radius:13px;min-height:44px;padding:9px 12px;color:#eaf4ff;background:rgba(255,255,255,.08);font:inherit;font-weight:850;cursor:pointer}
+.app-nav-primary button{display:inline-flex;gap:7px;align-items:center}
+.app-nav-primary button:hover,.app-nav-primary button.active,.app-nav-more:hover,.app-nav-account>button:hover{color:#10264c;background:#fff4c8;border-color:#ffd166}
+.app-nav-more{white-space:nowrap;background:#174e91}
+.app-nav-account{position:relative;flex:0 0 auto}
+.app-nav-account>button{white-space:nowrap;background:#226b80}
+.app-nav-account-menu{position:absolute;right:0;top:calc(100% + 8px);min-width:160px;border:1px solid #cbd5e1;border-radius:12px;padding:7px;background:#fff;box-shadow:0 15px 35px #071b3e44;z-index:60}
+.app-nav-account-menu[hidden]{display:none!important}
+.app-nav-account-menu button{width:100%;border:0;border-radius:8px;padding:10px;text-align:left;color:#7f1d1d;background:#fff;font:inherit;font-weight:800;cursor:pointer}
+.app-nav-account-menu button:hover{background:#fee2e2}
+.screen-tabs.app-nav-ready>.tab-scroll{display:none}
+.screen-tabs.app-nav-ready.app-nav-expanded>.tab-scroll{position:absolute;z-index:50;top:calc(100% + 10px);left:0;right:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-height:min(66vh,560px);overflow:auto;border:1px solid #5778aa;border-radius:18px;padding:16px;background:#102447;box-shadow:0 25px 60px #02061788}
+.screen-tabs.app-nav-ready>.tab-scroll .screen-tab{justify-content:center;white-space:normal;text-align:center;min-height:52px}
+.screen-tabs.app-nav-ready>.tab-scroll [data-target="auth"],.screen-tabs.app-nav-ready>.tab-scroll [data-live-logout]{display:none!important}
+.screen-tabs.app-nav-ready>.tab-scroll [hidden],.app-nav-primary [hidden]{display:none!important}
+body:has(.app-nav-ready) .live-user-identity{display:none!important}
+body:has(.admin-dashboard) .live-user-identity{display:none!important}
+.app-frame:has(.admin-dashboard)>.screen-tabs{display:none!important}
+.app-frame:has(.admin-dashboard)>.active-title{display:none!important}
+@media(max-width:1160px){.screen-tabs.app-nav-ready{flex-wrap:wrap}.app-nav-actions{flex-basis:100%;justify-content:space-between}.app-nav-primary{flex:1}}
+@media(max-width:720px){.screen-tabs.app-nav-ready{padding:12px}.app-nav-actions{flex-wrap:wrap}.app-nav-primary{order:2;flex-basis:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.app-nav-primary button{min-width:0;justify-content:center;flex-direction:column;gap:1px;padding:7px 3px;font-size:.7rem}.app-nav-more,.app-nav-account{flex:1}.app-nav-account>button,.app-nav-more{width:100%}.screen-tabs.app-nav-ready.app-nav-expanded>.tab-scroll{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.screen-tabs.app-nav-ready.app-nav-expanded>.tab-scroll{grid-template-columns:1fr}}
+@media print{.app-nav-actions,.screen-tabs.app-nav-ready>.tab-scroll{display:none!important}}
