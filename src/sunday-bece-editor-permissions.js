@@ -8,7 +8,7 @@ const EDITOR_ROOT = '[data-sunday-editor-root]'
 const QUESTIONS = [
   'id','year','type','topic','topic_area','curriculum_strand','difficulty','status','question_text','question_image_url',
   'option_a','option_b','option_c','option_d','option_a_image_url','option_b_image_url','option_c_image_url','option_d_image_url',
-  'correct_answer','explanation','source_name','source_page','math_format','editor_notes','updated_at','created_at'
+  'correct_answer','explanation','source_name','source_page','math_format','editor_notes','sunday_set_id','updated_at','created_at'
 ].join(',')
 const SYMBOL_GROUPS = [
   ['Powers', ['²','³','⁴','⁵','⁶','⁷','⁸','⁹','x²','x³','( )²','( )³']],
@@ -20,7 +20,7 @@ const SYMBOL_GROUPS = [
 ]
 const TOPICS = ['BECE Exam Practice','Algebra','Geometry','Statistics','Number','Fractions','Percentages','Measurement','Aptitude & Mental Reasoning','General Practice']
 const YEARS = ['2027 Prep','2026','2025','2024','2023','2022','Sample']
-const TYPES = ['Sunday Special','Past Question','Sample Question','Revision Drill']
+const TYPES = ['pastStyle','samples']
 const DIFFICULTY = ['Easy','Medium','Hard']
 const STATUS = ['Published','Draft','Archived']
 let canEdit = false
@@ -28,6 +28,8 @@ let isAdmin = false
 let checked = false
 let activeInput = null
 let questions = []
+let sets = []
+let selectedSetId = ''
 let editors = []
 let selectedId = ''
 let queued = false
@@ -49,7 +51,7 @@ function toast(message, type = 'info') {
 function localAdminGuess() { return String(profile().role || '').toLowerCase() === 'admin' }
 function normalise(q = {}) {
   return {
-    id: q.id || '', year: q.year || '2027 Prep', type: q.type || 'Sunday Special', topic: q.topic || 'BECE Exam Practice',
+    id: q.id || '', sunday_set_id: q.sunday_set_id || '', year: q.year || '2027 Prep', type: q.type || 'pastStyle', topic: q.topic || 'BECE Exam Practice',
     topic_area: q.topic_area || q.curriculum_strand || q.topic || 'BECE Exam Practice', curriculum_strand: q.curriculum_strand || q.topic_area || q.topic || '',
     difficulty: q.difficulty || 'Easy', status: q.status || 'Published', question_text: q.question_text || '', question_image_url: q.question_image_url || '',
     option_a: q.option_a || '', option_b: q.option_b || '', option_c: q.option_c || '', option_d: q.option_d || '',
@@ -111,14 +113,41 @@ function imagePreview(q) {
 function previewHtml(q) {
   return `<div class="sunday-special-preview-question">${esc(q.question_text || 'Question preview will appear here.')}</div>${q.question_image_url ? `<div class="sunday-special-image-card"><img src="${esc(q.question_image_url)}" alt="Question image"><b>Question Image</b></div>` : ''}<div class="sunday-special-preview-options"><span>A. ${esc(q.option_a || '')}</span><span>B. ${esc(q.option_b || '')}</span><span>C. ${esc(q.option_c || '')}</span><span>D. ${esc(q.option_d || '')}</span></div>`
 }
+function selectedSet() { return sets.find(s => s.id === selectedSetId) }
+function setQuestions(id = selectedSetId) { return questions.filter(q => q.sunday_set_id === id) }
+function suggestedSunday(set) {
+  if (set?.scheduled_sunday) return set.scheduled_sunday
+  const prior = [...sets].filter(s => s.scheduled_sunday && s.set_number < set.set_number).sort((a,b) => b.set_number - a.set_number)[0]
+  if (!prior) return ''
+  const date = new Date(`${prior.scheduled_sunday}T12:00:00Z`)
+  date.setUTCDate(date.getUTCDate() + (set.set_number - prior.set_number) * 7)
+  return date.toISOString().slice(0,10)
+}
+function setManagerHtml() {
+  const selected = selectedSet(), assigned = questions.filter(q => q.sunday_set_id).length
+  const complete = sets.filter(s => setQuestions(s.id).length === 40).length
+  const unassigned = questions.filter(q => !q.sunday_set_id)
+  return `<section class="sunday-set-manager" data-sunday-set-manager>
+    <header class="sunday-set-hero"><div><span>BECE QUESTION PROGRAMME</span><h2>Sunday question sets</h2><p>Forty unique questions per set. Choose the set and Sunday before the trial opens.</p></div>${isAdmin ? '<button type="button" class="btn btn-gold" data-create-sunday-set>Create next set</button>' : ''}</header>
+    <div class="sunday-set-stats"><div><strong>${sets.length}</strong><span>Sets</span></div><div><strong>${complete}</strong><span>Complete</span></div><div><strong>${assigned}</strong><span>Assigned questions</span></div><div><strong>${unassigned.length}</strong><span>Unassigned</span></div></div>
+    <div class="sunday-set-grid" aria-label="Sunday BECE sets">${sets.map(s => {const count=setQuestions(s.id).length;return `<button type="button" class="sunday-set-card ${s.id===selectedSetId?'selected':''}" data-select-sunday-set="${esc(s.id)}" aria-pressed="${s.id===selectedSetId}"><span>SET ${s.set_number}</span><strong>${count}/40 questions</strong><small>${s.scheduled_sunday ? '📅 '+esc(s.scheduled_sunday) : 'Not scheduled'} · ${esc(s.status)}</small><i style="width:${Math.min(count,40)*2.5}%"></i></button>`}).join('') || '<p>No sets yet.</p>'}</div>
+    ${selected ? `<div class="sunday-set-detail"><div class="sunday-set-detail-head"><div><span>SELECTED SET</span><h3>Set ${selected.set_number}</h3><p>${setQuestions().length}/40 questions · ${esc(selected.status)}${selected.scheduled_sunday ? ' · Sunday '+esc(selected.scheduled_sunday) : ''}</p></div><div class="sunday-set-actions">${isAdmin ? `<button type="button" class="btn btn-blue btn-small" data-sunday-set-status="ready" ${setQuestions().length!==40?'disabled':''}>Mark ready</button><button type="button" class="btn btn-gold btn-small" data-sunday-set-status="solved" ${setQuestions().length!==40?'disabled':''}>Mark done / solved</button><button type="button" class="btn btn-ghost btn-small" data-sunday-set-status="draft">Return to draft</button>` : ''}</div></div>
+      ${isAdmin ? `<form class="sunday-set-schedule" data-sunday-set-schedule><label>Choose a Sunday<input type="date" name="scheduled_sunday" value="${esc(suggestedSunday(selected))}" required></label><button type="submit" class="btn btn-primary btn-small" ${setQuestions().length!==40?'disabled':''}>Schedule this set</button>${selected.scheduled_sunday ? '<button type="button" class="btn btn-ghost btn-small" data-unschedule-sunday-set>Remove date</button>' : ''}<small>Scheduling requires 40 complete published questions. Dates must be Sundays.</small></form>` : ''}
+      <div class="sunday-set-question-list">${setQuestions().map((q,i)=>`<article><b>${i+1}</b><div><strong>${esc(q.topic)}</strong><p>${esc(q.question_text).slice(0,160)}</p><small>${esc(q.status)} · Answer ${esc(q.correct_answer)}</small></div><button type="button" class="btn btn-blue btn-small" data-edit-sunday-question="${esc(q.id)}">Edit</button>${selected.status==='draft'&&isAdmin?`<button type="button" class="btn btn-ghost btn-small" data-remove-from-sunday-set="${esc(q.id)}">Remove</button>`:''}</article>`).join('') || '<p>Add questions to build this set.</p>'}</div>
+      ${isAdmin && selected.status==='draft' && unassigned.length && setQuestions().length<40 ? `<details class="sunday-unassigned"><summary>Add from unassigned questions (${unassigned.length})</summary><button type="button" class="btn btn-gold btn-small" data-fill-sunday-set>Fill available places</button><div>${unassigned.slice(0,100).map(q=>`<article><span>${esc(q.question_text).slice(0,130)}</span><button type="button" class="btn btn-blue btn-small" data-add-to-sunday-set="${esc(q.id)}">Add to Set ${selected.set_number}</button></article>`).join('')}</div></details>` : ''}
+    </div>` : '<p class="sunday-editor-lock">Select a set to view and edit its questions.</p>'}
+  </section>`
+}
 function editorFormHtml() {
+  if (!selectedSet()) return setManagerHtml()
   const q = normalise(questions.find(x => x.id === selectedId) || {})
-  return `<section class="sunday-special-admin-editor glass-card" data-sunday-editor-root="true" data-permission-safe-editor="true">
+  return `${setManagerHtml()}<details class="sunday-set-editor-details" ${selectedId?'open':''}><summary>${q.id ? `Edit question in Set ${selectedSet().set_number}` : `Add a new question to Set ${selectedSet().set_number}`}</summary><section class="sunday-special-admin-editor glass-card" data-sunday-editor-root="true" data-permission-safe-editor="true">
     <div class="sunday-special-editor-head"><div><span>${isAdmin ? 'Admin + Assigned Editors' : 'Assigned Editor'}</span><h2>Sunday BECE Special Question Editor</h2><p>Add and edit BECE questions with original maths symbols, powers, roots, fractions and diagrams. Image questions and image options are supported.</p></div><button class="btn btn-blue" type="button" data-load-sunday-questions="true">Load Questions</button></div>
     <form id="sundaySpecialQuestionForm" class="sunday-special-form-grid">
       <input type="hidden" name="id" value="${esc(q.id)}">
       <label><span>Year</span><select name="year">${optionHtml(YEARS, q.year)}</select></label>
       <label><span>Type</span><select name="type">${optionHtml(TYPES, q.type)}</select></label>
+      <input type="hidden" name="sunday_set_id" value="${esc(selectedSetId)}">
       <label><span>Topic</span><select name="topic">${optionHtml(TOPICS, q.topic)}</select></label>
       <label><span>Topic Area / Strand</span><input name="topic_area" value="${esc(q.topic_area)}"></label>
       <label><span>Difficulty</span><select name="difficulty">${optionHtml(DIFFICULTY, q.difficulty)}</select></label>
@@ -147,9 +176,7 @@ function editorFormHtml() {
       <div class="sunday-special-live-preview" data-sunday-live-preview><strong>Live Preview</strong>${previewHtml(q)}</div>
       <div class="sunday-special-actions full"><button class="btn btn-gold" type="submit">${q.id ? 'Save Edited Question' : 'Add New Question'}</button><button class="btn btn-blue" type="button" data-new-sunday-question="true">New Question</button>${q.id ? '<button class="btn btn-danger" type="button" data-archive-sunday-question="true">Archive Question</button>' : ''}</div>
     </form>
-    <div class="sunday-special-filter"><input id="sundayQuestionSearch" placeholder="Search loaded questions"><select id="sundayStatusFilter">${optionHtml(['All','Published','Draft','Archived'], 'All')}</select><button class="btn btn-ghost" type="button" data-load-sunday-questions="true">Refresh List</button></div>
-    <div class="sunday-special-question-list" data-sunday-question-list>${questionsHtml()}</div>
-  </section>`
+  </section></details>`
 }
 function questionsHtml() {
   if (!questions.length) return '<p class="sunday-editor-lock">No questions loaded yet. Click Load Questions.</p>'
@@ -159,7 +186,7 @@ function questionsHtml() {
   return visible.map(q => `<article class="sunday-special-question-row"><div><strong>${esc(q.year)} • ${esc(q.topic)} • ${esc(q.status)}</strong><p>${esc(q.question_text).slice(0, 180)}${q.question_text.length > 180 ? '…' : ''}</p><small>Answer ${esc(q.correct_answer)}${q.question_image_url ? ' • Has question image' : ''}${q.option_a_image_url || q.option_b_image_url || q.option_c_image_url || q.option_d_image_url ? ' • Has option images' : ''}</small></div><button class="btn btn-blue btn-small" type="button" data-edit-sunday-question="${esc(q.id)}">Edit</button></article>`).join('') || '<p>No matching questions.</p>'
 }
 function shellHtml() {
-  return `<main class="app-shell"><section class="app-frame"><nav class="screen-tabs"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>Sunday BECE Editor</small></div></div><div class="tab-scroll"><button class="screen-tab" data-target="home">🏠 Home</button><button class="screen-tab" data-target="dashboard">📊 Dashboard</button>${isAdmin ? '<button class="screen-tab" data-target="admin">🛠️ Admin</button>' : ''}</div></nav><section class="screen admin-screen" data-sunday-editor-page="true">${assignmentHtml()}${editorFormHtml()}</section></section></main>`
+  return `<main class="app-shell"><section class="app-frame"><nav class="screen-tabs"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>Sunday BECE Editor</small></div></div><div class="tab-scroll"><button class="screen-tab" data-target="home">🏠 Home</button><button class="screen-tab" data-target="dashboard">📊 Dashboard</button>${isAdmin ? '<button class="screen-tab" data-target="admin">🛠️ Admin</button>' : ''}</div></nav><section class="screen admin-screen" data-sunday-editor-page="true"><div data-sunday-permission-mount></div></section></section></main>`
 }
 function installDashboardButton() {
   if (!canEdit) return
@@ -254,10 +281,49 @@ async function revokeEditor(email) {
 }
 async function loadQuestions() {
   if (!canEdit || !supabase) return
-  const { data, error } = await supabase.from('bece_question_bank').select(QUESTIONS).order('updated_at', { ascending: false }).limit(300)
+  const { data, error } = await supabase.from('bece_question_bank').select(QUESTIONS).order('created_at', { ascending: true }).limit(1000)
   if (error) { toast(`Could not load Sunday BECE questions: ${error.message}`, 'error'); return }
   questions = (data || []).map(normalise)
-  document.querySelector('[data-sunday-question-list]') && (document.querySelector('[data-sunday-question-list]').innerHTML = questionsHtml())
+  if (document.querySelector('[data-sunday-set-manager]')) renderAdminSections()
+}
+async function loadSets() {
+  if (!canEdit || !supabase) return
+  const { data, error } = await supabase.from('sunday_bece_sets').select('id,set_number,status,scheduled_sunday,notes').order('set_number')
+  if (error) { toast('Could not load Sunday BECE sets. Try again.', 'error'); return }
+  sets = data || []
+  if (!sets.some(s => s.id === selectedSetId)) selectedSetId = sets[0]?.id || ''
+}
+async function updateSet(values) {
+  if (!isAdmin || !selectedSet()) return false
+  const { error } = await supabase.from('sunday_bece_sets').update(values).eq('id', selectedSetId)
+  if (error) { toast(error.message, 'error'); return false }
+  await loadSets(); renderAdminSections()
+  return true
+}
+async function moveQuestion(id, setId) {
+  if (!isAdmin || !selectedSet()) return
+  const { error } = await supabase.from('bece_question_bank').update({ sunday_set_id: setId }).eq('id', id)
+  if (error) { toast(error.message, 'error'); return }
+  await loadQuestions()
+}
+async function createSet() {
+  if (!isAdmin) return
+  const set_number = Math.max(0, ...sets.map(s => s.set_number)) + 1
+  const { data, error } = await supabase.from('sunday_bece_sets').insert({ set_number }).select('id').single()
+  if (error) { toast(error.message, 'error'); return }
+  selectedSetId = data.id; selectedId = ''
+  await loadSets(); renderAdminSections()
+  toast(`Set ${set_number} created.`, 'success')
+}
+async function fillSet() {
+  if (!isAdmin || selectedSet()?.status !== 'draft') return
+  const places = 40 - setQuestions().length
+  const ids = questions.filter(q => !q.sunday_set_id && q.status === 'Published').slice(0, places).map(q => q.id)
+  if (!ids.length) { toast('No published unassigned questions are available.', 'warn'); return }
+  const { error } = await supabase.from('bece_question_bank').update({ sunday_set_id: selectedSetId }).in('id', ids)
+  if (error) { toast(error.message, 'error'); return }
+  await loadQuestions()
+  toast(`${ids.length} questions added to this set.`, 'success')
 }
 async function uploadImage(form, fileField, urlField) {
   const currentUrl = String(form.get(urlField) || '').trim()
@@ -282,7 +348,8 @@ async function saveQuestion(event) {
     const id = String(form.get('id') || '').trim()
     const payload = {
       year: String(form.get('year') || '2027 Prep'),
-      type: String(form.get('type') || 'Sunday Special'),
+      type: String(form.get('type') || 'pastStyle'),
+      sunday_set_id: selectedSetId,
       topic: String(form.get('topic') || 'BECE Exam Practice'),
       topic_area: String(form.get('topic_area') || form.get('topic') || 'BECE Exam Practice'),
       curriculum_strand: String(form.get('topic_area') || form.get('topic') || ''),
@@ -335,8 +402,11 @@ async function openEditorPage() {
   await checkAccess(true)
   if (!canEdit) { toast('Only admin or assigned editors can open the Sunday BECE question editor.', 'error'); return }
   document.getElementById('root').innerHTML = shellHtml()
-  await loadEditors()
+  mountedAdminScreen = document.querySelector('.admin-screen')
+  await loadSets()
   await loadQuestions()
+  renderAdminSections()
+  await loadEditors()
 }
 async function boot() {
   const screen = document.querySelector('.admin-screen')
@@ -348,9 +418,10 @@ async function boot() {
     mountedAdminScreen = screen
     if (!canEdit) { renderAdminSections(); return }
     installDashboardButton()
+    await loadSets()
+    await loadQuestions()
     renderAdminSections()
     await loadEditors()
-    if (document.querySelector(EDITOR_ROOT)) await loadQuestions()
   } finally { booting = false }
 }
 function scheduleBoot() {
@@ -382,7 +453,18 @@ document.addEventListener('click', async event => {
   const revoke = event.target.closest('[data-revoke-sunday-editor]')?.dataset?.revokeSundayEditor
   if (revoke) { event.preventDefault(); await revokeEditor(revoke); return }
   if (event.target.closest('[data-load-sunday-questions]')) { event.preventDefault(); await loadQuestions(); return }
-  if (event.target.closest('[data-new-sunday-question]')) { event.preventDefault(); selectedId = ''; renderAdminSections(); return }
+  if (event.target.closest('[data-create-sunday-set]')) { event.preventDefault(); await createSet(); return }
+  const selectSetId = event.target.closest('[data-select-sunday-set]')?.dataset?.selectSundaySet
+  if (selectSetId) { event.preventDefault(); selectedSetId = selectSetId; selectedId = ''; renderAdminSections(); return }
+  const setStatus = event.target.closest('[data-sunday-set-status]')?.dataset?.sundaySetStatus
+  if (setStatus) { event.preventDefault(); await updateSet({ status: setStatus, ...(setStatus === 'draft' ? { scheduled_sunday: null } : {}) }); return }
+  if (event.target.closest('[data-unschedule-sunday-set]')) { event.preventDefault(); await updateSet({ scheduled_sunday: null }); return }
+  if (event.target.closest('[data-fill-sunday-set]')) { event.preventDefault(); await fillSet(); return }
+  const addId = event.target.closest('[data-add-to-sunday-set]')?.dataset?.addToSundaySet
+  if (addId) { event.preventDefault(); await moveQuestion(addId, selectedSetId); return }
+  const removeId = event.target.closest('[data-remove-from-sunday-set]')?.dataset?.removeFromSundaySet
+  if (removeId) { event.preventDefault(); await moveQuestion(removeId, null); return }
+  if (event.target.closest('[data-new-sunday-question]')) { event.preventDefault(); selectedId = ''; renderAdminSections(); document.querySelector('.sunday-set-editor-details').open = true; return }
   const editId = event.target.closest('[data-edit-sunday-question]')?.dataset?.editSundayQuestion
   if (editId) { event.preventDefault(); selectedId = editId; renderAdminSections(); return }
   if (event.target.closest('[data-archive-sunday-question]')) { event.preventDefault(); await archiveQuestion(); return }
@@ -390,6 +472,12 @@ document.addEventListener('click', async event => {
 
 document.addEventListener('submit', event => {
   if (event.target?.id === 'sundaySpecialQuestionForm') saveQuestion(event)
+  if (event.target?.matches?.('[data-sunday-set-schedule]')) {
+    event.preventDefault()
+    const date = new FormData(event.target).get('scheduled_sunday')
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || new Date(`${date}T12:00:00Z`).getUTCDay() !== 0) { toast('Select a Sunday date.', 'warn'); return }
+    updateSet({ scheduled_sunday: date, status: 'ready' }).then(saved => { if (saved) toast('Sunday schedule saved.', 'success') })
+  }
 }, true)
 
 window.addEventListener('load', () => setTimeout(boot, 1300))
