@@ -93,10 +93,11 @@ document.addEventListener('click',event=>{
   }
   if(event.target.closest('[data-nav-admin]') && nav){
     event.preventDefault()
-    (nav.querySelector('[data-target="admin"]') || document.querySelector('[data-target="admin"]'))?.click()
+    window.dispatchEvent(new Event('mezzoNavigateAdmin'))
     closeMenus()
     return
   }
+  if(event.target.closest('.tab-scroll') && nav){closeMenus();return}
   if(!event.target.closest('.app-nav-ready'))closeMenus()
 },true)
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenus()})

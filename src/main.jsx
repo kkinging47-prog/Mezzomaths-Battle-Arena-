@@ -84,6 +84,15 @@ function render() {
   document.getElementById('root').innerHTML = `<main class="app-shell"><div class="orb orb-one"></div><div class="orb orb-two"></div><div class="orb orb-three"></div><section class="app-frame"><nav class="screen-tabs" aria-label="Main navigation"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>Maths Battle Arena</small></div></div><div class="tab-scroll">${tabs.map(([id,label,icon]) => `<button type="button" class="screen-tab ${state.view === id ? 'active' : ''}" data-target="${id}"><span>${icon}</span>${label}</button>`).join('')}</div></nav><div class="active-title"><span>${active?.[2] || '🏟️'}</span><p>${active?.[1] || 'Home'}</p></div>${state.message ? `<div class="status-banner glass-card">${state.message}</div>` : ''}${viewHtml()}${socialFooterHtml()}</section></main>`
 }
 function viewHtml() { if (state.view === 'smartboard') return smartBoardHtml(); if (state.view === 'battle') return battleHtml(); if (state.view === 'solo') return soloHtml(); if (state.view === 'dashboard') return dashboardHtml(); if (state.view === 'auth') return authHtml(); if (state.view === 'admin') return adminHtml(); if (state.view === 'leaderboard') return leaderboardHtml(); return homeHtml() }
+window.addEventListener('mezzoNavigateAdmin', () => {
+  state.user = stored('mezzo_profile', null)
+  if (state.user?.role !== 'admin') return
+  clearInterval(countdownTimer)
+  clearInterval(contestTimer)
+  state.view = 'admin'
+  state.message = ''
+  render()
+})
 
 function homeHtml() {
   const cards = [
@@ -228,7 +237,7 @@ async function login(form) { const f = Object.fromEntries(new FormData(form).ent
 document.addEventListener('click', async e => {
   const daily = e.target.closest('[data-start-daily]'); if (daily) { state.view = 'solo'; render(); await startSolo('Daily Practice'); return }
   const bot = e.target.closest('[data-start-bot]'); if (bot) { state.view = 'battle'; render(); await startBattle('Bot'); return }
-  const target = e.target.closest('[data-target]'); if (target) { clearInterval(countdownTimer); clearInterval(contestTimer); state.view = target.dataset.target; state.message = ''; state.editingIndex = null; render(); return }
+  const target = e.target.closest('[data-target]'); if (target) { clearInterval(countdownTimer); clearInterval(contestTimer); state.user = stored('mezzo_profile', null); state.view = target.dataset.target; state.message = ''; state.editingIndex = null; render(); return }
   const mode = e.target.closest('[data-auth-mode]'); if (mode) { state.authMode = mode.dataset.authMode; render(); return }
   const adminPage = e.target.closest('[data-admin-page]'); if (adminPage) { state.adminPage = Number(adminPage.dataset.adminPage); render(); return }
   const edit = e.target.closest('[data-edit-question]'); if (edit) { state.editingIndex = Number(edit.dataset.editQuestion); render(); return }
