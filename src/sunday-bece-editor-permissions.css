@@ -283,6 +283,54 @@
 .sunday-editor-permission-toast.error { background: #991b1b; }
 .sunday-editor-permission-toast.warn { background: #92400e; }
 
+[data-sunday-permission-mount] { min-width: 0; width: 100%; }
+.sunday-set-manager { min-width: 0; margin: 24px 0; color: #14233d; }
+.sunday-set-hero { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 30px; border-radius: 24px; background: linear-gradient(120deg,#132b51,#2454a4); color: #fff; }
+.sunday-set-hero span, .sunday-set-detail-head span { font-size: .78rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.sunday-set-hero h2 { margin: 8px 0; color: #fff; font-size: clamp(1.6rem,2.5vw,2.4rem); }
+.sunday-set-hero p { margin: 0; color: #dce8ff; }
+.sunday-set-stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; margin: 18px 0; }
+.sunday-set-stats div { background: #fff; border: 1px solid #dce5f0; border-radius: 16px; padding: 18px; display: grid; gap: 3px; box-shadow: 0 6px 22px rgba(20,35,61,.05); }
+.sunday-set-stats strong { font-size: 1.65rem; color: #153764; }
+.sunday-set-stats span { color: #53657c; font-size: .85rem; font-weight: 700; }
+.sunday-set-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(195px,1fr)); gap: 12px; }
+.sunday-set-card { position: relative; overflow: hidden; display: grid; gap: 8px; text-align: left; border: 1px solid #d5e0ed; border-radius: 16px; background: #fff; padding: 17px; color: #163357; cursor: pointer; min-width: 0; }
+.sunday-set-card:hover, .sunday-set-card:focus-visible { border-color: #3977cb; box-shadow: 0 4px 18px rgba(34,91,175,.13); }
+.sunday-set-card.selected { border: 2px solid #225bb4; background: #edf5ff; }
+.sunday-set-card span { color: #2861af; font-size: .75rem; font-weight: 900; letter-spacing: .12em; }
+.sunday-set-card strong { font-size: 1.05rem; }
+.sunday-set-card small { color: #52657d; }
+.sunday-set-card i { height: 4px; background: #3679d8; border-radius: 4px; }
+.sunday-set-detail { margin-top: 22px; background: #fff; border: 1px solid #dce5f0; border-radius: 22px; padding: 24px; min-width: 0; }
+.sunday-set-detail-head { display: flex; justify-content: space-between; gap: 16px; align-items: center; border-bottom: 1px solid #e4eaf2; padding-bottom: 16px; }
+.sunday-set-detail-head span { color: #3569b4; }
+.sunday-set-detail-head h3 { margin: 4px 0; font-size: 1.7rem; color: #132e54; }
+.sunday-set-detail-head p { margin: 0; color: #54677e; }
+.sunday-set-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sunday-set-schedule { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 18px 0; padding: 16px; background: #f3f7fc; border-radius: 14px; }
+.sunday-set-schedule label { display: grid; gap: 6px; color: #213956; font-weight: 700; }
+.sunday-set-schedule input { width: 190px; max-width: 100%; padding: 9px; border: 1px solid #c5d3e5; border-radius: 10px; background: #fff; }
+.sunday-set-schedule small { flex-basis: 100%; color: #52657d; }
+.sunday-set-question-list { display: grid; gap: 0; max-height: 660px; overflow: auto; }
+.sunday-set-question-list article { display: flex; gap: 12px; align-items: center; min-width: 0; padding: 13px 4px; border-bottom: 1px solid #edf0f5; }
+.sunday-set-question-list article > b { flex: 0 0 33px; text-align: center; color: #275bae; }
+.sunday-set-question-list article > div { min-width: 0; flex: 1; }
+.sunday-set-question-list strong { color: #173b69; }
+.sunday-set-question-list p { margin: 4px 0; color: #273a52; overflow-wrap: anywhere; }
+.sunday-set-question-list small { color: #60718a; }
+.sunday-unassigned, .sunday-set-editor-details { margin: 18px 0; border: 1px solid #dce5f0; border-radius: 17px; background: #fff; padding: 16px; min-width: 0; }
+.sunday-unassigned summary, .sunday-set-editor-details summary { cursor: pointer; font-weight: 800; color: #174478; }
+.sunday-unassigned article { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #edf0f5; }
+.sunday-unassigned article span { min-width: 0; overflow-wrap: anywhere; }
+.sunday-set-editor-details > section { margin-top: 16px; }
+@media (max-width: 700px) {
+  .sunday-set-hero, .sunday-set-detail-head { display: grid; }
+  .sunday-set-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .sunday-set-detail { padding: 16px; }
+  .sunday-set-question-list article { flex-wrap: wrap; }
+  .sunday-set-question-list article > div { flex-basis: calc(100% - 45px); }
+}
+
 @media (max-width: 860px) {
   .sunday-editor-permission-head,
   .sunday-special-editor-head,
