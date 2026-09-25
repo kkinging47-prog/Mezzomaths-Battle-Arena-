@@ -142,6 +142,10 @@ function renderList(list = cachedQuestions) {
 function installPanel() {
   if (!isTrustedEditor()) return
   const admin = document.querySelector('.admin-screen')
+  if (admin?.querySelector('[data-admin-dashboard]')) {
+    admin.querySelector('[data-sunday-question-editor]')?.remove()
+    return
+  }
   if (!admin || admin.querySelector('[data-sunday-question-editor]')) return
   const anchor = admin.querySelector('[data-topic-question-uploader]') || admin.querySelector('.question-manager') || admin.firstElementChild
   anchor?.insertAdjacentHTML('afterend', editorHtml())

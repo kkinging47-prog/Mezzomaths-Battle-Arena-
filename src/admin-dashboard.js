@@ -71,10 +71,13 @@ function show(root) {
   const content=root.querySelector('[data-admin-content]')
   const slot=root.querySelector('[data-admin-parking]')
   const sundayMount=root.parentElement.querySelector('[data-sunday-permission-mount]')
-  // Keep the live editor DOM when changing pages; replacing the page content would destroy it.
-  if(sundayMount && sundayMount.parentElement!==slot)slot.appendChild(sundayMount)
   const signature=[current,loaded,users.length,sessions.length,events.length,pageViewCount,search,filter,page,error].join('|')
-  if(content.dataset.signature!==signature){content.innerHTML=current==='overview'?overview():current==='users'?people():current==='audience'?audience():current==='performance'?performance():current==='export'?exportsPage():toolPage();content.dataset.signature=signature}
+  if(content.dataset.signature!==signature){
+    // Move it only when replacing the page that currently owns it.
+    if(sundayMount && content.contains(sundayMount))slot.appendChild(sundayMount)
+    content.innerHTML=current==='overview'?overview():current==='users'?people():current==='audience'?audience():current==='performance'?performance():current==='export'?exportsPage():toolPage()
+    content.dataset.signature=signature
+  }
   const screen=root.parentElement
   for(const child of [...screen.children]){
     if(child===root||child.classList.contains('dashboard-hero')||child.matches('[data-admin-control-hub]'))continue
@@ -90,7 +93,7 @@ function show(root) {
   if(['editors','sunday'].includes(current)){
     const destination=content.querySelector(`[data-admin-tool-slot="${current}"]`)
     const mount=screen.querySelector('[data-sunday-permission-mount]')
-    if(destination&&mount){destination.appendChild(mount);mount.hidden=false}
+    if(destination&&mount){if(mount.parentElement!==destination)destination.appendChild(mount);mount.hidden=false}
   }
 }
 function install(){
