@@ -31,6 +31,8 @@ let questions = []
 let editors = []
 let selectedId = ''
 let queued = false
+let booting = false
+let mountedAdminScreen = null
 let saving = false
 
 function esc(value = '') {
@@ -67,12 +69,12 @@ async function checkAccess(force = false) {
     if (!userData?.user) return { canEdit, isAdmin }
     const admin = await supabase.rpc('is_sunday_bece_admin')
     const manage = await supabase.rpc('can_manage_sunday_bece_questions')
-    isAdmin = Boolean(admin.data) || localAdminGuess()
+    if (admin.error || manage.error) throw admin.error || manage.error
+    isAdmin = Boolean(admin.data)
     canEdit = Boolean(manage.data) || isAdmin
   } catch (error) {
     console.warn('Sunday editor permission check failed:', error?.message || error)
-    isAdmin = localAdminGuess()
-    canEdit = isAdmin
+    checked = true
   }
   window.__mezzoSundayBeceCanEdit = canEdit
   window.__mezzoSundayBeceIsAdmin = isAdmin
@@ -177,7 +179,7 @@ function renderAdminSections() {
   }
   if (!mount) return
   if (!canEdit) {
-    mount.innerHTML = localAdminGuess() ? '<section class="sunday-editor-lock">Sunday BECE editor is waiting for Supabase permission check. Make sure you are logged in as admin.</section>' : ''
+    mount.innerHTML = localAdminGuess() ? '<section class="sunday-editor-lock">Could not verify editor access. Check your connection, then <button type="button" class="btn btn-blue btn-small" data-retry-sunday-access>try again</button>.</section>' : ''
     return
   }
   mount.innerHTML = `${assignmentHtml()}${editorFormHtml()}`
@@ -224,7 +226,12 @@ function insertAtCursor(el, text) {
 async function loadEditors() {
   if (!isAdmin || !supabase) return
   const { data, error } = await supabase.from('sunday_bece_question_editors').select('*').order('updated_at', { ascending: false }).limit(100)
-  if (error) { toast(`Could not load editors: ${error.message}`, 'error'); return }
+  if (error) {
+    const list = document.querySelector('[data-sunday-editor-list]')
+    if (list) list.innerHTML = '<p class="sunday-editor-lock">The editor list could not connect. <button type="button" class="btn btn-blue btn-small" data-refresh-sunday-editors>Try again</button></p>'
+    console.warn('Could not load editors:', error.message)
+    return
+  }
   editors = data || []
   document.querySelector('[data-sunday-editor-list]') && (document.querySelector('[data-sunday-editor-list]').innerHTML = editorsHtml())
 }
@@ -332,13 +339,19 @@ async function openEditorPage() {
   await loadQuestions()
 }
 async function boot() {
-  await checkAccess()
-  removeLegacyEditor()
-  if (!canEdit) return
-  installDashboardButton()
-  renderAdminSections()
-  await loadEditors()
-  if (document.querySelector(EDITOR_ROOT)) await loadQuestions()
+  const screen = document.querySelector('.admin-screen')
+  if (!screen || (screen === mountedAdminScreen && checked) || booting) return
+  booting = true
+  try {
+    await checkAccess()
+    removeLegacyEditor()
+    mountedAdminScreen = screen
+    if (!canEdit) { renderAdminSections(); return }
+    installDashboardButton()
+    renderAdminSections()
+    await loadEditors()
+    if (document.querySelector(EDITOR_ROOT)) await loadQuestions()
+  } finally { booting = false }
 }
 function scheduleBoot() {
   if (queued) return
@@ -364,6 +377,7 @@ document.addEventListener('click', async event => {
   if (event.target.closest('[data-sunday-preview]')) { event.preventDefault(); refreshPreview(); return }
   if (event.target.closest('[data-open-sunday-editor]')) { event.preventDefault(); await openEditorPage(); return }
   if (event.target.closest('[data-refresh-sunday-editors]')) { event.preventDefault(); await loadEditors(); return }
+  if (event.target.closest('[data-retry-sunday-access]')) { event.preventDefault(); checked = false; mountedAdminScreen = null; scheduleBoot(); return }
   if (event.target.closest('[data-assign-sunday-editor]')) { event.preventDefault(); await assignEditor(); return }
   const revoke = event.target.closest('[data-revoke-sunday-editor]')?.dataset?.revokeSundayEditor
   if (revoke) { event.preventDefault(); await revokeEditor(revoke); return }
@@ -379,6 +393,6 @@ document.addEventListener('submit', event => {
 }, true)
 
 window.addEventListener('load', () => setTimeout(boot, 1300))
-window.addEventListener('mezzoProfileUpdated', () => { checked = false; scheduleBoot() })
+window.addEventListener('mezzoProfileUpdated', () => { checked = false; mountedAdminScreen = null; scheduleBoot() })
 new MutationObserver(scheduleBoot).observe(document.documentElement, { childList: true, subtree: true })
 setTimeout(boot, 1800)
