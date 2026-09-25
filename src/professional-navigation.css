@@ -24,4 +24,12 @@ body:has(.admin-dashboard) .live-user-identity{display:none!important}
 @media(max-width:1160px){.screen-tabs.app-nav-ready{flex-wrap:wrap}.app-nav-actions{flex-basis:100%;justify-content:space-between}.app-nav-primary{flex:1}}
 @media(max-width:720px){.screen-tabs.app-nav-ready{padding:12px}.app-nav-actions{flex-wrap:wrap}.app-nav-primary{order:2;flex-basis:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.app-nav-primary button{min-width:0;justify-content:center;flex-direction:column;gap:1px;padding:7px 3px;font-size:.7rem}.app-nav-more,.app-nav-account{flex:1}.app-nav-account>button,.app-nav-more{width:100%}.screen-tabs.app-nav-ready.app-nav-expanded>.tab-scroll{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.screen-tabs.app-nav-ready.app-nav-expanded>.tab-scroll{grid-template-columns:1fr}}
+/* Override the older global navigation rules, which force a seven-column grid. */
+.screen-tabs.app-nav-ready{display:flex!important;grid-template-columns:none!important;min-height:72px!important;padding:12px 18px!important}
+.screen-tabs.app-nav-ready>.tab-scroll{display:none!important}
+.screen-tabs.app-nav-ready.app-nav-expanded>.tab-scroll{display:grid!important;left:auto;right:0;width:min(620px,calc(100vw - 32px));max-width:calc(100vw - 32px)!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;max-height:min(60vh,460px)}
+.screen-tabs.app-nav-ready.app-nav-expanded>.tab-scroll .screen-tab{font-size:.85rem!important}
+@media(max-width:1160px){.screen-tabs.app-nav-ready{flex-wrap:wrap}}
+@media(max-width:720px){.screen-tabs.app-nav-ready.app-nav-expanded>.tab-scroll{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:420px){.screen-tabs.app-nav-ready.app-nav-expanded>.tab-scroll{grid-template-columns:1fr!important}}
 @media print{.app-nav-actions,.screen-tabs.app-nav-ready>.tab-scroll{display:none!important}}
