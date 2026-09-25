@@ -98,10 +98,9 @@ async function retrieveAndApply(user, reason = 'login') {
       if (touched?.id) dbProfile = { ...dbProfile, ...touched }
     }
     const local = activate(dbProfile, 'supabase_database')
-    if (reason === 'login') toast(`Profile loaded from database: ${local.email} • ${local.role}`, 'success')
     syncStatus()
   } catch (error) {
-    toast(`Profile database sync failed: ${error.message}`, 'error')
+    console.warn('Profile sync failed', error)
   }
 }
 async function saveCurrentToDb(reason = 'manual') {
@@ -122,12 +121,7 @@ function statusHtml(profile) {
   return `<div class="profile-db-status" data-profile-db-status="true"><b>☁️ Database Profile</b><span>${profile?.email ? `${esc(profile.email)} • ${esc(profile.role || 'student')}` : 'Not loaded yet'}</span><small>${synced ? `Last sync: ${new Date(synced).toLocaleString()}` : 'Login details will load from Supabase after sign in.'}</small><button type="button" class="btn btn-blue btn-small" data-save-profile-database="true">Save Login Details to Database</button></div>`
 }
 function syncStatus() {
-  const profile = localProfile()
-  const host = document.querySelector('.dashboard-screen .dashboard-hero, .admin-screen .dashboard-hero, .auth-card, .auth-panel')
-  if (!host) return
-  const existing = host.querySelector('[data-profile-db-status]')
-  if (existing) existing.outerHTML = statusHtml(profile)
-  else host.insertAdjacentHTML('beforeend', statusHtml(profile))
+  document.querySelectorAll('[data-profile-db-status]').forEach(node => node.remove())
 }
 async function bootstrap() {
   if (!supabase || !isSupabaseConfigured) return
@@ -166,4 +160,3 @@ window.addEventListener('mezzoProfileUpdated', () => {
   requestAnimationFrame(() => { queued = false; syncStatus() })
 })
 window.addEventListener('load', () => { bootstrap(); syncStatus() })
-setTimeout(() => { bootstrap(); syncStatus() }, 700)

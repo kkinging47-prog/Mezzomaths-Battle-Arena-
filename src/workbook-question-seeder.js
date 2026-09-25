@@ -151,6 +151,7 @@ function buildWorkbookQuestions() {
 }
 function questionKey(q) { return `${q.class_level}|${q.curriculum}|${q.topic}|${q.question_text}` }
 function seedWorkbookQuestions() {
+  if (localStorage.getItem(SEEDED_KEY) === WORKBOOK_VERSION && localStorage.getItem(BANK_KEY)) return
   const existing = readJson(BANK_KEY, [])
   const merged = [...existing]
   const keys = new Set(existing.map(questionKey))
@@ -200,13 +201,13 @@ function syncWorkbookOptions() {
   const admin = document.querySelector('.admin-screen .question-manager')
   if (admin && !document.querySelector('[data-workbook-seed-summary]')) {
     const totalTopics = Object.values(WORKBOOK_TOPICS).reduce((sum, topics) => sum + topics.length, 0)
-    admin.insertAdjacentHTML('afterend', `<section class="question-manager glass-card" data-workbook-seed-summary="true"><div class="section-row"><h3>Mezzo Workbook 2025 Questions Loaded</h3><span>${totalTopics} topics • ${buildWorkbookQuestions().length} starter questions</span></div><p class="auth-note">KG1 to Grade 8 workbook topics have been added to class/topic dropdowns and seeded into the local question bank. Use Sync Local Questions to Database when Supabase policies are ready.</p></section>`)
+    admin.insertAdjacentHTML('afterend', `<section class="question-manager glass-card" data-workbook-seed-summary="true"><div class="section-row"><h3>Mezzo Workbook Topics</h3><span>${totalTopics} topics</span></div><p class="auth-note">KG1 to Grade 8 workbook topics are available in the class and topic selectors.</p></section>`)
   }
 }
 function syncAll() {
   if (queued) return
   queued = true
-  requestAnimationFrame(() => { queued = false; seedWorkbookQuestions(); syncWorkbookOptions() })
+  requestAnimationFrame(() => { queued = false; syncWorkbookOptions() })
 }
 
 seedWorkbookQuestions()

@@ -14,7 +14,6 @@ let audioEnabled = localStorage.getItem('mezzo_sound_enabled') !== 'off'
 let prepSession = null
 let prepTimer = null
 let syncQueued = false
-let initialHomeForced = false
 
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
 function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
@@ -184,16 +183,6 @@ function syncSoundPrep() {
     soundFromMutation()
   })
 }
-function forceHomeOnStartup() {
-  if (initialHomeForced) return
-  initialHomeForced = true
-  setTimeout(() => {
-    if (document.querySelector('.smartboard-screen') && document.querySelector('[data-target="home"]')) {
-      document.querySelector('[data-target="home"]').click()
-    }
-  }, 120)
-}
-
 document.addEventListener('click', event => {
   soundFromClick(event)
   if (event.target.closest('[data-sound-toggle]')) {
@@ -213,5 +202,5 @@ document.addEventListener('click', event => {
 
 const observer = new MutationObserver(syncSoundPrep)
 observer.observe(document.body, { childList: true, subtree: true, attributes: false })
-window.addEventListener('load', () => { syncSoundPrep(); forceHomeOnStartup() })
-setTimeout(() => { syncSoundPrep(); forceHomeOnStartup() }, 300)
+window.addEventListener('load', syncSoundPrep)
+setTimeout(syncSoundPrep, 300)
