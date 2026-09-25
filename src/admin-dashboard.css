@@ -34,6 +34,13 @@
 .admin-links strong{font-size:1rem}.admin-links span{color:#61738b;font-size:.86rem}.admin-links b{color:#2a63b5;font-size:.78rem}
 .admin-note{border:1px solid #cad8ed;border-radius:9px;padding:13px 16px;background:#edf4ff}
 .admin-filters{display:flex;gap:13px;flex-wrap:wrap;margin:22px 0}
+.admin-role-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:22px 0 8px}
+.admin-role-summary button{display:grid;gap:5px;text-align:left;border:1px solid #d3dfed;border-radius:12px;padding:16px;background:#fff;color:#17365f;cursor:pointer}
+.admin-role-summary button.active,.admin-role-summary button:hover{background:#eaf2ff;border-color:#3773c7}
+.admin-role-summary strong{font-size:1.45rem;color:#16417a}
+.admin-role-summary span{font-weight:800;font-size:.85rem}
+.admin-empty-role{display:grid;gap:12px;justify-items:start;padding:28px;border:1px dashed #aec4df;border-radius:14px;background:#fff;color:#29415e}
+.admin-empty-role button{border:1px solid #b8cbe5;border-radius:9px;padding:9px 13px;background:#eef5ff;color:#174780;font-weight:800;cursor:pointer}
 .admin-filters label{display:grid;gap:6px;min-width:180px;color:#445b78;font-size:.78rem;font-weight:800}
 .admin-filters label:first-child{flex:1}
 .admin-filters input,.admin-filters select,.admin-user-fields input,.admin-user-fields select{width:100%;min-width:0;border:1px solid #c9d6e8;border-radius:8px;padding:10px;color:#1b2c44;background:#fff;font:inherit}
@@ -80,6 +87,7 @@
 .admin-dashboard .bece-admin-panel,.admin-dashboard .sunday-question-editor{background:#142b4d!important;color:#eef4ff}
 .admin-dashboard .bece-admin-panel input,.admin-dashboard .bece-admin-panel select,.admin-dashboard .bece-admin-panel textarea,.admin-dashboard .sunday-question-editor input,.admin-dashboard .sunday-question-editor select,.admin-dashboard .sunday-question-editor textarea{background:#fff;color:#10213a}
 @media(max-width:850px){.admin-dashboard{grid-template-columns:1fr}.admin-side{padding:14px}.admin-brand{margin:0 0 10px;padding:0 0 10px}.admin-side nav{display:flex;overflow-x:auto;gap:3px}.admin-side button{white-space:nowrap;width:auto}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:850px){.admin-role-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1100px){.admin-dashboard .exact-workbook-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-dashboard .course-studio-fields{grid-template-columns:1fr}}
 @media(max-width:850px){.admin-dashboard .course-studio-shell{grid-template-columns:1fr}.admin-dashboard .course-studio-shell>aside{display:none}}
 @media(max-width:600px){.admin-header{flex-direction:column}.admin-links,.admin-user-fields{grid-template-columns:1fr}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-main{padding:18px}}
