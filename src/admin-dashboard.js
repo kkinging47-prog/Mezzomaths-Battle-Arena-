@@ -28,7 +28,7 @@ const mappings = [
 const read = key => { try { return JSON.parse(localStorage.getItem(key) || 'null') } catch { return null } }
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 let current='overview', users=[], sessions=[], events=[], pageViews=[], pageViewCount=0, loaded=false, loading=false, error='', search='', filter='all', page=0, queued=false
-let lastTracked='', lastTrackedAt=0, lastGuestAt=0, tracking=false
+let lastTracked='', lastGuestAt=0, tracking=false
 
 function shell() {
   return `<section class="admin-dashboard" data-admin-dashboard><aside class="admin-side"><div class="admin-brand"><span>MEZZO MATHS</span><strong>Administration</strong><small>Battle Arena</small></div><nav aria-label="Admin sections">${areas.map(([key,label])=>`<button type="button" data-admin-go="${key}">${esc(label)}</button>`).join('')}</nav></aside><div class="admin-main"><header class="admin-header"><div><small>ADMINISTRATION / <span data-admin-crumb>OVERVIEW</span></small><h1 data-admin-title>Overview</h1><p data-admin-subtitle>A snapshot of the app</p></div><button type="button" data-admin-reload>Refresh data</button></header><div data-admin-content></div><div data-admin-parking></div></div></section>`
@@ -53,7 +53,8 @@ function performance() {
   return `${warning()}<h2>Performance statistics</h2><p>Based on the latest 200 practice sessions, rather than lifetime totals.</p><div class="admin-stats">${stat(loaded?done.length:'—','Completed sessions')}${stat(loaded?(avg===null?'—':avg+'%'):'—','Average score')}${stat(loaded?new Set(done.map(s=>s.student_id)).size:'—','Active learners')}</div><div class="admin-report">${groups.map(([k,v])=>`<div><span>${esc(k)}</span><strong>${v} sessions</strong></div>`).join('')||'<p>No completed sessions found.</p>'}</div>`
 }
 function exportsPage() {
-  return `<h2>Email or print</h2><p>Download a report, print this view, or open a prepared email draft.</p><div class="admin-links"><button type="button" data-admin-export="users"><strong>Download users CSV</strong><span>Accounts, roles and schools</span></button><button type="button" data-admin-export="performance"><strong>Download performance CSV</strong><span>Recent practice records</span></button><button type="button" data-admin-print><strong>Print report</strong><span>Browser print or Save as PDF</span></button><button type="button" data-admin-email><strong>Email summary</strong><span>Open a draft in your email app</span></button></div><p class="admin-note">The email button opens a draft. It does not send a message automatically.</p>`
+  const completed=sessions.filter(s=>s.completed_at)
+  return `<h2>Email or print</h2><p>Download a report, print the summary below, or open a prepared email draft.</p><div class="admin-links"><button type="button" data-admin-export="users"><strong>Download users CSV</strong><span>Accounts, roles and schools</span></button><button type="button" data-admin-export="performance"><strong>Download performance CSV</strong><span>Recent practice records</span></button><button type="button" data-admin-print><strong>Print report</strong><span>Browser print or Save as PDF</span></button><button type="button" data-admin-email><strong>Email summary</strong><span>Open a draft in your email app</span></button></div><div class="admin-print-summary"><h2>Mezzo Maths Battle Arena · Administration summary</h2><p>Generated ${new Date().toLocaleDateString()}. Practice results cover the latest 200 sessions.</p><div class="admin-stats">${stat(loaded?users.length:'—','Registered users')}${stat(loaded?completed.length:'—','Completed practice sessions')}${stat(loaded?pageViewCount:'—','Authenticated page views')}</div></div><p class="admin-note">The email button opens a draft. It does not send a message automatically.</p>`
 }
 function toolPage() {
   const title=areas.find(([key])=>key===current)
@@ -133,13 +134,13 @@ async function trackNavigation(){
   const name=document.querySelector('.active-title p')?.textContent?.trim()
   if(!name)return
   const now=Date.now()
-  if(name===lastTracked&&now-lastTrackedAt<30000)return
+  if(name===lastTracked)return
   tracking=true
   try{
     const {data}=await supabase.auth.getUser()
     if(data?.user){
       const {error:insertError}=await supabase.from('app_page_views').insert({user_id:data.user.id,page_key:name.slice(0,60)})
-      if(!insertError){lastTracked=name;lastTrackedAt=now}
+      if(!insertError)lastTracked=name
     } else lastGuestAt=now
   }catch(e){console.warn('Page tracking unavailable',e?.message)}finally{tracking=false}
 }
