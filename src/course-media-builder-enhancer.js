@@ -1,14 +1,22 @@
 import './course-media-builder.css'
+import { supabase } from './supabaseClient.js'
 
 let queued = false
 
 function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])) }
 function toast(message) { document.querySelector('.course-media-toast')?.remove(); document.body.insertAdjacentHTML('beforeend', `<div class="course-media-toast">${escapeHtml(message)}</div>`); setTimeout(() => document.querySelector('.course-media-toast')?.remove(), 4200) }
 function setupTextarea() { return document.querySelector('#courseAdminForm textarea[name="setup"]') || document.querySelector('#courseAdminForm textarea') }
-async function fileToDataUrl(id) {
+async function fileToDataUrl(id, upload = false) {
   const file = document.getElementById(id)?.files?.[0]
   if (!file) return ''
-  if (file.size > 18 * 1024 * 1024) { toast('This file is large. Use a YouTube/Drive/Supabase Storage link for production videos.'); return '' }
+  if (file.size > 50 * 1024 * 1024) { toast('Choose a file below 50 MB or use an external video link.'); return '' }
+  if (upload && supabase) {
+    const ext = (file.name.split('.').pop() || 'bin').replace(/[^a-z0-9]/gi, '').toLowerCase()
+    const path = `lessons/${crypto.randomUUID()}.${ext}`
+    const { error } = await supabase.storage.from('course-media').upload(path, file, { contentType:file.type, upsert:false })
+    if (error) throw new Error(`Media upload failed: ${error.message}`)
+    return supabase.storage.from('course-media').getPublicUrl(path).data.publicUrl
+  }
   return new Promise(resolve => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result || ''))
@@ -61,11 +69,11 @@ function appendSetup(line) {
   area.value = `${area.value || ''}${area.value?.trim() ? '\n' : ''}${line}`
   area.dispatchEvent(new Event('input', { bubbles: true }))
 }
-async function mediaValues() {
-  const videoUpload = await fileToDataUrl('courseMediaVideoFile')
-  const audioUpload = await fileToDataUrl('courseMediaAudioFile')
-  const imageUpload = await fileToDataUrl('courseMediaImageFile')
-  const resourceUpload = await fileToDataUrl('courseMediaResourceFile')
+async function mediaValues(upload = false) {
+  const videoUpload = await fileToDataUrl('courseMediaVideoFile', upload)
+  const audioUpload = await fileToDataUrl('courseMediaAudioFile', upload)
+  const imageUpload = await fileToDataUrl('courseMediaImageFile', upload)
+  const resourceUpload = await fileToDataUrl('courseMediaResourceFile', upload)
   return {
     chapter: document.getElementById('courseMediaChapter')?.value || 'Chapter 1 - Introduction',
     lesson: document.getElementById('courseMediaLesson')?.value || 'Lesson 1',
@@ -81,9 +89,10 @@ async function mediaValues() {
   }
 }
 async function addLesson() {
-  const v = await mediaValues()
+  let v
+  try { v = await mediaValues(true) } catch (error) { toast(error.message); return }
   appendSetup(`CHAPTER: ${v.chapter}`)
-  appendSetup(`LESSON: ${v.lesson}|Interactive Lesson|${v.notes}|${v.video}|${v.resource}|${v.interactive}|${v.homework}|${v.classwork}|${v.audio}|${v.image}`)
+  appendSetup(`LESSON: ${v.lesson}|Interactive Lesson|${v.notes}|${v.video}|${v.resource}|${v.interactive}|${v.homework}|${v.classwork}||${v.audio}|${v.image}`)
   toast('Lesson media added to Course Setup.')
 }
 function addMiniQuiz() {
