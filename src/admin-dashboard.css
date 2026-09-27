@@ -95,3 +95,78 @@
 @media(max-width:600px){.admin-header{flex-direction:column}.admin-links,.admin-user-fields{grid-template-columns:1fr}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-main{padding:18px}}
 @media(max-width:600px){.admin-header-actions{justify-content:flex-start}.admin-dashboard .exact-workbook-actions{grid-template-columns:1fr}.admin-dashboard .question-manager .bank-row{grid-template-columns:1fr}}
 @media print{.admin-side,.admin-header button,.admin-links button,.admin-filters,.admin-user-fields button,.admin-pager{display:none!important}.admin-dashboard{display:block;box-shadow:none;border:0}.admin-main{padding:0}}
+/* Narrow phones: keep the admin page inside the viewport and let only the menu scroll. */
+@media (max-width: 700px) {
+  .app-frame:has(.admin-dashboard),
+  .admin-screen:has(.admin-dashboard),
+  .admin-dashboard,
+  .admin-dashboard .admin-main,
+  .admin-dashboard [data-admin-content],
+  .admin-dashboard [data-admin-parking] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .admin-dashboard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+    border-radius: 16px;
+  }
+  .admin-dashboard .admin-side {
+    min-width: 0;
+    align-self: start;
+    padding: 10px 12px;
+  }
+  .admin-dashboard .admin-brand { display: none; }
+  .admin-dashboard .admin-side nav {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    padding-bottom: 4px;
+  }
+  .admin-dashboard .admin-side button {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 44px;
+    padding: 9px 12px;
+    font-size: .88rem;
+  }
+  .admin-dashboard .admin-main { padding: 18px 14px 26px; }
+  .admin-dashboard .admin-header { gap: 12px; margin-bottom: 18px; padding-bottom: 16px; }
+  .admin-dashboard .admin-header small { display: block; overflow-wrap: anywhere; line-height: 1.4; }
+  .admin-dashboard .admin-header h1 { font-size: 1.55rem; }
+  .admin-dashboard .admin-header p { font-size: .94rem; }
+  .admin-dashboard .admin-header-actions { width: 100%; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .admin-dashboard .admin-header-actions button { width: 100%; min-width: 0; padding: 10px 6px; font-size: .84rem; white-space: normal; }
+  .admin-dashboard .admin-stats,
+  .admin-dashboard .admin-role-summary,
+  .admin-dashboard .admin-links,
+  .admin-dashboard .admin-user-fields { grid-template-columns: minmax(0,1fr); }
+  .admin-dashboard .admin-stat,
+  .admin-dashboard .admin-role-summary button,
+  .admin-dashboard .admin-links button,
+  .admin-dashboard .admin-users form,
+  .admin-dashboard .admin-report,
+  .admin-dashboard .admin-note { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+  .admin-dashboard .admin-role-summary { gap: 8px; margin: 15px 0; }
+  .admin-dashboard .admin-role-summary button { grid-template-columns: auto 1fr; align-items: center; min-height: 58px; padding: 11px 14px; }
+  .admin-dashboard .admin-role-summary strong { font-size: 1.2rem; }
+  .admin-dashboard .admin-links button { padding: 16px; }
+  .admin-dashboard .admin-filters { display: grid; grid-template-columns: minmax(0,1fr); }
+  .admin-dashboard .admin-filters label { min-width: 0; }
+  .admin-dashboard .admin-report>div { gap: 10px; flex-wrap: wrap; }
+  .admin-dashboard [data-admin-parking] > * { min-width: 0!important; max-width: 100%!important; }
+  .admin-dashboard .course-admin-head,
+  .admin-dashboard .bece-admin-head,
+  .admin-dashboard .bece-admin-tools,
+  .admin-dashboard .bece-admin-form { grid-template-columns: minmax(0,1fr); }
+  .admin-dashboard input, .admin-dashboard select, .admin-dashboard textarea { max-width: 100%; }
+}
+.admin-auth-notice{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#17365f;line-height:1.4}
+.admin-auth-notice button{flex:none;border:1px solid #1657a4;border-radius:9px;padding:9px 12px;color:#fff;background:#1657a4;font-weight:800}
+@media(max-width:700px){.admin-auth-notice{display:grid}.admin-auth-notice button{justify-self:start}}
