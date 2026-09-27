@@ -1,5 +1,79 @@
 import './professional-course-builder.css'
 
-function enhance(){const panel=document.querySelector('[data-course-admin-panel]'),form=panel?.querySelector('#courseAdminForm');if(!form||form.dataset.professional)return;form.dataset.professional='true';panel.classList.add('professional-course-studio');const labels=[...form.children];const find=n=>labels.find(x=>x.querySelector?.(`[name="${n}"]`));const groups=[['Course identity','Set the public title, audience and instructor.',['title','class_level','category','course_level','instructor','duration','cover_icon']],['Access & publishing','Control visibility, sequencing and future commercial settings.',['access_type','price','status','drip_mode','prerequisite_course_id']],['Course promise','Write clear information learners see before enrolling.',['summary','outcomes','requirements']],['Completion standard','Define the evidence required to complete this course.',[]],['Curriculum studio','Mount chapters, lessons, media, activities and assessments.',['course_setup']]];const submit=labels.filter(x=>x.tagName==='BUTTON');const shell=document.createElement('div');shell.className='course-studio-shell';shell.innerHTML='<aside><span>COURSE MOUNTING</span><h3>Build a complete learning experience</h3><ol><li class="active">1 <b>Identity</b></li><li>2 <b>Access</b></li><li>3 <b>Promise</b></li><li>4 <b>Standards</b></li><li>5 <b>Curriculum</b></li></ol><div><strong>Publishing checklist</strong><small>Clear title and audience</small><small>Measurable outcomes</small><small>Lessons and activities</small><small>Assessment and pass mark</small></div></aside><main></main>';const main=shell.querySelector('main');groups.forEach(([title,desc,names],i)=>{const sec=document.createElement('section');sec.className='course-studio-section';sec.innerHTML=`<header><i>${i+1}</i><div><h3>${title}</h3><p>${desc}</p></div></header><div class="course-studio-fields"></div>`;const body=sec.lastElementChild;if(i===3){const rules=form.querySelector('.completion-rule-grid');if(rules)body.appendChild(rules)}names.forEach(n=>{const el=find(n);if(el)body.appendChild(el)});if(i===4){const tools=document.createElement('div');tools.className='curriculum-tools';tools.innerHTML='<button type="button" data-course-line="CHAPTER: New Chapter">+ Chapter</button><button type="button" data-course-line="LESSON: New Lesson|Interactive Lesson|Lesson notes||||||">+ Lesson</button><button type="button" data-course-line="QUIZ: Question?|A|B|C|D|A|Explanation">+ Quiz</button><button type="button" data-course-line="FINAL: Final question?|A|B|C|D|A|Explanation">+ Final question</button>';body.prepend(tools)}main.appendChild(sec)});const actions=document.createElement('div');actions.className='course-studio-actions';submit.forEach(x=>actions.appendChild(x));main.appendChild(actions);[...form.children].filter(x=>x.tagName==='INPUT'&&x.type==='hidden').forEach(x=>main.prepend(x));form.appendChild(shell)}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-course-line]');if(!b)return;const ta=document.querySelector('#courseAdminForm [name="course_setup"]');if(!ta)return;ta.value=`${ta.value.trim()}\n${b.dataset.courseLine}`.trim();ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length)},true)
-const observer=new MutationObserver(()=>requestAnimationFrame(enhance));observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('load',enhance);setTimeout(enhance,600)
+const sections = [
+  ['identity', 'Course details', 'Title, cover and instructor', ['title','class_level','category','course_level','instructor','duration','cover_icon','cover_image']],
+  ['publishing', 'Publishing', 'Access, visibility and schedule', ['access_type','price','status','featured','drip_mode','prerequisite_course_id']],
+  ['description', 'Course information', 'Overview and learning goals', ['summary','outcomes','requirements']],
+  ['curriculum', 'Curriculum', 'Chapters, lessons and assessments', ['course_setup']],
+  ['completion', 'Completion', 'Assessment and certificate rules', []]
+]
+let active = 'identity'
+function enhance() {
+  const panel = document.querySelector('[data-course-admin-panel]')
+  const form = panel?.querySelector('#courseAdminForm')
+  if (!form || form.dataset.professional) return
+  form.dataset.professional = 'true'
+  panel.classList.add('professional-course-studio')
+  const fields = [...form.children]
+  const shell = document.createElement('div')
+  shell.className = 'course-studio-shell'
+  shell.innerHTML = '<aside><span>COURSE STUDIO</span><h3>Build your course</h3><nav aria-label="Course builder sections"></nav><p class="studio-help">Save your changes before leaving the workspace.</p></aside><main><div class="studio-panel"></div></main>'
+  const nav = shell.querySelector('nav')
+  const main = shell.querySelector('.studio-panel')
+  sections.forEach(([key,title,desc,names], index) => {
+    nav.insertAdjacentHTML('beforeend', `<button type="button" data-studio-tab="${key}">${String(index+1).padStart(2,'0')} <span>${title}</span></button>`)
+    const section = document.createElement('section')
+    section.className = 'course-studio-section'
+    section.dataset.studioSection = key
+    section.innerHTML = `<header><div><h3>${title}</h3><p>${desc}</p></div></header><div class="course-studio-fields"></div>`
+    const body = section.querySelector('.course-studio-fields')
+    names.forEach(name => { const el = fields.find(item => item.querySelector?.(`[name="${name}"]`)); if (el) body.appendChild(el) })
+    if (key === 'completion') { const rule = form.querySelector('.completion-rule-grid'); if (rule) body.appendChild(rule) }
+    if (key === 'curriculum') {
+      const tools = document.createElement('div')
+      tools.className = 'curriculum-tools'
+      tools.innerHTML = '<button type="button" data-course-line="CHAPTER: New Chapter">+ Chapter</button><button type="button" data-course-line="LESSON: New Lesson|Interactive Lesson|Lesson notes||||||">+ Lesson</button><button type="button" data-course-line="QUIZ: Question?|A|B|C|D|A|Explanation">+ Quiz</button><button type="button" data-course-line="FINAL: Final question?|A|B|C|D|A|Explanation">+ Final question</button>'
+      body.prepend(tools)
+    }
+    main.appendChild(section)
+  })
+  const actions = document.createElement('div')
+  actions.className = 'course-studio-actions'
+  fields.filter(item => item.tagName === 'BUTTON').forEach(item => actions.appendChild(item))
+  main.appendChild(actions)
+  fields.filter(item => item.tagName === 'INPUT' && item.type === 'hidden').forEach(item => main.prepend(item))
+  form.appendChild(shell)
+  showTab(panel, active)
+}
+function showTab(panel, key) {
+  active = sections.some(section => section[0] === key) ? key : 'identity'
+  panel.querySelectorAll('[data-studio-section]').forEach(el => { el.hidden = el.dataset.studioSection !== active })
+  panel.querySelectorAll('[data-studio-tab]').forEach(el => {
+    const current = el.dataset.studioTab === active
+    el.classList.toggle('active', current)
+    el.setAttribute('aria-current', current ? 'step' : 'false')
+  })
+}
+document.addEventListener('click', event => {
+  const tab = event.target.closest('[data-studio-tab]')
+  if (tab) { showTab(tab.closest('[data-course-admin-panel]'), tab.dataset.studioTab); return }
+  const line = event.target.closest('[data-course-line]')
+  if (!line) return
+  const area = document.querySelector('#courseAdminForm [name="course_setup"]')
+  if (!area) return
+  area.value = [area.value.trim(), line.dataset.courseLine].filter(Boolean).join('\n')
+  area.focus()
+  area.setSelectionRange(area.value.length, area.value.length)
+}, true)
+document.addEventListener('invalid', event => {
+  const section = event.target.closest('[data-studio-section]')
+  const panel = event.target.closest('[data-course-admin-panel]')
+  if (section && panel) showTab(panel, section.dataset.studioSection)
+}, true)
+const observer = new MutationObserver(() => {
+  if (!document.querySelector('#courseAdminForm:not([data-professional])')) return
+  requestAnimationFrame(enhance)
+})
+observer.observe(document.body, {childList:true, subtree:true})
+window.addEventListener('load', enhance)
+setTimeout(enhance, 600)
