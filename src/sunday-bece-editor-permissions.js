@@ -26,6 +26,7 @@ const STATUS = ['Published','Draft','Archived']
 let canEdit = false
 let isAdmin = false
 let checked = false
+let accessState = 'unavailable'
 let activeInput = null
 let questions = []
 let sets = []
@@ -65,15 +66,20 @@ async function checkAccess(force = false) {
   checked = true
   canEdit = false
   isAdmin = false
+  accessState = 'unavailable'
   if (!supabase || !isSupabaseConfigured) return { canEdit, isAdmin }
   try {
-    const { data: userData } = await supabase.auth.getUser()
-    if (!userData?.user) return { canEdit, isAdmin }
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (!sessionData?.session) { accessState = 'signed_out'; return { canEdit, isAdmin } }
+    const { data: userData, error: authError } = await supabase.auth.getUser()
+    if (authError) throw authError
+    if (!userData?.user) { accessState = 'signed_out'; return { canEdit, isAdmin } }
     const admin = await supabase.rpc('is_sunday_bece_admin')
     const manage = await supabase.rpc('can_manage_sunday_bece_questions')
     if (admin.error || manage.error) throw admin.error || manage.error
     isAdmin = Boolean(admin.data)
     canEdit = Boolean(manage.data) || isAdmin
+    accessState = canEdit ? 'allowed' : 'denied'
   } catch (error) {
     console.warn('Sunday editor permission check failed:', error?.message || error)
     checked = true
@@ -206,7 +212,7 @@ function renderAdminSections() {
   }
   if (!mount) return
   if (!canEdit) {
-    mount.innerHTML = localAdminGuess() ? '<section class="sunday-editor-lock">Could not verify editor access. Check your connection, then <button type="button" class="btn btn-blue btn-small" data-retry-sunday-access>try again</button>.</section>' : ''
+    mount.innerHTML = localAdminGuess() ? `<section class="sunday-editor-lock">${accessState === 'signed_out' ? 'Sign in on this phone to manage BECE editors.' : accessState === 'denied' ? 'This account does not have BECE editor access.' : 'Editor access could not be checked. Please retry.'} ${accessState === 'signed_out' ? '<button type="button" class="btn btn-blue btn-small" data-sunday-sign-in>Go to sign in</button>' : accessState === 'unavailable' ? '<button type="button" class="btn btn-blue btn-small" data-retry-sunday-access>Retry</button>' : ''}</section>` : ''
     return
   }
   mount.innerHTML = `${assignmentHtml()}${editorFormHtml()}`
@@ -448,6 +454,7 @@ document.addEventListener('click', async event => {
   if (event.target.closest('[data-sunday-preview]')) { event.preventDefault(); refreshPreview(); return }
   if (event.target.closest('[data-open-sunday-editor]')) { event.preventDefault(); await openEditorPage(); return }
   if (event.target.closest('[data-refresh-sunday-editors]')) { event.preventDefault(); await loadEditors(); return }
+  if (event.target.closest('[data-sunday-sign-in]')) { event.preventDefault(); document.querySelector('.screen-tabs [data-target="auth"]')?.click(); return }
   if (event.target.closest('[data-retry-sunday-access]')) { event.preventDefault(); checked = false; mountedAdminScreen = null; scheduleBoot(); return }
   if (event.target.closest('[data-assign-sunday-editor]')) { event.preventDefault(); await assignEditor(); return }
   const revoke = event.target.closest('[data-revoke-sunday-editor]')?.dataset?.revokeSundayEditor

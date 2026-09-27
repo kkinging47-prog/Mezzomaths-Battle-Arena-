@@ -28,7 +28,7 @@ const mappings = [
 ]
 const read = key => { try { return JSON.parse(localStorage.getItem(key) || 'null') } catch { return null } }
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
-let current='overview', users=[], sessions=[], events=[], pageViews=[], pageViewCount=0, loaded=false, loading=false, error='', search='', filter='all', page=0, queued=false
+let current='overview', users=[], sessions=[], events=[], pageViews=[], pageViewCount=0, loaded=false, loading=false, error='', needsSignIn=false, search='', filter='all', page=0, queued=false
 let lastTracked='', lastGuestAt=0, tracking=false
 
 function shell() {
@@ -36,11 +36,12 @@ function shell() {
 }
 const stat = (value,label,sub='') => `<article class="admin-stat"><strong>${esc(value)}</strong><span>${esc(label)}</span><small>${esc(sub)}</small></article>`
 const roles = [['admin','Admin'],['mezzo_staff','Mezzo Tutor'],['teacher','Teacher'],['student','Student']]
-const warning = () => !isSupabaseConfigured ? '<p class="admin-note">The database is not connected; live figures and user editing are unavailable.</p>' : error ? `<p class="admin-note">${esc(error)}</p>` : ''
+const warning = () => !isSupabaseConfigured ? '<p class="admin-note">The database is not connected; live figures and user editing are unavailable.</p>' : needsSignIn ? '<div class="admin-note admin-auth-notice"><span>Sign in on this phone to load administration data.</span><button type="button" data-admin-sign-in>Go to sign in</button></div>' : error ? `<p class="admin-note">${esc(error)}</p>` : ''
 function overview() {
   return `${warning()}<div class="admin-stats">${stat(loaded?users.length:'—','Registered users')}${stat(loaded?users.filter(u=>u.role==='student').length:'—','Students')}${stat(loaded?users.filter(u=>['teacher','mezzo_staff'].includes(u.role)).length:'—','Teachers & tutors')}${stat(loaded?sessions.length:'—','Recent sessions','Latest 200')}</div><h2>Manage the platform</h2><div class="admin-links">${areas.slice(1,10).map(([key,label,desc])=>`<button type="button" data-admin-go="${key}"><strong>${esc(label)}</strong><span>${esc(desc)}</span><b>Open →</b></button>`).join('')}</div>`
 }
 function people() {
+  if (needsSignIn) return `${warning()}<h2>Users & roles</h2><p>Account records will appear after you sign in as an administrator.</p>`
   const match=users.filter(u=>(filter==='all'||u.role===filter)&&[u.full_name,u.email,u.school_name,u.location].some(v=>String(v||'').toLowerCase().includes(search.toLowerCase())))
   const rows=match.slice(page*20,(page+1)*20)
   const empty = !loaded ? 'Loading accounts…' : error && !users.length ? 'Accounts could not be loaded. Select Refresh data to try again.' : search ? `No ${filter==='all'?'users':roles.find(([v])=>v===filter)?.[1]||'users'} match “${esc(search)}”. Clear the search to see all accounts.` : filter==='all' ? 'No registered accounts are available.' : `No ${roles.find(([v])=>v===filter)?.[1]||'users'} accounts yet. You can assign this role to an existing user below after selecting All roles.`
@@ -61,7 +62,7 @@ function exportsPage() {
 }
 function toolPage() {
   const title=areas.find(([key])=>key===current)
-  return `<h2>${esc(title?.[1])}</h2><p>${esc(title?.[2])}. Use the tools below.</p><div data-admin-tool-slot="${current}"></div>`
+  return `${warning()}<h2>${esc(title?.[1])}</h2><p>${esc(title?.[2])}. Use the tools below.</p><div data-admin-tool-slot="${current}"></div>`
 }
 function show(root) {
   const meta=areas.find(([key])=>key===current)||areas[0]
@@ -74,7 +75,7 @@ function show(root) {
   const content=root.querySelector('[data-admin-content]')
   const slot=root.querySelector('[data-admin-parking]')
   const sundayMount=root.parentElement.querySelector('[data-sunday-permission-mount]')
-  const signature=[current,loaded,users.length,sessions.length,events.length,pageViewCount,search,filter,page,error].join('|')
+  const signature=[current,loaded,users.length,sessions.length,events.length,pageViewCount,search,filter,page,error,needsSignIn].join('|')
   if(content.dataset.signature!==signature){
     // Move it only when replacing the page that currently owns it.
     if(sundayMount && content.contains(sundayMount))slot.appendChild(sundayMount)
@@ -110,10 +111,13 @@ function install(){
 }
 async function load(){
   if(loading||!supabase||!isSupabaseConfigured)return
-  loading=true;error=''
+  loading=true;error='';needsSignIn=false
   try{
-    const {data:auth}=await supabase.auth.getUser()
-    if(!auth?.user)throw new Error('Sign in again to load administration data.')
+    const {data:sessionData}=await supabase.auth.getSession()
+    if(!sessionData?.session){needsSignIn=true;throw new Error('Sign in on this phone to load administration data.')}
+    const {data:auth,error:authError}=await supabase.auth.getUser()
+    if(authError)throw authError
+    if(!auth?.user){needsSignIn=true;throw new Error('Sign in on this phone to load administration data.')}
     const [p,s,a,v]=await Promise.all([
       (async()=>{const rows=[];for(let offset=0;;offset+=1000){const result=await supabase.from('profiles').select('id,full_name,email,school_name,location,region,role,approval_status,created_at').order('created_at',{ascending:false}).range(offset,offset+999);if(result.error)return result;rows.push(...(result.data||[]));if((result.data||[]).length<1000)break}return {data:rows}})(),
       supabase.from('practice_sessions').select('student_id,practice_type,score,question_count,completed_at,started_at').order('started_at',{ascending:false}).limit(200),
@@ -161,6 +165,7 @@ async function trackNavigation(){
 }
 document.addEventListener('click',e=>{
   if(e.target.closest('[data-admin-open-app]')){e.preventDefault();document.querySelector('.screen-tabs [data-target="home"]')?.click();return}
+  if(e.target.closest('[data-admin-sign-in]')){e.preventDefault();document.querySelector('.screen-tabs [data-target="auth"]')?.click();return}
   const go=e.target.closest('[data-admin-go]');if(go){e.preventDefault();current=go.dataset.adminGo;page=0;queue();return}
   const role=e.target.closest('[data-admin-role-card]');if(role){e.preventDefault();filter=role.dataset.adminRoleCard;search='';page=0;queue();return}
   if(e.target.closest('[data-admin-reload]')){loaded=false;load();return}
