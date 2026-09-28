@@ -350,3 +350,7 @@
     grid-template-columns: 1fr;
   }
 }
+.sunday-set-guidance{color:#183b63;line-height:1.5}
+.sunday-ai-review{display:grid;gap:10px;margin:16px 0;color:#17365f}
+.sunday-ai-review article{padding:15px;border:1px solid #cbd5e1;border-radius:13px;background:#fff;overflow-wrap:anywhere}
+.sunday-ai-review p{color:#324c6d}

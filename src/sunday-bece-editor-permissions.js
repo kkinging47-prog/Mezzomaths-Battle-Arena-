@@ -30,6 +30,8 @@ let accessState = 'unavailable'
 let activeInput = null
 let questions = []
 let sets = []
+const aiReviews = new Map()
+let reviewingSet = false
 let selectedSetId = ''
 let editors = []
 let selectedId = ''
@@ -137,7 +139,8 @@ function setManagerHtml() {
     <header class="sunday-set-hero"><div><span>BECE QUESTION PROGRAMME</span><h2>Sunday question sets</h2><p>Forty unique questions per set. Choose the set and Sunday before the trial opens.</p></div>${isAdmin ? '<button type="button" class="btn btn-gold" data-create-sunday-set>Create next set</button>' : ''}</header>
     <div class="sunday-set-stats"><div><strong>${sets.length}</strong><span>Sets</span></div><div><strong>${complete}</strong><span>Complete</span></div><div><strong>${assigned}</strong><span>Assigned questions</span></div><div><strong>${unassigned.length}</strong><span>Unassigned</span></div></div>
     <div class="sunday-set-grid" aria-label="Sunday BECE sets">${sets.map(s => {const count=setQuestions(s.id).length;return `<button type="button" class="sunday-set-card ${s.id===selectedSetId?'selected':''}" data-select-sunday-set="${esc(s.id)}" aria-pressed="${s.id===selectedSetId}"><span>SET ${s.set_number}</span><strong>${count}/40 questions</strong><small>${s.scheduled_sunday ? '📅 '+esc(s.scheduled_sunday) : 'Not scheduled'} · ${esc(s.status)}</small><i style="width:${Math.min(count,40)*2.5}%"></i></button>`}).join('') || '<p>No sets yet.</p>'}</div>
-    ${selected ? `<div class="sunday-set-detail"><div class="sunday-set-detail-head"><div><span>SELECTED SET</span><h3>Set ${selected.set_number}</h3><p>${setQuestions().length}/40 questions · ${esc(selected.status)}${selected.scheduled_sunday ? ' · Sunday '+esc(selected.scheduled_sunday) : ''}</p></div><div class="sunday-set-actions">${isAdmin ? `<button type="button" class="btn btn-blue btn-small" data-sunday-set-status="ready" ${setQuestions().length!==40?'disabled':''}>Mark ready</button><button type="button" class="btn btn-gold btn-small" data-sunday-set-status="solved" ${setQuestions().length!==40?'disabled':''}>Mark done / solved</button><button type="button" class="btn btn-ghost btn-small" data-sunday-set-status="draft">Return to draft</button>` : ''}</div></div>
+    ${selected ? `<div class="sunday-set-detail"><div class="sunday-set-detail-head"><div><span>SELECTED SET</span><h3>Set ${selected.set_number}</h3><p>${setQuestions().length}/40 questions · ${esc(selected.status)}${selected.scheduled_sunday ? ' · Sunday '+esc(selected.scheduled_sunday) : ''}</p></div><div class="sunday-set-actions">${isAdmin ? `<button type="button" class="btn btn-blue btn-small" data-preview-sunday-set>Try this set</button><button type="button" class="btn btn-blue btn-small" data-analyse-sunday-set ${reviewingSet?'disabled':''}>${reviewingSet?'Analysing…':'AI review questions'}</button><button type="button" class="btn btn-blue btn-small" data-sunday-set-status="ready" ${setQuestions().length!==40?'disabled':''}>Mark ready</button><button type="button" class="btn btn-gold btn-small" data-sunday-set-status="solved" ${setQuestions().length!==40?'disabled':''}>Mark done / solved</button><button type="button" class="btn btn-ghost btn-small" data-sunday-set-status="draft">Return to draft</button>` : ''}</div></div>
+      ${isAdmin ? `<p class="sunday-set-guidance">Try the full set before scheduling it. AI suggestions require editor review; a disagreement with the stored answer is flagged, never changed automatically.</p><div class="sunday-ai-review" data-sunday-ai-review>${setQuestions().filter(q=>aiReviews.has(q.id)).map(q=>{const r=aiReviews.get(q.id);return `<article><b>Question ${setQuestions().indexOf(q)+1} · ${esc(r.topic_area)} · ${esc(r.confidence)} confidence</b><p>AI answer ${esc(r.answer)} · Stored answer ${esc(q.correct_answer)} ${r.answer!==q.correct_answer?'⚠️ Check this answer before release':''}</p><p>${esc(r.explanation)}</p>${selected.status==='draft'?`<button type="button" class="btn btn-blue btn-small" data-apply-sunday-ai="${esc(q.id)}">Apply topic & explanation</button>`:'<small>Return this set to draft to edit.</small>'}</article>`}).join('')}</div>` : ''}
       ${isAdmin ? `<form class="sunday-set-schedule" data-sunday-set-schedule><label>Choose a Sunday<input type="date" name="scheduled_sunday" value="${esc(suggestedSunday(selected))}" required></label><button type="submit" class="btn btn-primary btn-small" ${setQuestions().length!==40?'disabled':''}>Schedule this set</button>${selected.scheduled_sunday ? '<button type="button" class="btn btn-ghost btn-small" data-unschedule-sunday-set>Remove date</button>' : ''}<small>Scheduling requires 40 complete published questions. Dates must be Sundays.</small></form>` : ''}
       <div class="sunday-set-question-list">${setQuestions().map((q,i)=>`<article><b>${i+1}</b><div><strong>${esc(q.topic)}</strong><p>${esc(q.question_text).slice(0,160)}</p><small>${esc(q.status)} · Answer ${esc(q.correct_answer)}</small></div><button type="button" class="btn btn-blue btn-small" data-edit-sunday-question="${esc(q.id)}">Edit</button>${selected.status==='draft'&&isAdmin?`<button type="button" class="btn btn-ghost btn-small" data-remove-from-sunday-set="${esc(q.id)}">Remove</button>`:''}</article>`).join('') || '<p>Add questions to build this set.</p>'}</div>
       ${isAdmin && selected.status==='draft' && unassigned.length && setQuestions().length<40 ? `<details class="sunday-unassigned"><summary>Add from unassigned questions (${unassigned.length})</summary><button type="button" class="btn btn-gold btn-small" data-fill-sunday-set>Fill available places</button><div>${unassigned.slice(0,100).map(q=>`<article><span>${esc(q.question_text).slice(0,130)}</span><button type="button" class="btn btn-blue btn-small" data-add-to-sunday-set="${esc(q.id)}">Add to Set ${selected.set_number}</button></article>`).join('')}</div></details>` : ''}
@@ -306,6 +309,43 @@ async function updateSet(values) {
   await loadSets(); renderAdminSections()
   return true
 }
+async function adminBearer() {
+  const { data, error } = await supabase.auth.getSession()
+  if (error || !data?.session?.access_token) throw new Error('Sign in as an administrator to use these tools.')
+  return data.session.access_token
+}
+async function analyseSelectedSet() {
+  if (!isAdmin || reviewingSet || !selectedSet()) return
+  reviewingSet = true
+  const setId = selectedSetId
+  const list = setQuestions()
+  const status = document.querySelector('[data-sunday-ai-review]')
+  try {
+    const token = await adminBearer()
+    for (let index = 0; index < list.length; index += 5) {
+      if (status) status.textContent = `Reviewing questions ${index + 1}–${Math.min(index + 5, list.length)} of ${list.length}…`
+      const response = await fetch('/api/bece-sunday-analyse', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ set_id: setId, question_ids: list.slice(index, index + 5).map(q => q.id) }) })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || 'AI review failed.')
+      data.reviews.forEach(review => aiReviews.set(review.id, review))
+    }
+    toast(`Reviewed ${list.length} questions. Check each suggestion before applying it.`, 'success')
+  } catch (error) { toast(error.message, 'error') }
+  finally { reviewingSet = false; renderAdminSections() }
+}
+async function applyAiReview(id) {
+  if (!isAdmin || selectedSet()?.status !== 'draft') return
+  const review = aiReviews.get(id)
+  const original = questions.find(q => q.id === id && q.sunday_set_id === selectedSetId)
+  if (!review || !original) return
+  if (review.answer !== original.correct_answer) { toast('AI disagrees with the stored answer. Open the question editor and verify the answer first.', 'warn'); return }
+  if (review.confidence === 'low') { toast('Low-confidence solution needs manual review in the question editor.', 'warn'); return }
+  const { error } = await supabase.from('bece_question_bank').update({ topic_area: review.topic_area, curriculum_strand: review.topic_area, explanation: review.explanation }).eq('id', id).eq('sunday_set_id', selectedSetId)
+  if (error) { toast(error.message, 'error'); return }
+  aiReviews.delete(id)
+  await loadQuestions()
+  toast('Reviewed topic and explanation saved.', 'success')
+}
 async function moveQuestion(id, setId) {
   if (!isAdmin || !selectedSet()) return
   const { error } = await supabase.from('bece_question_bank').update({ sunday_set_id: setId }).eq('id', id)
@@ -461,6 +501,10 @@ document.addEventListener('click', async event => {
   if (revoke) { event.preventDefault(); await revokeEditor(revoke); return }
   if (event.target.closest('[data-load-sunday-questions]')) { event.preventDefault(); await loadQuestions(); return }
   if (event.target.closest('[data-create-sunday-set]')) { event.preventDefault(); await createSet(); return }
+  if (event.target.closest('[data-preview-sunday-set]')) { event.preventDefault(); if (isAdmin && selectedSetId) window.dispatchEvent(new CustomEvent('mezzoSundayPreview', { detail: { setId: selectedSetId } })); return }
+  if (event.target.closest('[data-analyse-sunday-set]')) { event.preventDefault(); await analyseSelectedSet(); return }
+  const aiId = event.target.closest('[data-apply-sunday-ai]')?.dataset?.applySundayAi
+  if (aiId) { event.preventDefault(); await applyAiReview(aiId); return }
   const selectSetId = event.target.closest('[data-select-sunday-set]')?.dataset?.selectSundaySet
   if (selectSetId) { event.preventDefault(); selectedSetId = selectSetId; selectedId = ''; renderAdminSections(); return }
   const setStatus = event.target.closest('[data-sunday-set-status]')?.dataset?.sundaySetStatus
