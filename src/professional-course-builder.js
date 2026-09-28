@@ -30,6 +30,10 @@ function enhance() {
     names.forEach(name => { const el = fields.find(item => item.querySelector?.(`[name="${name}"]`)); if (el) body.appendChild(el) })
     if (key === 'completion') { const rule = form.querySelector('.completion-rule-grid'); if (rule) body.appendChild(rule) }
     if (key === 'curriculum') {
+      // The media helper can mount before or after this studio enhancer.
+      // Keep it in the curriculum step in either order.
+      const media = form.querySelector('[data-course-media-builder]')
+      if (media) body.appendChild(media)
       const tools = document.createElement('div')
       tools.className = 'curriculum-tools'
       tools.innerHTML = '<button type="button" data-course-line="CHAPTER: New Chapter">+ Chapter</button><button type="button" data-course-line="LESSON: New Lesson|Interactive Lesson|Lesson notes||||||">+ Lesson</button><button type="button" data-course-line="QUIZ: Question?|A|B|C|D|A|Explanation">+ Quiz</button><button type="button" data-course-line="FINAL: Final question?|A|B|C|D|A|Explanation">+ Final question</button>'

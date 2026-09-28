@@ -29,8 +29,9 @@ function enhanceCourseBuilder() {
   if (!form || form.querySelector('[data-course-media-builder]')) return
   const target = setupTextarea()?.closest('label') || form.lastElementChild
   target?.insertAdjacentHTML('beforebegin', `
-    <section class="course-media-builder" data-course-media-builder="true">
-      <div class="course-media-head"><div><span>🎥 Course Media & Interactive Lesson Builder</span><h3>Lecture Videos, Mini Quizzes, Classwork & Homework</h3><p>Add video lessons, notes, resources, mini quizzes, classwork and homework into the Course Setup box automatically.</p></div></div>
+    <details class="course-media-builder" data-course-media-builder="true">
+      <summary>Lesson media and interactive activities <small>Course Studio · Curriculum</small></summary>
+      <div class="course-media-head"><div><h3>Add a lesson and its activities</h3><p>Use these tools to add video, audio, images, notes, quizzes, classwork and homework to this course. They write entries into the Course Setup field below.</p></div></div>
       <div class="course-media-grid">
         <label><span>Chapter Title</span><input id="courseMediaChapter" placeholder="e.g. Chapter 1 - Fractions"></label>
         <label><span>Lesson Title</span><input id="courseMediaLesson" placeholder="e.g. Lesson 1 - Equivalent Fractions"></label>
@@ -60,7 +61,7 @@ function enhanceCourseBuilder() {
         <button type="button" class="btn btn-ghost" data-preview-media-lesson="true">Preview Media</button>
       </div>
       <div id="courseMediaPreview" class="course-media-preview"></div>
-    </section>
+    </details>
   `)
 }
 function appendSetup(line) {
