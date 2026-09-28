@@ -8,6 +8,8 @@ const QUESTION_COUNT = 40
 const REGIONS = ['Greater Accra','Ashanti','Central','Eastern','Western','Western North','Volta','Oti','Northern','Savannah','North East','Upper East','Upper West','Bono','Bono East','Ahafo']
 let active = null
 let queued = false
+let previewReport = false
+let submitting = false
 
 const esc = (v = '') => String(v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
 const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
@@ -79,7 +81,7 @@ async function dbLeaders() {
 function localLeaders() { return attempts().filter(a => a.week_start === weekStartIso()).sort((a,b) => b.score - a.score || a.time_taken_seconds - b.time_taken_seconds).slice(0, 20) }
 function bannerHtml() {
   const w = trialWindow()
-  return `<section class="bece-sunday-banner glass-card" data-bece-sunday-banner="true"><div><span>${w.open ? '🟢 Window open now' : '⏳ Countdown to Sunday'}</span><h2>Free Sunday BECE Maths Trial</h2><p>Every Sunday 6:00pm–8:00pm. 40 objectives, weekly leaderboard by score and time, plus progress report and AI analysis.</p></div><div class="bece-sunday-count"><small>${w.open ? 'Closes in' : 'Starts in'}</small><strong data-bece-sunday-countdown>${fmt(w.ms)}</strong><em>Ghana time</em></div><button class="btn btn-gold" type="button" data-bece-sunday-open="true">${w.open ? 'Start Trial' : 'Register Free'}</button></section>`
+  return `<section class="bece-sunday-banner glass-card" data-bece-sunday-banner="true"><div><span>${w.open ? '🟢 Window open now' : '⏳ Countdown to Sunday'}</span><h2>Free Sunday BECE Maths Trial</h2><p>Every Sunday 6:00pm–8:00pm. 40 objectives, weekly leaderboard by score and time, plus worked explanations and performance analysis.</p></div><div class="bece-sunday-count"><small>${w.open ? 'Closes in' : 'Starts in'}</small><strong data-bece-sunday-countdown>${fmt(w.ms)}</strong><em>Ghana time</em></div><button class="btn btn-gold" type="button" data-bece-sunday-open="true">${w.open ? 'Start Trial' : 'Register Free'}</button></section>`
 }
 function injectBanner() {
   const home = document.querySelector('.home-screen, .landing-page') || document.querySelector('.mode-section-head')?.parentElement
@@ -88,7 +90,7 @@ function injectBanner() {
   anchor?.insertAdjacentHTML('afterend', bannerHtml())
 }
 function shell(content) {
-  document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-sunday-page"><nav class="screen-tabs"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE Sunday Trial</small></div></div><div class="tab-scroll"><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button><button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Practice</button><button class="screen-tab active" data-bece-sunday-open="true"><span>⏰</span>Sunday Trial</button></div></nav>${content}</section></main>`
+  document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-sunday-page"><nav class="screen-tabs"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE Sunday Trial</small></div></div><div class="tab-scroll"><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button>${active?.preview || previewReport ? '<button class="screen-tab" data-target="admin"><span>🛠️</span>Admin workspace</button>' : '<button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Practice</button><button class="screen-tab active" data-bece-sunday-open="true"><span>⏰</span>Sunday Trial</button>'}</div></nav>${content}</section></main>`
 }
 function registerHtml() {
   return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
@@ -119,75 +121,79 @@ async function startTrial() {
   try {
     const secured = await loadTrialQuestions()
     if (!secured.questions.length || !secured.sessionToken) throw new Error('The secured question service returned no questions.')
-    active = { id: `trial_${Date.now()}`, week_start: weekStartIso(), candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: 0, selected: '', feedback: null, score: 0, answers: [], started_at: Date.now() }
+    active = { id: `trial_${Date.now()}`, week_start: weekStartIso(), candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: 0, selections: {}, started_at: Date.now() }
     saveJson(ACTIVE_KEY, active)
     renderQuestion()
   } catch (error) {
-    shell(`<section class="sunday-report light-card"><h2>Trial temporarily unavailable</h2><p>We could not start the trial right now. Please check your connection and try again shortly.</p><button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button></section>`)
+    shell(`<section class="sunday-report light-card"><h2>Trial temporarily unavailable</h2><p>${esc(error.message || 'Please check your connection and try again shortly.')}</p><button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button></section>`)
   }
 }
+async function startAdminPreview(setId) {
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data?.session?.access_token
+    if (!token) throw new Error('Sign in as an administrator to preview a set.')
+    const response = await fetch('/api/bece-sunday-preview', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ set_id: setId }) })
+    const result = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(result.error || 'The set could not be loaded.')
+    active = { id: `preview_${Date.now()}`, preview: true, set_number: result.set_number, questions: result.questions, session_token: result.session_token, index: 0, selections: {}, started_at: Date.now() }
+    renderQuestion()
+  } catch (error) { alert(error.message) }
+}
+function selectedCount() { return Object.keys(active?.selections || {}).length }
 function renderQuestion() {
   active ||= readJson(ACTIVE_KEY, null)
   if (!active) return renderSundayHome()
   const q = active.questions[active.index]
-  const feedback = active.feedback
-  shell(`<section class="sunday-live"><div class="sunday-live-top glass-card"><span>Question ${active.index + 1}/${active.questions.length}</span><strong>${esc(q.topic_area || q.topic)}</strong><em>${fmt(Date.now() - active.started_at)}</em></div><article class="sunday-question light-card"><h2>${esc(q.question_text)}</h2>${q.question_image_url ? `<img class="sunday-question-img" src="${q.question_image_url}" alt="Question diagram">` : ''}<div class="sunday-options">${q.options.map((op, i) => { const letter = String.fromCharCode(65 + i); const cls = active.selected === letter && feedback ? (feedback.correct ? 'correct' : 'wrong') : ''; return `<button class="${cls}" data-sunday-answer="${letter}" ${active.selected ? 'disabled' : ''}><b>${letter}</b>${q.option_image_urls?.[i] ? `<img src="${q.option_image_urls[i]}" alt="Option ${letter}">` : ''}<span>${esc(op)}</span></button>` }).join('')}</div></article>${feedback ? `<section class="sunday-feedback ${feedback.correct ? 'correct' : 'wrong'}"><strong>${feedback.correct ? 'Correct' : 'Not correct'}</strong><p>Answer: ${esc(feedback.correct_answer)}. ${esc(feedback.explanation)}</p><button class="btn btn-gold" data-sunday-next="true">${active.index + 1 >= active.questions.length ? 'Finish Trial' : 'Next Question'} ▶</button></section>` : ''}</section>`)
+  const selected = active.selections?.[q.id] || ''
+  const complete = selectedCount() === active.questions.length
+  shell(`<section class="sunday-live"><div class="sunday-live-top glass-card"><span>${active.preview ? `Admin trial · Set ${esc(active.set_number)}` : 'Sunday BECE Trial'} · Question ${active.index + 1}/${active.questions.length}</span><strong>${selectedCount()} answered</strong><em>${fmt(Date.now() - active.started_at)}</em></div><article class="sunday-question light-card"><p class="sunday-question-topic">${esc(q.topic_area || q.topic)}</p><h2>${esc(q.question_text)}</h2>${q.question_image_url ? `<img class="sunday-question-img" src="${esc(q.question_image_url)}" alt="Question diagram">` : ''}<div class="sunday-options">${q.options.map((op, i) => { const letter = String.fromCharCode(65 + i); return `<button type="button" class="${selected === letter ? 'selected' : ''}" data-sunday-answer="${letter}" aria-pressed="${selected === letter}"><b>${letter}</b>${q.option_image_urls?.[i] ? `<img src="${esc(q.option_image_urls[i])}" alt="Option ${letter}">` : ''}<span>${esc(op)}</span></button>` }).join('')}</div></article><nav class="sunday-question-nav" aria-label="Question navigation"><button type="button" class="btn btn-blue" data-sunday-prev ${active.index === 0 ? 'disabled' : ''}>← Previous</button><span>${selected ? 'Answer saved' : 'Choose an answer'}</span><button type="button" class="btn btn-blue" data-sunday-next ${active.index + 1 === active.questions.length ? 'disabled' : ''}>Next →</button></nav><div class="sunday-question-jump" aria-label="Jump to question">${active.questions.map((item, i) => `<button type="button" data-sunday-jump="${i}" class="${i === active.index ? 'current' : ''} ${active.selections?.[item.id] ? 'answered' : ''}" aria-label="Question ${i + 1}${active.selections?.[item.id] ? ', answered' : ', unanswered'}" aria-current="${i === active.index ? 'step' : 'false'}">${i + 1}</button>`).join('')}</div><div class="sunday-submit-row"><p>${complete ? 'All questions answered. Submit to see your feedback and explanations.' : `${active.questions.length - selectedCount()} question(s) still need an answer.`}</p><button type="button" class="btn btn-gold" data-sunday-submit ${complete ? '' : 'disabled'}>Submit all answers</button>${active.preview ? '<button type="button" class="btn btn-ghost" data-sunday-exit-preview>Exit admin trial</button>' : ''}</div></section>`)
 }
-async function answer(letter) {
-  if (!active || active.selected) return
+function answer(letter) {
+  if (!active || !/^[ABCD]$/.test(letter)) return
   const q = active.questions[active.index]
-  active.selected = letter
+  active.selections ||= {}
+  active.selections[q.id] = letter
+  if (!active.preview) saveJson(ACTIVE_KEY, active)
   renderQuestion()
-  try {
-    const response = await fetch('/api/bece-sunday-answer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_token: active.session_token, question_id: q.id, selected_answer: letter })
-    })
-    const result = await response.json().catch(() => ({}))
-    if (!response.ok) throw new Error(result.error || 'Unable to verify this answer.')
-    if (result.correct) active.score++
-    active.session_token = result.session_token
-    active.feedback = {
-      correct: Boolean(result.correct),
-      correct_answer: result.correct_answer,
-      explanation: result.explanation
-    }
-    active.answers.push({ question_id: q.id, question_text: q.question_text, topic: q.topic, topic_area: q.topic_area, selected_answer: letter, correct_answer: result.correct_answer, correct: Boolean(result.correct) })
-    saveJson(ACTIVE_KEY, active)
-    renderQuestion()
-  } catch (error) {
-    active.selected = ''
-    active.feedback = null
-    saveJson(ACTIVE_KEY, active)
-    alert('We could not verify your answer right now. Please check your connection and try again.')
-    renderQuestion()
-  }
 }
-async function nextQuestion() {
-  active ||= readJson(ACTIVE_KEY, null)
-  if (!active) return renderSundayHome()
-  if (active.index + 1 >= active.questions.length) return finishTrial()
-  active.index++
-  active.selected = ''
-  active.feedback = null
-  saveJson(ACTIVE_KEY, active)
+function nextQuestion(delta = 1) {
+  if (!active) return
+  active.index = Math.min(active.questions.length - 1, Math.max(0, active.index + delta))
+  if (!active.preview) saveJson(ACTIVE_KEY, active)
   renderQuestion()
 }
 async function finishTrial() {
-  const seconds = Math.round((Date.now() - active.started_at) / 1000)
-  const attempt = { id: active.id, week_start: active.week_start, candidate: active.candidate, score: active.score, total: active.questions.length, percent: Math.round((active.score / active.questions.length) * 100), time_taken_seconds: seconds, answers: active.answers, completed_at: new Date().toISOString() }
-  attempt.ai_analysis = analyse(attempt)
-  localStorage.removeItem(ACTIVE_KEY)
-  await saveAttempt(attempt)
-  active = null
-  renderReport(attempt)
+  if (!active || submitting || selectedCount() !== active.questions.length) return
+  if (!window.confirm('Submit all answers? You will see feedback and explanations after submission.')) return
+  submitting = true
+  const current = active
+  const button = document.querySelector('[data-sunday-submit]')
+  if (button) { button.disabled = true; button.textContent = 'Marking answers…' }
+  try {
+    const token = current.preview ? (await supabase.auth.getSession()).data?.session?.access_token : ''
+    if (current.preview && !token) throw new Error('Sign in again to submit the admin trial.')
+    const response = await fetch('/api/bece-sunday-answer', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ session_token: current.session_token, answers: current.questions.map(q => ({ question_id: q.id, selected_answer: current.selections[q.id] })) }) })
+    const marked = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(marked.error || 'The answers could not be marked.')
+    const seconds = Math.round((Date.now() - current.started_at) / 1000)
+    const byId = new Map(marked.results.map(result => [String(result.question_id), result]))
+    const answers = current.questions.map(q => ({ ...byId.get(String(q.id)), question_text: q.question_text, options: q.options, question_image_url: q.question_image_url }))
+    const attempt = { id: current.id, week_start: current.week_start, candidate: current.candidate, preview: current.preview, set_number: current.set_number, score: marked.score, total: current.questions.length, percent: Math.round(marked.score / current.questions.length * 100), time_taken_seconds: seconds, answers, completed_at: new Date().toISOString() }
+    attempt.ai_analysis = analyse(attempt)
+    active = null
+    if (!current.preview) { localStorage.removeItem(ACTIVE_KEY); await saveAttempt(attempt) }
+    renderReport(attempt)
+  } catch (error) { alert(error.message); if (button) { button.disabled = false; button.textContent = 'Submit all answers' } }
+  finally { submitting = false }
 }
 function renderReport(attempt = currentAttempt()) {
   if (!attempt) return renderSundayHome()
+  previewReport = Boolean(attempt.preview)
   const a = attempt.ai_analysis || analyse(attempt)
-  shell(`<section class="sunday-report light-card"><div class="report-score"><span>📊 Progress Report</span><h1>${attempt.score}/${attempt.total}</h1><p>${attempt.percent}% • Time: ${fmt(attempt.time_taken_seconds * 1000)}</p></div><div class="report-ai"><h2>AI Analysis</h2><p>${esc(a.speed)}</p>${a.strong?.length ? `<p><b>Strong areas:</b> ${a.strong.map(esc).join(', ')}</p>` : ''}${a.weak?.length ? `<p><b>Areas to improve:</b> ${a.weak.slice(0,5).map(([t,v]) => `${esc(t)} (${v.wrong} missed)`).join(', ')}</p>` : '<p><b>Excellent:</b> no weak area detected.</p>'}<ul>${(a.advice || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="sunday-actions"><button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button><button class="btn btn-gold" onclick="window.print()">Print / Save Report</button></div></section>${leaderboardHtml(localLeaders())}`)
-  refreshDbLeaders()
+  const review = (attempt.answers || []).map((item, index) => `<article class="sunday-review-item ${item.correct ? 'correct' : 'incorrect'}"><h3>Question ${index + 1} · ${esc(item.topic_area || item.topic || 'General')} · ${item.correct ? 'Correct' : 'Needs review'}</h3><p>${esc(item.question_text || '')}</p>${item.question_image_url ? `<img src="${esc(item.question_image_url)}" alt="Question diagram">` : ''}<p>Your answer: <b>${esc(item.selected_answer || '—')}${item.options?.['ABCD'.indexOf(item.selected_answer)] ? ` · ${esc(item.options['ABCD'.indexOf(item.selected_answer)])}` : ''}</b> · Correct answer: <b>${esc(item.correct_answer || '—')}</b></p><p><strong>How to solve it:</strong> ${esc(item.explanation || 'A worked explanation is awaiting editor review.')}</p></article>`).join('')
+  shell(`<section class="sunday-report light-card"><div class="report-score"><span>${attempt.preview ? `Admin trial · Set ${esc(attempt.set_number)}` : '📊 Progress Report'}</span><h1>${attempt.score}/${attempt.total}</h1><p>${attempt.percent}% · Time: ${fmt(attempt.time_taken_seconds * 1000)}</p></div><div class="report-ai"><h2>Performance analysis</h2><p>${esc(a.speed)}</p>${a.strong?.length ? `<p><b>Strong areas:</b> ${a.strong.map(esc).join(', ')}</p>` : ''}${a.weak?.length ? `<p><b>Areas to improve:</b> ${a.weak.slice(0,5).map(([t,v]) => `${esc(t)} (${v.wrong} missed)`).join(', ')}</p>` : '<p><b>Excellent:</b> no weak area detected.</p>'}<ul>${(a.advice || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="sunday-actions"><button class="btn btn-blue" ${attempt.preview ? 'data-sunday-exit-preview' : 'data-bece-sunday-open'}>${attempt.preview ? 'Return to admin workspace' : 'Back to Sunday Trial'}</button><button class="btn btn-gold" onclick="window.print()">Print / Save Report</button></div></section><section class="sunday-review light-card"><h2>Question by question feedback</h2>${review || '<p>Detailed review is unavailable for this earlier attempt.</p>'}</section>${attempt.preview ? '' : leaderboardHtml(localLeaders())}`)
+  if (!attempt.preview) refreshDbLeaders()
 }
 function updateCountdowns() { const w = trialWindow(); document.querySelectorAll('[data-bece-sunday-countdown]').forEach(el => { el.textContent = fmt(w.ms) }) }
 function sync() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; injectBanner(); updateCountdowns() }) }
@@ -199,8 +205,14 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-bece-sunday-report]')) { e.preventDefault(); renderReport(); return }
   const ans = e.target.closest('[data-sunday-answer]')
   if (ans) { e.preventDefault(); answer(ans.dataset.sundayAnswer); return }
-  if (e.target.closest('[data-sunday-next]')) { e.preventDefault(); nextQuestion(); return }
+  if (e.target.closest('[data-sunday-next]')) { e.preventDefault(); nextQuestion(1); return }
+  if (e.target.closest('[data-sunday-prev]')) { e.preventDefault(); nextQuestion(-1); return }
+  const jump = e.target.closest('[data-sunday-jump]')?.dataset?.sundayJump
+  if (jump !== undefined) { e.preventDefault(); if (active) { active.index = Number(jump); renderQuestion() } return }
+  if (e.target.closest('[data-sunday-submit]')) { e.preventDefault(); finishTrial(); return }
+  if (e.target.closest('[data-sunday-exit-preview]')) { e.preventDefault(); active = null; previewReport = false; document.querySelector('.screen-tabs [data-target="admin"]')?.click(); return }
 }, true)
+window.addEventListener('mezzoSundayPreview', event => { if (event.detail?.setId) startAdminPreview(event.detail.setId) })
 document.addEventListener('submit', e => { if (e.target?.id === 'beceSundayRegisterForm') { e.preventDefault(); register(e.target) } }, true)
 
 new MutationObserver(sync).observe(document.body, { childList: true, subtree: true, attributes: false })

@@ -61,3 +61,24 @@ export async function supabaseRows(query) {
   if (!response.ok) throw new Error(data?.message || 'Unable to load Sunday BECE questions.')
   return data
 }
+
+export async function requireSundayAdmin(req) {
+  const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim()
+  if (!token) throw new Error('Sign in as an administrator to preview a set.')
+  const url = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim().replace(/\/$/, '')
+  const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
+  if (!url || !key) throw new Error('Sunday BECE question service is not configured.')
+  const auth = await fetch(`${url}/auth/v1/user`, { headers: { apikey: key, Authorization: `Bearer ${token}` } })
+  const user = await auth.json().catch(() => ({}))
+  if (!auth.ok || !user.id) throw new Error('Your sign-in session has expired. Sign in again.')
+  const profiles = await supabaseRows(`profiles?select=role&id=eq.${encodeURIComponent(user.id)}&limit=1`)
+  if (profiles[0]?.role !== 'admin') throw new Error('Only administrators can preview or analyse sets.')
+  return user
+}
+
+export const SUNDAY_QUESTION_COLUMNS = [
+  'id','topic','topic_area','question_text','question_image_url',
+  'option_a','option_b','option_c','option_d',
+  'option_a_image_url','option_b_image_url','option_c_image_url','option_d_image_url',
+  'correct_answer','explanation','status'
+].join(',')
