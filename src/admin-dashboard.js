@@ -76,13 +76,16 @@ function show(root) {
   const slot=root.querySelector('[data-admin-parking]')
   const sundayMount=root.parentElement.querySelector('[data-sunday-permission-mount]')
   const signature=[current,loaded,users.length,sessions.length,events.length,pageViewCount,search,filter,page,error,needsSignIn].join('|')
-  if(content.dataset.signature!==signature){
+  const changed=content.dataset.signature!==signature
+  const screen=root.parentElement
+  const newPanels=[...screen.children].some(child=>child!==root&&!child.classList.contains('dashboard-hero')&&!child.matches('[data-admin-control-hub]'))
+  if(!changed&&!newPanels)return
+  if(changed){
     // Move it only when replacing the page that currently owns it.
     if(sundayMount && content.contains(sundayMount))slot.appendChild(sundayMount)
     content.innerHTML=current==='overview'?overview():current==='users'?people():current==='audience'?audience():current==='performance'?performance():current==='export'?exportsPage():toolPage()
     content.dataset.signature=signature
   }
-  const screen=root.parentElement
   for(const child of [...screen.children]){
     if(child===root||child.classList.contains('dashboard-hero')||child.matches('[data-admin-control-hub]'))continue
     if(!child.dataset.adminPanel){const m=mappings.find(([selector])=>child.matches(selector)||child.querySelector(selector));child.dataset.adminPanel=m?.[1]||'control'}

@@ -14,6 +14,10 @@ const TYPES = ['Text Lesson','Video Lesson','Interactive Lesson','Worked Example
 const RULES = { allLessons: true, minQuizScore: 70, requireHomework: false, requireClasswork: false, requireFinal: false, finalPass: 70 }
 let queued = false, editingCourseId = '', selectedCourseId = '', chapterIndex = 0, lessonIndex = 0
 let cloudCourses = null, cloudReady = false, cloudError = ''
+let cloudGrants = []
+let cloudEnrollmentIds = new Set()
+const courseDrafts = new Map()
+let draftTimer = null
 let filters = { q: '', classLevel: '', category: '', access: '', level: '', sort: 'newest' }
 
 const $ = s => document.querySelector(s)
@@ -26,6 +30,43 @@ const h = (v = '') => String(v).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt
 const id = (p = 'id') => `${p}_${Date.now()}_${Math.random().toString(16).slice(2)}`
 const profile = () => read('mezzo_profile', {}) || {}
 const userKey = () => String(profile().email || profile().full_name || 'demo-student').toLowerCase()
+const draftKey = (courseId = editingCourseId) => `mezzo_course_draft:${userKey()}:${courseId || 'new'}`
+function rememberCourseDraft(form){
+  const key=draftKey(form.elements.namedItem('id')?.value || '')
+  const fields=Object.fromEntries([...new FormData(form).entries()].filter(([,value])=>typeof value==='string'))
+  courseDrafts.set(key,fields)
+  form.dataset.courseDirty='true'
+  clearTimeout(draftTimer)
+  draftTimer=setTimeout(()=>{try{sessionStorage.setItem(key,JSON.stringify(fields))}catch{}},300)
+}
+function restoreCourseDraft(form){
+  const key=draftKey(form.elements.namedItem('id')?.value || '')
+  let fields=courseDrafts.get(key)
+  if(!fields){try{fields=JSON.parse(sessionStorage.getItem(key)||'null')}catch{}}
+  if(!fields)return
+  for(const [name,value] of Object.entries(fields)){
+    const field=form.elements.namedItem(name)
+    if(field&&field.type!=='file')field.value=value
+  }
+  form.dataset.courseDirty='true'
+}
+function clearCourseDraft(courseId=''){
+  clearTimeout(draftTimer)
+  const key=draftKey(courseId)
+  courseDrafts.delete(key)
+  sessionStorage.removeItem(key)
+}
+document.addEventListener('course-studio-save-draft',event=>{
+  const form=event.target
+  if(form.id!=='courseAdminForm')return
+  rememberCourseDraft(form)
+  clearTimeout(draftTimer)
+  const key=draftKey(form.elements.namedItem('id')?.value || '')
+  try{
+    sessionStorage.setItem(key,JSON.stringify(courseDrafts.get(key)))
+    event.detail.saved=true
+  }catch{toast('Draft could not be saved. Keep this page open and try again.')}
+})
 const isAdmin = () => profile().role === 'admin'
 const isTeacher = () => profile().role === 'teacher'
 const isStaff = () => profile().role === 'mezzo_staff'
@@ -55,7 +96,7 @@ function cloudCourse(row){ const outline = row.course_document?.outline || []; r
 async function loadCloudCourses(){
   if (!supabase) return
   const {data,error} = await supabase.from('course_sessions').select('*').order('updated_at',{ascending:false}).limit(250)
-  if (error) { cloudError = 'Courses could not be loaded. Please try again.'; cloudCourses=[]; cloudReady=true; if ($('.course-app .catalog-section')) renderCourses(); if ($('[data-course-admin-panel]')) { $('[data-course-admin-panel]').remove(); adminPanel() } return }
+  if (error) { cloudError = 'Courses could not be loaded. Please try again.'; cloudCourses=[]; cloudReady=true; if ($('.course-app .catalog-section')) renderCourses(); refreshCourseAdminPanel(); return }
   cloudError = ''
   const previous = cloudCourses || []
   cloudCourses = (data || []).map(row => {
@@ -68,14 +109,23 @@ async function loadCloudCourses(){
   if (!review.error) saveRows(K.reviews,(review.data||[]).map(row => ({...row,user:row.student_email})))
   if (user) {
     const enrol = await supabase.from('course_enrollments').select('course_id,progress_snapshot,enrolled_at').eq('student_id',user.id)
+    cloudEnrollmentIds = new Set(enrol.error ? [] : (enrol.data || []).map(row => row.course_id))
     if (!enrol.error) {
       const e = {}, p = {}
       enrol.data.forEach(row => { e[`${userKey()}_${row.course_id}`] = {course_id:row.course_id,student:userKey(),enrolled_at:row.enrolled_at}; p[`${userKey()}_${row.course_id}`] = row.progress_snapshot || {} })
       save(K.enroll,e); save(K.progress,p)
     }
-  } else { save(K.enroll,{}); save(K.progress,{}) }
+    const grants = await supabase.from('course_access_grants').select('course_id,student_id').eq('student_id',user.id)
+    cloudGrants = grants.error ? [] : grants.data || []
+  } else { save(K.enroll,{}); save(K.progress,{}); cloudGrants=[]; cloudEnrollmentIds=new Set() }
   if ($('.course-app .catalog-section')) renderCourses()
-  if ($('[data-course-admin-panel]')) { $('[data-course-admin-panel]').remove(); adminPanel() }
+  refreshCourseAdminPanel()
+}
+function refreshCourseAdminPanel(){
+  const panel = $('[data-course-admin-panel]')
+  if (!panel || panel.querySelector('#courseAdminForm')?.dataset.courseDirty === 'true') return
+  panel.remove()
+  adminPanel()
 }
 async function loadContent(cid){
   const course = cloudCourses?.find(c => c.id === cid)
@@ -94,10 +144,10 @@ async function saveCloudCourse(item){
   const row = {id,title:item.title,class_level:item.class_level,category:item.category,duration:item.duration,cover_icon:item.cover_icon,cover_image:item.cover_image,featured:!!item.featured,summary:item.summary,status:'draft',created_by:previous?.created_by||user.id,updated_at:new Date().toISOString(),access_type:item.access_type,price:item.price,currency:'GHS',instructor:item.instructor,outcomes:item.outcomes,requirements:item.requirements,course_level:item.course_level,drip_mode:item.drip_mode,prerequisite_course_id:uuid(item.prerequisite_course_id)?item.prerequisite_course_id:null,completion_rules:item.completion_rules,course_document:{outline:publicOutline(item)}}
   const saved = await supabase.from('course_sessions').upsert(row).select('id').single()
   if (saved.error) throw saved.error
-  const content = await supabase.from('course_content').upsert({course_id:id,content:{...item,id},updated_at:new Date().toISOString()})
+  const content = await supabase.from('course_content').upsert({course_id:id,content:{...item,id},updated_at:new Date().toISOString()}).select('course_id').single()
   if (content.error) throw content.error
   if (item.status === 'published') {
-    const published = await supabase.from('course_sessions').update({status:'published'}).eq('id',id)
+    const published = await supabase.from('course_sessions').update({status:'published'}).eq('id',id).select('id').single()
     if (published.error) throw published.error
   }
   return id
@@ -114,16 +164,16 @@ async function syncProgress(cid,p){
 function allLessons(c){ return (c.chapters || []).flatMap((ch, ci) => (ch.lessons || []).map((l, li) => ({...l, ci, li}))) }
 function trialCount(c, type){ return (c.chapters || []).reduce((n,ch) => n + (ch[type] || []).length, 0) }
 function enrolments(){ return read(K.enroll, {}) }
-function enrolled(cid){ return Boolean(enrolments()[`${userKey()}_${cid}`]) }
+function enrolled(cid){ return cloudReady ? cloudEnrollmentIds.has(cid) : Boolean(enrolments()[`${userKey()}_${cid}`]) }
 function progress(cid){ return read(K.progress, {})[`${userKey()}_${cid}`] || { completed:[], quizScores:{}, finalScore:null } }
 function setProgress(cid, p){ const all = read(K.progress, {}); all[`${userKey()}_${cid}`] = p; save(K.progress, all); if (cloudReady) syncProgress(cid,p) }
 function certs(){ return rows(K.certs) }
 function hasCert(cid){ return certs().some(c => c.course_id === cid && c.user === userKey()) }
 function purchase(cid){ return rows(K.purchases).some(p => p.user === userKey() && p.course_id === cid && p.status === 'success') }
-function grant(cid){ return rows(K.grants).some(g => String(g.email || '').toLowerCase() === userKey() && (g.course_id === cid || g.course_id === 'all')) }
+function grant(cid){ return cloudReady ? cloudGrants.some(g => g.course_id === cid) : rows(K.grants).some(g => String(g.email || '').toLowerCase() === userKey() && (g.course_id === cid || g.course_id === 'all')) }
 function prerequisiteMet(c){ return !c.prerequisite_course_id || hasCert(c.prerequisite_course_id) }
-function access(c){ return c.access_type !== 'paid' || subscribed() || purchase(c.id) || grant(c.id) || enrolled(c.id) }
-function canEnrol(c){ return prerequisiteMet(c) && (!cloudReady || c.access_type === 'free') && access(c) }
+function access(c){ return c.access_type !== 'paid' || (cloudReady ? (grant(c.id) || enrolled(c.id)) : (subscribed() || purchase(c.id) || grant(c.id) || enrolled(c.id))) }
+function canEnrol(c){ return (!supabase || cloudReady) && prerequisiteMet(c) && access(c) }
 function pct(c){ const p = progress(c.id); return Math.round(((p.completed || []).length / Math.max(1, allLessons(c).length)) * 100) }
 function avgRating(cid){ const r = rows(K.reviews).filter(x => x.course_id === cid); return r.length ? Math.round((r.reduce((a,b)=>a + Number(b.rating || 0),0)/r.length)*10)/10 : 0 }
 function enrolCount(cid){ return Object.values(enrolments()).filter(e => e.course_id === cid).length }
@@ -174,27 +224,80 @@ function adminPanel(){
   const pre = '<option value="">No prerequisite</option>' + list.filter(c => c.id !== edit?.id).map(c => `<option value="${c.id}" ${c.id === edit?.prerequisite_course_id ? 'selected' : ''}>${h(c.title)}</option>`).join('')
   const setup = edit ? setupText(edit) : ''
   const rules = { ...RULES, ...(edit?.completion_rules || {}) }
-  const html = `<section class="course-admin-panel glass-card" data-course-admin-panel="true"><div class="course-admin-head"><div><span>🎓 Complete LMS</span><h2>Course Builder</h2><p>Mount free or paid courses with landing pages, chapters, interactive lessons, quizzes, trials, final assessment and certificates.</p></div><button class="btn btn-blue" data-courses-page="true">Preview Courses</button></div>${cloudError ? `<div class="course-cloud-notice">${h(cloudError)} <button type="button" data-reload-courses="true">Retry</button></div>` : !cloudReady && supabase ? '<div class="course-cloud-notice">Loading course database…</div>' : ''}<form id="courseAdminForm" class="course-admin-form"><input name="id" type="hidden" value="${h(edit?.id || '')}"><label><span>Title</span><input name="title" required value="${h(edit?.title || '')}"></label><label><span>Class</span><select name="class_level">${classOpts(edit?.class_level || 'Grade 8')}</select></label><label><span>Category</span><input name="category" value="${h(edit?.category || '')}"></label><label><span>Level</span><select name="course_level">${opts(LEVELS, edit?.course_level || 'Beginner')}</select></label><label><span>Instructor</span><input name="instructor" value="${h(edit?.instructor || 'Mezzo Maths Faculty')}"></label><label><span>Duration</span><input name="duration" value="${h(edit?.duration || '')}"></label><label><span>Free/Paid</span><select name="access_type"><option value="free" ${edit?.access_type !== 'paid' ? 'selected':''}>Free</option><option value="paid" ${edit?.access_type === 'paid' ? 'selected':''}>Paid</option></select></label><label><span>Price GHS</span><input name="price" type="number" min="0" value="${h(edit?.price || 0)}"></label><label><span>Status</span><select name="status"><option value="published" ${edit?.status !== 'draft' ? 'selected':''}>Published</option><option value="draft" ${edit?.status === 'draft' ? 'selected':''}>Draft</option></select></label><label><span>Icon</span><input name="cover_icon" value="${h(edit?.cover_icon || '🎓')}"></label><label class="wide"><span>Cover image URL</span><input name="cover_image" type="url" value="${h(edit?.cover_image || '')}" placeholder="https://... course artwork"></label><label><span>Featured course</span><select name="featured"><option value="no" ${!edit?.featured ? 'selected':''}>No</option><option value="yes" ${edit?.featured ? 'selected':''}>Yes</option></select></label><label><span>Drip Mode</span><select name="drip_mode"><option value="all" ${edit?.drip_mode === 'all' ? 'selected':''}>All open</option><option value="chapter" ${edit?.drip_mode === 'chapter' ? 'selected':''}>Chapter by chapter</option><option value="date" ${edit?.drip_mode === 'date' ? 'selected':''}>By date</option></select></label><label><span>Prerequisite</span><select name="prerequisite_course_id">${pre}</select></label><label class="wide"><span>Description</span><textarea name="summary" required>${h(edit?.summary || '')}</textarea></label><label class="wide"><span>What Students Will Learn</span><textarea name="outcomes">${h(edit?.outcomes || '')}</textarea></label><label class="wide"><span>Requirements</span><textarea name="requirements">${h(edit?.requirements || '')}</textarea></label><div class="completion-rule-grid wide"><label><span>All lessons</span><select name="allLessons"><option value="yes" ${rules.allLessons ? 'selected':''}>Yes</option><option value="no" ${!rules.allLessons ? 'selected':''}>No</option></select></label><label><span>Min quiz %</span><input name="minQuizScore" type="number" value="${h(rules.minQuizScore)}"></label><label><span>Homework</span><select name="requireHomework"><option value="no" ${!rules.requireHomework ? 'selected':''}>No</option><option value="yes" ${rules.requireHomework ? 'selected':''}>Yes</option></select></label><label><span>Classwork</span><select name="requireClasswork"><option value="no" ${!rules.requireClasswork ? 'selected':''}>No</option><option value="yes" ${rules.requireClasswork ? 'selected':''}>Yes</option></select></label><label><span>Final</span><select name="requireFinal"><option value="no" ${!rules.requireFinal ? 'selected':''}>No</option><option value="yes" ${rules.requireFinal ? 'selected':''}>Yes</option></select></label><label><span>Final pass %</span><input name="finalPass" type="number" value="${h(rules.finalPass)}"></label></div><label class="wide"><span>Chapters, Lessons, Quizzes, Homework, Classwork & Final</span><textarea name="course_setup" class="course-setup-textarea">${h(setup)}</textarea><small>Use CHAPTER, LESSON, QUIZ, HOMEWORK, CLASSWORK, FINAL lines. Lesson types: ${TYPES.join(', ')}.</small></label><button class="btn btn-gold wide" type="submit">${edit ? 'Update Course':'Mount Course'}</button>${edit ? '<button class="btn btn-ghost wide" type="button" data-cancel-course-edit="true">Cancel Edit</button>':''}</form>${cloudReady && rows(K.courses).length ? '<button class="btn btn-blue" type="button" data-import-local-courses="true">Import browser courses</button>' : ''}${commerceAdmin()}${analytics()}<div class="course-admin-list">${list.map(adminRow).join('')}</div></section>`
+  const html = `<section class="course-admin-panel glass-card" data-course-admin-panel="true"><div class="course-admin-head"><div><span>🎓 Complete LMS</span><h2>Course Builder</h2><p>Mount free or paid courses with landing pages, chapters, interactive lessons, quizzes, trials, final assessment and certificates.</p></div><button class="btn btn-blue" data-courses-page="true">Preview Courses</button></div>${cloudError ? `<div class="course-cloud-notice">${h(cloudError)} <button type="button" data-reload-courses="true">Retry</button></div>` : !cloudReady && supabase ? '<div class="course-cloud-notice">Loading course database…</div>' : ''}<form id="courseAdminForm" class="course-admin-form"><input name="id" type="hidden" value="${h(edit?.id || '')}"><label><span>Title</span><input name="title" required value="${h(edit?.title || '')}"></label><label><span>Class</span><select name="class_level">${classOpts(edit?.class_level || 'Grade 8')}</select></label><label><span>Category</span><input name="category" value="${h(edit?.category || '')}"></label><label><span>Level</span><select name="course_level">${opts(LEVELS, edit?.course_level || 'Beginner')}</select></label><label><span>Instructor</span><input name="instructor" value="${h(edit?.instructor || 'Mezzo Maths Faculty')}"></label><label><span>Duration</span><input name="duration" value="${h(edit?.duration || '')}"></label><label><span>Free/Paid</span><select name="access_type"><option value="free" ${edit?.access_type !== 'paid' ? 'selected':''}>Free</option><option value="paid" ${edit?.access_type === 'paid' ? 'selected':''}>Paid</option></select></label><label><span>Price GHS</span><input name="price" type="number" min="0" value="${h(edit?.price || 0)}"></label><label><span>Status</span><select name="status"><option value="published" ${edit?.status !== 'draft' ? 'selected':''}>Published</option><option value="draft" ${edit?.status === 'draft' ? 'selected':''}>Draft</option></select></label><label><span>Icon</span><input name="cover_icon" value="${h(edit?.cover_icon || '🎓')}"></label><label class="wide"><span>Upload course cover image</span><input name="cover_image" type="hidden" value="${h(edit?.cover_image || '')}"><input name="cover_image_file" type="file" accept="image/jpeg,image/png,image/webp"><small>Choose a JPG, PNG or WebP image up to 5 MB.</small><small data-cover-status role="status"></small><img data-cover-preview alt="Course cover preview" hidden style="width:100%;max-width:320px;max-height:180px;object-fit:contain;border-radius:12px"></label><label><span>Featured course</span><select name="featured"><option value="no" ${!edit?.featured ? 'selected':''}>No</option><option value="yes" ${edit?.featured ? 'selected':''}>Yes</option></select></label><label><span>Drip Mode</span><select name="drip_mode"><option value="all" ${edit?.drip_mode === 'all' ? 'selected':''}>All open</option><option value="chapter" ${edit?.drip_mode === 'chapter' ? 'selected':''}>Chapter by chapter</option><option value="date" ${edit?.drip_mode === 'date' ? 'selected':''}>By date</option></select></label><label><span>Prerequisite</span><select name="prerequisite_course_id">${pre}</select></label><label class="wide"><span>Description</span><textarea name="summary" required>${h(edit?.summary || '')}</textarea></label><label class="wide"><span>What Students Will Learn</span><textarea name="outcomes">${h(edit?.outcomes || '')}</textarea></label><label class="wide"><span>Requirements</span><textarea name="requirements">${h(edit?.requirements || '')}</textarea></label><div class="completion-rule-grid wide"><label><span>All lessons</span><select name="allLessons"><option value="yes" ${rules.allLessons ? 'selected':''}>Yes</option><option value="no" ${!rules.allLessons ? 'selected':''}>No</option></select></label><label><span>Min quiz %</span><input name="minQuizScore" type="number" value="${h(rules.minQuizScore)}"></label><label><span>Homework</span><select name="requireHomework"><option value="no" ${!rules.requireHomework ? 'selected':''}>No</option><option value="yes" ${rules.requireHomework ? 'selected':''}>Yes</option></select></label><label><span>Classwork</span><select name="requireClasswork"><option value="no" ${!rules.requireClasswork ? 'selected':''}>No</option><option value="yes" ${rules.requireClasswork ? 'selected':''}>Yes</option></select></label><label><span>Final</span><select name="requireFinal"><option value="no" ${!rules.requireFinal ? 'selected':''}>No</option><option value="yes" ${rules.requireFinal ? 'selected':''}>Yes</option></select></label><label><span>Final pass %</span><input name="finalPass" type="number" value="${h(rules.finalPass)}"></label></div><label class="wide"><span>Chapters, Lessons, Quizzes, Homework, Classwork & Final</span><textarea name="course_setup" class="course-setup-textarea">${h(setup)}</textarea><small>Use CHAPTER, LESSON, QUIZ, HOMEWORK, CLASSWORK, FINAL lines. Lesson types: ${TYPES.join(', ')}.</small></label><button class="btn btn-gold wide" type="submit">${edit ? 'Update Course':'Mount Course'}</button>${edit ? '<button class="btn btn-ghost wide" type="button" data-cancel-course-edit="true">Cancel Edit</button>':''}</form>${cloudReady && rows(K.courses).length ? '<button class="btn btn-blue" type="button" data-import-local-courses="true">Import browser courses</button>' : ''}${commerceAdmin()}${analytics()}<div class="course-admin-list">${list.map(adminRow).join('')}</div></section>`
   ;(screen.querySelector('[data-admin-brand-staff-panel]') || screen.querySelector('.dashboard-hero') || screen.firstElementChild).insertAdjacentHTML('afterend', html)
+  restoreCourseDraft($('#courseAdminForm'))
+  updateCoverPreview($('#courseAdminForm'))
 }
 function adminRow(c){ const price = c.access_type === 'paid' ? `Paid GHS ${c.price}` : 'Free'; return `<article><div><strong>${h(c.cover_icon || '🎓')} ${h(c.title)}</strong><span>${h(c.class_level)} • ${h(c.category)} • ${price} • ${h(c.status)}</span><small>${(c.chapters||[]).length} chapters • ${allLessons(c).length} lessons • ⭐ ${avgRating(c.id)||'—'}</small></div><div><button class="btn btn-blue btn-small" data-edit-course="${c.id}">Edit</button><button class="btn btn-danger btn-small" data-delete-course="${c.id}">Delete</button></div></article>` }
-function commerceAdmin(){ const options = '<option value="all">All courses</option>' + courses().map(c => `<option value="${c.id}">${h(c.title)}</option>`).join(''); return `<section class="course-commerce-admin"><header><h3>Coupons & access grants</h3><p>Manage course offers and give individual learners access.</p></header><div class="commerce-grid"><form id="courseCouponForm"><h4>Create a coupon</h4><label>Coupon code<input name="code" required placeholder="e.g. MEZZO100"></label><label>Course<select name="course_id">${options}</select></label><label>Discount %<input name="discount" type="number" min="1" max="100" value="100"></label><button class="btn btn-gold" type="submit">Save coupon</button></form><form id="courseGrantForm"><h4>Grant a learner access</h4><label>Student email or name<input name="email" required placeholder="Enter learner email or name"></label><label>Course<select name="course_id">${options}</select></label><button class="btn btn-blue" type="submit">Grant access</button></form></div></section>` }
+function commerceAdmin(){ const options = courses().map(c => `<option value="${c.id}">${h(c.title)}</option>`).join(''); return `<section class="course-commerce-admin"><header><h3>Coupons & access grants</h3><p>Manage course offers and give individual learners access.</p></header><div class="commerce-grid"><form id="courseCouponForm"><h4>Create a coupon</h4><label>Coupon code<input name="code" required placeholder="e.g. MEZZO100"></label><label>Course<select name="course_id">${options}</select></label><label>Discount %<input name="discount" type="number" min="100" max="100" value="100" readonly></label><button class="btn btn-gold" type="submit">Save coupon</button></form><form id="courseGrantForm"><h4>Grant a learner access</h4><label>Student email<input name="email" type="email" required placeholder="learner@example.com"></label><label>Course<select name="course_id">${options}</select></label><button class="btn btn-blue" type="submit">Grant access</button></form></div></section>` }
 function analytics(){ const e = Object.values(enrolments()).length, subs = rows(K.submissions).length, rev = rows(K.purchases).filter(p => p.status === 'success').reduce((n,p)=>n+Number(p.amount||0),0); return `<section class="course-analytics-panel"><div><strong>${courses().length}</strong><span>Courses</span></div><div><strong>${e}</strong><span>Enrolments</span></div><div><strong>${rows(K.certs).length}</strong><span>Certificates</span></div><div><strong>${subs}</strong><span>Submissions</span></div><div><strong>GHS ${rev}</strong><span>Revenue</span></div><button class="btn btn-ghost" data-download-course-analytics="true">Download CSV</button></section>` }
+function updateCoverPreview(form){
+  const preview=form.querySelector('[data-cover-preview]')
+  const url=form.elements.namedItem('cover_image').value
+  preview.hidden=!url
+  if(url)preview.src=url
+}
+async function uploadCourseCover(input){
+  const form=input.closest('form'), file=input.files?.[0]
+  if(!file)return
+  const status=form.querySelector('[data-cover-status]')
+  const types={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}
+  input.setCustomValidity('')
+  if(!types[file.type]||file.size>5*1024*1024){
+    input.setCustomValidity('Choose a JPG, PNG or WebP image up to 5 MB.')
+    status.textContent=input.validationMessage
+    input.reportValidity()
+    return
+  }
+  form.dataset.coverUploading='true'
+  input.disabled=true
+  status.textContent='Uploading cover image…'
+  try{
+    const user=await authUser()
+    if(!supabase||!user||!isAdmin())throw new Error('Sign in as an administrator to upload the cover.')
+    const path='covers/'+user.id+'/'+crypto.randomUUID()+'.'+types[file.type]
+    const {error}=await supabase.storage.from('course-media').upload(path,file,{contentType:file.type,upsert:false})
+    if(error)throw error
+    form.elements.namedItem('cover_image').value=supabase.storage.from('course-media').getPublicUrl(path).data.publicUrl
+    input.value=''
+    updateCoverPreview(form)
+    rememberCourseDraft(form)
+    form.dispatchEvent(new CustomEvent('course-studio-save-draft',{bubbles:true,detail:{saved:false}}))
+    status.textContent='Cover uploaded. Mount course to save it with the course.'
+  }catch(error){
+    input.setCustomValidity('Cover upload failed. Choose the image again to retry.')
+    status.textContent='Cover upload failed. Please choose the image again to retry.'
+  }finally{
+    input.disabled=false
+    delete form.dataset.coverUploading
+  }
+}
+document.addEventListener('change',event=>{
+  if(event.target.matches('#courseAdminForm [name="cover_image_file"]'))uploadCourseCover(event.target)
+},true)
 async function saveCourse(form){
+  if(form.dataset.coverUploading==='true'){toast('Please wait for the cover image upload to finish.');return}
+  const current=form.querySelector('[data-studio-section]:not([hidden])')
+  if(current&&current.dataset.studioSection!=='completion'){current.querySelector('[data-studio-continue]')?.click();return}
+  for(const field of form.querySelectorAll('input,select,textarea')){
+    if(!field.checkValidity()){field.reportValidity();return}
+  }
   const f = Object.fromEntries(new FormData(form).entries()), parsed = parseSetup(f.course_setup)
   if (!parsed.chapters.some(ch => ch.lessons.length)) { toast('Add at least one chapter and lesson before saving.'); return }
   const item = { id:f.id || id('course'), title:f.title, class_level:f.class_level, category:f.category, course_level:f.course_level, instructor:f.instructor, duration:f.duration, access_type:f.access_type, price:Number(f.price||0), status:f.status, cover_icon:f.cover_icon||'🎓', cover_image:f.cover_image||'', featured:f.featured==='yes', summary:f.summary, outcomes:f.outcomes, requirements:f.requirements, drip_mode:f.drip_mode, prerequisite_course_id:f.prerequisite_course_id, completion_rules:{ allLessons:f.allLessons !== 'no', minQuizScore:Number(f.minQuizScore||0), requireHomework:f.requireHomework==='yes', requireClasswork:f.requireClasswork==='yes', requireFinal:f.requireFinal==='yes', finalPass:Number(f.finalPass||70) }, chapters:parsed.chapters, final:parsed.final, updated_at:new Date().toISOString() }
   const button=form.querySelector('[type="submit"]'); if(button) button.disabled=true
   try {
-    if (cloudReady) { await saveCloudCourse(item); await loadCloudCourses() }
-    else if (supabase) throw new Error('Course database is unavailable. Please try again shortly.')
-    else { const list=courses(), i=list.findIndex(c=>c.id===item.id); if(i>=0) list[i]=item; else list.unshift(item); saveCourses(list) }
-    editingCourseId=''; $('[data-course-admin-panel]')?.remove(); adminPanel(); notify('Course saved.',item.id)
+    if (!supabase || !cloudReady) throw new Error('Course database is unavailable. Your draft is preserved; please retry when connected.')
+    const savedId=await saveCloudCourse(item)
+    form.elements.namedItem('id').value=savedId
+    await loadCloudCourses()
+    clearCourseDraft(f.id || ''); editingCourseId=''; $('[data-course-admin-panel]')?.remove(); adminPanel(); notify('Course saved.',item.id)
   } catch(error){ toast(error.message||'Course could not be saved.') }
   finally { if(button) button.disabled=false }
 }
-function saveCoupon(form){ const f=Object.fromEntries(new FormData(form).entries()); saveRows(K.coupons,[{id:id('coupon'),code:String(f.code).toUpperCase(),course_id:f.course_id,discount:Number(f.discount||100),active:true},...rows(K.coupons)]); form.reset(); notify('Coupon saved.') }
-function saveGrant(form){ const f=Object.fromEntries(new FormData(form).entries()); saveRows(K.grants,[{id:id('grant'),email:String(f.email).toLowerCase(),course_id:f.course_id,created_at:new Date().toISOString()},...rows(K.grants)]); form.reset(); notify('Course access granted.') }
+async function saveCoupon(form){ const f=Object.fromEntries(new FormData(form).entries()); if(cloudReady){ const user=await authUser(); if(!user||!isAdmin()) return toast('Administrator sign-in required.'); const {error}=await supabase.from('course_coupons').insert({code:String(f.code).trim().toUpperCase(),course_id:f.course_id,discount_percent:100,active:true}); if(error) return toast(error.message) } else if(supabase) return toast('Course database is unavailable.'); else saveRows(K.coupons,[{id:id('coupon'),code:String(f.code).toUpperCase(),course_id:f.course_id,discount:100,active:true},...rows(K.coupons)]); form.reset(); notify('Coupon saved.') }
+async function saveGrant(form){ const f=Object.fromEntries(new FormData(form).entries()); if(cloudReady){ const admin=await authUser(); if(!admin||!isAdmin()) return toast('Administrator sign-in required.'); const email=String(f.email).trim().toLowerCase(); const found=await supabase.from('profiles').select('id,email').ilike('email',email).maybeSingle(); if(found.error||!found.data) return toast('Learner account not found. Ask them to register first.'); const {error}=await supabase.from('course_access_grants').insert({course_id:f.course_id,student_id:found.data.id,student_email:email,granted_by:admin.id}); if(error) return toast(error.message); const enrol=await supabase.from('course_enrollments').upsert({course_id:f.course_id,student_id:found.data.id,student_email:email,progress_snapshot:{completed:[],quizScores:{},finalScore:null}},{onConflict:'course_id,student_id',ignoreDuplicates:true}); if(enrol.error) return toast('Grant saved, but enrollment could not be created: '+enrol.error.message) } else if(supabase) return toast('Course database is unavailable.'); else saveRows(K.grants,[{id:id('grant'),email:String(f.email).toLowerCase(),course_id:f.course_id,created_at:new Date().toISOString()},...rows(K.grants)]); form.reset(); notify('Course access granted.') }
 function filterCourses(){ let x = courses().filter(c => c.status !== 'draft'), q = filters.q.toLowerCase(); if (q) x = x.filter(c => [c.title,c.category,c.class_level,c.instructor].join(' ').toLowerCase().includes(q)); if (filters.classLevel) x = x.filter(c => c.class_level === filters.classLevel); if (filters.category) x = x.filter(c => c.category === filters.category); if (filters.access) x = x.filter(c => c.access_type === filters.access); if (filters.level) x = x.filter(c => c.course_level === filters.level); if (filters.sort === 'rating') x.sort((a,b)=>avgRating(b.id)-avgRating(a.id)); else if (filters.sort === 'price') x.sort((a,b)=>Number(a.price)-Number(b.price)); else if (filters.sort === 'popular') x.sort((a,b)=>enrolCount(b.id)-enrolCount(a.id)); else x.sort((a,b)=>new Date(b.updated_at||0)-new Date(a.updated_at||0)); return x }
 function categories(){ return [...new Set(courses().map(c => c.category).filter(Boolean))] }
 function renderCourses(){
@@ -217,21 +320,22 @@ function card(c){
   const rating = avgRating(c.id), image = /^https:\/\//i.test(c.cover_image || '')
   return `<article class="course-card catalog-card"><button class="catalog-cover" data-preview-course="${h(c.id)}" aria-label="View ${h(c.title)}">${image?`<img src="${h(c.cover_image)}" alt="" loading="lazy">`:`<span>${h(c.cover_icon||'🎓')}</span>`}<em>${h(c.course_level)}</em></button><div class="catalog-card-body"><span class="catalog-card-category">${h(c.category||'Mathematics')} · ${h(c.class_level)}</span><h3>${h(c.title)}</h3><p>${h(c.summary||'Explore this course and its lessons.')}</p><div class="catalog-instructor"><span>${h((c.instructor||'M').trim().charAt(0))}</span> By ${h(c.instructor||'Mezzo Maths Faculty')}</div><div class="catalog-rating">${rating?`★ ${rating}/5`:'New course'} <span>· ${enrolCount(c.id)} learners</span></div><div class="catalog-card-foot"><strong>${c.access_type==='paid'?`GHS ${h(c.price)}`:'Free'}</strong><button data-preview-course="${h(c.id)}">View course →</button></div></div></article>`
 }
-function renderPreview(cid){ const c = courses().find(x=>x.id===cid); if (!c) return renderCourses(); selectedCourseId=cid; const prereq = c.prerequisite_course_id ? courses().find(x=>x.id===c.prerequisite_course_id) : null; const rev = rows(K.reviews).filter(r=>r.course_id===cid); const action = canEnrol(c) ? `<button class="btn btn-gold" data-enrol-course="${cid}">${enrolled(cid)?'Continue Learning':'Self Enrol Now'}</button>` : cloudReady ? `<p class="locked-warning">${c.access_type==='paid'?'Paid course checkout is being prepared. Enrolment will open after payment verification.':'Complete the prerequisite course to enrol.'}</p>` : `<button class="btn btn-blue" data-pay-course="${cid}">Pay for Course</button><button class="btn btn-primary" data-open-subscriptions="true">Subscribe</button><form class="coupon-inline" data-coupon-form="${cid}"><input name="code" placeholder="Coupon code"><button class="btn btn-ghost">Apply Coupon</button></form>`; $('#root').innerHTML = `<main class="app-shell course-app"><section class="app-frame course-page"><nav class="screen-tabs course-nav"><div class="brand-chip"><span class="brand-crown">${logo()}</span><div><strong>MEZZO</strong><small>Course Preview</small></div></div><div class="tab-scroll"><button class="screen-tab" data-courses-page="true"><span>🎓</span>Courses</button><button class="screen-tab" data-course-dashboard="true"><span>📚</span>My Courses</button></div></nav><section class="course-preview glass-card"><div class="course-preview-main"><span class="course-kicker">${c.access_type==='paid'?`Paid • GHS ${h(c.price)}`:'Free Course'} • ${h(c.class_level)}</span><h1>${h(c.cover_icon)} ${h(c.title)}</h1><p>${h(c.summary)}</p><div class="preview-meta"><span>👩🏾‍🏫 ${h(c.instructor)}</span><span>⏱️ ${h(c.duration)}</span><span>📚 ${allLessons(c).length} lessons</span><span>🧪 ${(c.final||[]).length + (c.chapters||[]).reduce((n,ch)=>n+(ch.quiz||[]).length,0)} assessments</span><span>⭐ ${avgRating(cid)||'No rating'}</span></div>${!prerequisiteMet(c)?`<div class="locked-warning">Prerequisite required: complete ${h(prereq?.title||'required course')} first.</div>`:''}<div class="course-actions">${action}</div></div><aside class="course-preview-side"><h3>What students will learn</h3>${bullets(c.outcomes)}<h3>Requirements</h3>${bullets(c.requirements)}</aside></section><section class="course-detail-grid"><article class="light-card"><h2>Chapter Outline</h2>${(c.chapters||[]).map((ch,i)=>`<div class="outline-row"><strong>${i+1}. ${h(ch.title)}</strong><span>${(ch.lessons||[]).length} lessons • ${(ch.quiz||[]).length} quiz • ${(ch.homework||[]).length} homework • ${(ch.classwork||[]).length} classwork</span></div>`).join('')}</article><article class="light-card"><h2>Reviews</h2>${rev.map(r=>`<p>⭐ ${r.rating}/5 — ${h(r.comment)} <small>${h(r.user)}</small></p>`).join('') || '<p>No reviews yet.</p>'}</article></section></section></main>` }
+function renderPreview(cid){ const c = courses().find(x=>x.id===cid); if (!c) return renderCourses(); selectedCourseId=cid; const prereq = c.prerequisite_course_id ? courses().find(x=>x.id===c.prerequisite_course_id) : null; const rev = rows(K.reviews).filter(r=>r.course_id===cid); const action = canEnrol(c) ? `<button class="btn btn-gold" data-enrol-course="${cid}">${enrolled(cid)?'Continue Learning':'Self Enrol Now'}</button>` : c.access_type==='paid' ? `<p class="locked-warning">Paid checkout is being prepared. Enter a full-access coupon or ask an administrator for access.</p><form class="coupon-inline" data-coupon-form="${cid}"><input name="code" required placeholder="Coupon code"><button class="btn btn-ghost">Apply coupon</button></form>` : `<p class="locked-warning">Complete the prerequisite course to enrol.</p>`; $('#root').innerHTML = `<main class="app-shell course-app"><section class="app-frame course-page"><nav class="screen-tabs course-nav"><div class="brand-chip"><span class="brand-crown">${logo()}</span><div><strong>MEZZO</strong><small>Course Preview</small></div></div><div class="tab-scroll"><button class="screen-tab" data-courses-page="true"><span>🎓</span>Courses</button><button class="screen-tab" data-course-dashboard="true"><span>📚</span>My Courses</button></div></nav><section class="course-preview glass-card"><div class="course-preview-main"><span class="course-kicker">${c.access_type==='paid'?`Paid • GHS ${h(c.price)}`:'Free Course'} • ${h(c.class_level)}</span><h1>${h(c.cover_icon)} ${h(c.title)}</h1><p>${h(c.summary)}</p><div class="preview-meta"><span>👩🏾‍🏫 ${h(c.instructor)}</span><span>⏱️ ${h(c.duration)}</span><span>📚 ${allLessons(c).length} lessons</span><span>🧪 ${(c.final||[]).length + (c.chapters||[]).reduce((n,ch)=>n+(ch.quiz||[]).length,0)} assessments</span><span>⭐ ${avgRating(cid)||'No rating'}</span></div>${!prerequisiteMet(c)?`<div class="locked-warning">Prerequisite required: complete ${h(prereq?.title||'required course')} first.</div>`:''}<div class="course-actions">${action}</div></div><aside class="course-preview-side"><h3>What students will learn</h3>${bullets(c.outcomes)}<h3>Requirements</h3>${bullets(c.requirements)}</aside></section><section class="course-detail-grid"><article class="light-card"><h2>Chapter Outline</h2>${(c.chapters||[]).map((ch,i)=>`<div class="outline-row"><strong>${i+1}. ${h(ch.title)}</strong><span>${(ch.lessons||[]).length} lessons • ${(ch.quiz||[]).length} quiz • ${(ch.homework||[]).length} homework • ${(ch.classwork||[]).length} classwork</span></div>`).join('')}</article><article class="light-card"><h2>Reviews</h2>${rev.map(r=>`<p>⭐ ${r.rating}/5 — ${h(r.comment)} <small>${h(r.user)}</small></p>`).join('') || '<p>No reviews yet.</p>'}</article></section></section></main>` }
 function bullets(txt){ const a = lines(txt); return a.length ? `<ul>${a.map(x=>`<li>${h(x)}</li>`).join('')}</ul>` : '<p>Not specified.</p>' }
 async function enrolCourse(cid){
   const c=courses().find(x=>x.id===cid); if (!c || !canEnrol(c)) return renderPreview(cid)
   if (cloudReady) {
     const user=await authUser(); if(!user) return toast('Please sign in to save your course and progress.')
-    if(c.access_type!=='free') return toast('Paid course enrolment is not available yet.')
+    if(c.access_type!=='free') return toast('Ask an administrator for access or redeem a full-access coupon.')
     const {error}=await supabase.from('course_enrollments').upsert({course_id:cid,student_id:user.id,student_email:user.email,progress_snapshot:{completed:[],quizScores:{},finalScore:null}},{onConflict:'course_id,student_id'})
     if(error) return toast(`Enrolment failed: ${error.message}`)
+    cloudEnrollmentIds.add(cid)
   }
   const e=enrolments(); e[`${userKey()}_${cid}`]={course_id:cid,student:userKey(),enrolled_at:new Date().toISOString()}; save(K.enroll,e)
   notify('Enrolled in course.',cid); openCourse(cid)
 }
 function payCourse(cid){ notify('Course payment checkout is prepared. Backend Paystack course-product support is pending; use subscription, coupon, or admin grant now.', cid); $('[data-open-subscriptions]')?.click() }
-function applyCoupon(cid, form){ const code=String(new FormData(form).get('code')||'').toUpperCase().trim(); const cp=rows(K.coupons).find(x=>x.active && x.code===code && (x.course_id===cid || x.course_id==='all')); if(!cp) return toast('Invalid coupon.'); saveRows(K.purchases,[{id:id('purchase'),course_id:cid,user:userKey(),amount:0,coupon:code,status:'success',paid_at:new Date().toISOString()},...rows(K.purchases)]); notify('Coupon applied. Course unlocked.',cid); renderPreview(cid) }
+async function applyCoupon(cid, form){ const code=String(new FormData(form).get('code')||'').toUpperCase().trim(); if(cloudReady){ if(!await authUser()) return toast('Sign in to redeem a coupon.'); const {error}=await supabase.rpc('redeem_course_coupon',{p_course_id:cid,p_code:code}); if(error) return toast(error.message); await loadCloudCourses(); notify('Coupon applied. Course unlocked.',cid); renderPreview(cid); return } if(supabase) return toast('Course database is unavailable.'); const cp=rows(K.coupons).find(x=>x.active && x.code===code && (x.course_id===cid || x.course_id==='all')); if(!cp) return toast('Invalid coupon.'); saveRows(K.purchases,[{id:id('purchase'),course_id:cid,user:userKey(),amount:0,coupon:code,status:'success',paid_at:new Date().toISOString()},...rows(K.purchases)]); notify('Coupon applied. Course unlocked.',cid); renderPreview(cid) }
 function chapterLocked(c,ci){ if(ci===0) return false; const ch=c.chapters?.[ci]; if(c.drip_mode==='date' && ch?.unlock_date && new Date(ch.unlock_date)>new Date()) return true; if(c.drip_mode==='chapter'){ const p=progress(c.id), prev=c.chapters?.[ci-1]; return !(prev?.lessons||[]).every((_,li)=>(p.completed||[]).includes(`${ci-1}-${li}`)) } return false }
 async function openCourse(cid){ if(!canStaffOpen()) return toast('Courses locked for staff.'); if(!enrolled(cid)) return renderPreview(cid); if(cloudReady && !await loadContent(cid)) return; selectedCourseId=cid; chapterIndex=0; lessonIndex=0; renderViewer() }
 function lessonHtml(l){ const url=l.video_url||l.resource_url||''; const embed=/youtube|youtu\.be|vimeo/i.test(url)?`<iframe class="lesson-embed" src="${h(url.replace('watch?v=','embed/'))}" allowfullscreen></iframe>`:''; const audio=l.audio_url|| (l.type==='Audio Lesson'?url:''); const audioHtml=audio?`<audio controls src="${h(audio)}"></audio>`:''; const image=l.image_url||(/\.(png|jpg|jpeg|webp|gif)$/i.test(url)?url:''); const imageHtml=image?`<img class="lesson-image" src="${h(image)}" alt="Lesson diagram">`:''; return `<p>${h(l.content||'No lesson notes yet.')}</p>${embed}${audioHtml}${imageHtml}${l.interactive?`<section class="interactive-lesson-box"><h3>Interactive Lesson</h3><p>${h(l.interactive)}</p><textarea placeholder="Student response / working area"></textarea></section>`:''}${l.homework?`<section class="trial-box"><h3>Lesson Homework Trial</h3><p>${h(l.homework)}</p></section>`:''}${l.classwork?`<section class="trial-box"><h3>Lesson Classwork Trial</h3><p>${h(l.classwork)}</p></section>`:''}${l.video_url?`<a class="course-resource" href="${h(l.video_url)}" target="_blank">▶ Open Video</a>`:''}${l.resource_url?`<a class="course-resource" href="${h(l.resource_url)}" target="_blank">📄 Open Resource/PDF</a>`:''}` }
@@ -257,6 +361,8 @@ document.addEventListener('submit', e=>{ if(e.target?.id==='courseAdminForm'){ e
 document.addEventListener('click', async e=>{ if(e.target.closest('[data-courses-page]')){ e.preventDefault(); e.stopImmediatePropagation(); renderCourses(); return } if(e.target.closest('[data-course-dashboard]')){ e.preventDefault(); e.stopImmediatePropagation(); dashboard(); return } const prev=e.target.closest('[data-preview-course]'); if(prev){ e.preventDefault(); renderPreview(prev.dataset.previewCourse); return } const en=e.target.closest('[data-enrol-course]'); if(en){ e.preventDefault(); enrolled(en.dataset.enrolCourse)?openCourse(en.dataset.enrolCourse):enrolCourse(en.dataset.enrolCourse); return } const pay=e.target.closest('[data-pay-course]'); if(pay){ e.preventDefault(); payCourse(pay.dataset.payCourse); return } const edit=e.target.closest('[data-edit-course]'); if(edit){ if (cloudReady && !await loadContent(edit.dataset.editCourse)) return; editingCourseId=edit.dataset.editCourse; $('[data-course-admin-panel]')?.remove(); adminPanel(); return } if(e.target.closest('[data-reload-courses]')){ cloudReady=false; cloudError=''; await loadCloudCourses(); return } if(e.target.closest('[data-import-local-courses]')){ if(!isAdmin() || !cloudReady) return; const legacy=rows(K.courses); if(!confirm(`Import ${legacy.length} browser courses to Supabase? Review and remove placeholders first.`)) return; const imported=read('mezzo_course_import_map',{}); for(const item of legacy){ if(imported[item.id]) continue; try{ imported[item.id]=await saveCloudCourse(normal(item)); save('mezzo_course_import_map',imported) } catch(error){ return toast(`Import stopped: ${error.message}`) } } saveRows(K.courses,[]); await loadCloudCourses(); $('[data-course-admin-panel]')?.remove(); adminPanel(); toast('Browser courses imported.'); return } const del=e.target.closest('[data-delete-course]'); if(del){ if(confirm('Delete this course?')){ if (cloudReady) { const {error}=await supabase.from('course_sessions').delete().eq('id',del.dataset.deleteCourse); if(error) return toast(error.message); await loadCloudCourses() } else saveCourses(courses().filter(c=>c.id!==del.dataset.deleteCourse)); $('[data-course-admin-panel]')?.remove(); adminPanel(); toast('Course deleted.') } return } if(e.target.closest('[data-cancel-course-edit]')){ editingCourseId=''; $('[data-course-admin-panel]')?.remove(); adminPanel(); return } if(e.target.closest('[data-locked-chapter]')){ toast('This chapter is locked.'); return } const lesson=e.target.closest('[data-lesson-index]'); if(lesson){ chapterIndex=Number(lesson.dataset.chapterIndex); lessonIndex=Number(lesson.dataset.lessonIndex); renderViewer(); return } const ch=e.target.closest('[data-chapter-index]'); if(ch && !lesson){ chapterIndex=Number(ch.dataset.chapterIndex); lessonIndex=0; renderViewer(); return } const complete=e.target.closest('[data-complete-lesson]'); if(complete){ completeLesson(complete.dataset.completeLesson); return } if(e.target.closest('[data-next-lesson]')){ nextLesson(); return } const q=e.target.closest('[data-open-chapter-quiz]'); if(q){ assessment('chapter',q.dataset.openChapterQuiz); return } if(e.target.closest('[data-final-assessment]')){ assessment('final','final'); return } const hw=e.target.closest('[data-open-homework]'); if(hw){ renderTrial('homework',hw.dataset.openHomework); return } const cw=e.target.closest('[data-open-classwork]'); if(cw){ renderTrial('classwork',cw.dataset.openClasswork); return } const tr=e.target.closest('[data-submit-trial]'); if(tr){ submitTrial(tr.dataset.submitTrial,tr.dataset.trialChapter,tr.dataset.trialIndex); return } const a=e.target.closest('[data-assessment-answer]'); if(a){ const k=`lms_assess_${a.dataset.assessmentType}_${a.dataset.assessmentRef}`, v=read(k,{}); v[a.dataset.assessmentIndex]=a.dataset.assessmentAnswer; save(k,v); a.closest('.chapter-quiz-question')?.querySelectorAll('button').forEach(b=>b.classList.remove('selected')); a.classList.add('selected'); return } const sub=e.target.closest('[data-submit-assessment]'); if(sub){ submitAssessment(sub.dataset.submitAssessment,sub.dataset.assessmentRef); return } if(e.target.closest('[data-return-course]')){ renderViewer(); return } if(e.target.closest('[data-generate-certificate]')){ certificate(); return } if(e.target.closest('[data-download-course-analytics]')){ downloadAnalytics(); return } }, true)
 document.addEventListener('input', e=>{ const f=e.target.closest('[data-course-filter]'); if(!f || f.tagName !== 'INPUT') return; filters[f.dataset.courseFilter]=f.value; const pos=f.selectionStart; renderCourses(); const next=$('[data-course-filter=\"q\"]'); next?.focus(); next?.setSelectionRange(pos,pos) })
 document.addEventListener('change', e=>{ const f=e.target.closest('[data-course-filter]'); if(!f || f.tagName === 'INPUT') return; filters[f.dataset.courseFilter]=f.value; renderCourses() })
+document.addEventListener('input', e=>{ const form=e.target.closest('#courseAdminForm'); if(form) rememberCourseDraft(form) }, true)
+document.addEventListener('change', e=>{ const form=e.target.closest('#courseAdminForm'); if(form) rememberCourseDraft(form) }, true)
 document.addEventListener('click', e=>{ const b=e.target.closest('[data-course-category]'); if(!b) return; filters.category=b.dataset.courseCategory; renderCourses() }, true)
 const observer=new MutationObserver(sync)
 observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:false})
