@@ -26,7 +26,7 @@ async function fileToDataUrl(id, upload = false) {
 }
 function enhanceCourseBuilder() {
   const form = document.getElementById('courseAdminForm')
-  if (!form || form.querySelector('[data-course-media-builder]')) return
+  if (!form || form.dataset.professional || form.querySelector('[data-course-media-builder]')) return
   const target = setupTextarea()?.closest('label') || form.lastElementChild
   target?.insertAdjacentHTML('beforebegin', `
     <details class="course-media-builder" data-course-media-builder="true">
