@@ -58,7 +58,7 @@ function clearCourseDraft(courseId=''){
 }
 document.addEventListener('course-studio-save-draft',event=>{
   const form=event.target
-  if(form.id!=='courseAdminForm')return
+  if(form.getAttribute('id')!=='courseAdminForm')return
   rememberCourseDraft(form)
   clearTimeout(draftTimer)
   const key=draftKey(form.elements.namedItem('id')?.value || '')
