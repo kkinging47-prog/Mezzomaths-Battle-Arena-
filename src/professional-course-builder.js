@@ -13,11 +13,13 @@ function enhance() {
   const form = panel?.querySelector('#courseAdminForm')
   if (!form || form.dataset.professional) return
   form.dataset.professional = 'true'
+  form.noValidate = true
+  for(const name of ['title','category','instructor','duration','summary','outcomes','course_setup'])form.elements.namedItem(name).required=true
   panel.classList.add('professional-course-studio')
   const fields = [...form.children]
   const shell = document.createElement('div')
   shell.className = 'course-studio-shell'
-  shell.innerHTML = '<aside><span>COURSE STUDIO</span><h3>Build your course</h3><nav aria-label="Course builder sections"></nav><p class="studio-help">Save your changes before leaving the workspace.</p></aside><main><div class="studio-panel"></div></main>'
+  shell.innerHTML = '<aside><span>COURSE STUDIO</span><h3>Build your course</h3><nav aria-label="Course builder sections"></nav><p class="studio-help">Save each step, then mount the course on Completion.</p></aside><main><div class="studio-panel"></div></main>'
   const nav = shell.querySelector('nav')
   const main = shell.querySelector('.studio-panel')
   sections.forEach(([key,title,desc,names], index) => {
@@ -40,11 +42,13 @@ function enhance() {
       body.prepend(tools)
     }
     main.appendChild(section)
+    if(index < sections.length-1) section.insertAdjacentHTML('beforeend', '<div class="course-studio-actions"><button type="button" class="btn btn-blue" data-studio-continue>Save and continue →</button></div>')
   })
   const actions = document.createElement('div')
   actions.className = 'course-studio-actions'
   fields.filter(item => item.tagName === 'BUTTON').forEach(item => actions.appendChild(item))
-  main.appendChild(actions)
+  actions.insertAdjacentHTML('afterbegin','<button type="button" class="btn btn-blue" data-studio-save>Save draft</button><p>Step drafts stay in this browser tab. Mount course saves the complete course online.</p>')
+  main.querySelector('[data-studio-section="completion"]').appendChild(actions)
   fields.filter(item => item.tagName === 'INPUT' && item.type === 'hidden').forEach(item => main.prepend(item))
   form.appendChild(shell)
   showTab(panel, active)
@@ -58,17 +62,51 @@ function showTab(panel, key) {
     el.setAttribute('aria-current', current ? 'step' : 'false')
   })
 }
+function validateStep(panel,key){
+  const section=panel.querySelector(`[data-studio-section="${key}"]`)
+  if(key==='curriculum'){
+    const setup=section.querySelector('[name="course_setup"]')
+    setup.setCustomValidity(/^CHAPTER:/im.test(setup.value)&&/^LESSON:/im.test(setup.value)?'':'Add at least one chapter and lesson.')
+  }
+  for(const field of section.querySelectorAll('input,select,textarea')){
+    if(!field.checkValidity()){showTab(panel,key);field.reportValidity();return false}
+  }
+  return true
+}
+function saveStep(form){
+  if(form.dataset.coverUploading==='true'){form.querySelector('[data-cover-status]').textContent='Please wait for the cover image upload to finish.';return false}
+  const detail={saved:false}
+  form.dispatchEvent(new CustomEvent('course-studio-save-draft',{bubbles:true,detail}))
+  return detail.saved
+}
 document.addEventListener('click', event => {
+  const save=event.target.closest('[data-studio-save]')
+  if(save){saveStep(save.closest('form'));return}
+  const next=event.target.closest('[data-studio-continue]')
+  if(next){
+    const panel=next.closest('[data-course-admin-panel]'),form=next.closest('form')
+    if(!validateStep(panel,active)||!saveStep(form))return
+    showTab(panel,sections[sections.findIndex(([key])=>key===active)+1][0])
+    return
+  }
   const tab = event.target.closest('[data-studio-tab]')
-  if (tab) { showTab(tab.closest('[data-course-admin-panel]'), tab.dataset.studioTab); return }
+  if (tab) {
+    const panel=tab.closest('[data-course-admin-panel]'),form=panel.querySelector('form')
+    const destination=sections.findIndex(([key])=>key===tab.dataset.studioTab)
+    for(let i=0;i<destination;i++)if(!validateStep(panel,sections[i][0]))return
+    if(!saveStep(form))return
+    showTab(panel, tab.dataset.studioTab); return
+  }
   const line = event.target.closest('[data-course-line]')
   if (!line) return
   const area = document.querySelector('#courseAdminForm [name="course_setup"]')
   if (!area) return
   area.value = [area.value.trim(), line.dataset.courseLine].filter(Boolean).join('\n')
+  area.dispatchEvent(new Event('input', { bubbles: true }))
   area.focus()
   area.setSelectionRange(area.value.length, area.value.length)
 }, true)
+document.addEventListener('input',event=>{if(event.target.matches('#courseAdminForm [name="course_setup"]'))event.target.setCustomValidity('')},true)
 document.addEventListener('invalid', event => {
   const section = event.target.closest('[data-studio-section]')
   const panel = event.target.closest('[data-course-admin-panel]')
