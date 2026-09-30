@@ -13,4 +13,5 @@ enrolled=false;assert.equal((await handler(request())).status,403);enrolled=true
 lesson.homework_due='2000-01-01';assert.equal((await handler(request())).status,400);lesson.homework_due='2099-10-04T18:00:00Z'
 configured=false;assert.equal((await handler(request())).status,503);configured=true
 const res=await handler(request());assert.equal(res.status,200);assert.deepEqual(sentPayload.to,['learner@example.test']);assert.match(sentPayload.text,/homework=course-id/);assert.match(sentPayload.text,/Due:/);assert.match(sentHeaders['Idempotency-Key'],/^homework-learner-id/)
+lesson.homework_due='';assert.equal((await handler(request())).status,200);assert.match(sentPayload.text,/No deadline set/);
 console.log('PASS: email authentication, enrollment, due date, unavailable configuration, safe recipient and idempotency.')
