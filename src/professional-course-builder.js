@@ -37,6 +37,7 @@ function validate(form,key){
  const section=form.querySelector(`[data-studio-section="${key}"]`)
  for(const el of section.querySelectorAll('input,select,textarea'))if(!el.checkValidity()){show(form,key);el.reportValidity();notice(form,'Please complete the highlighted field.');return false}
  const model=states.get(form).model
+ if(key==='chapters')for(const ch of model.chapters)for(const l of ch.lessons||[]){if(l.homework&&!l.homework_due){notice(form,'Set a due date for each lesson homework.');return false}for(const q of l.classwork_questions||[])if(!q.q.trim()||q.options.some(o=>!o.trim())||!q.explanation.trim()){notice(form,'Complete the classwork question, four options and explanation.');return false}}
  if(key==='chapters'&&(!model.chapters.length||model.chapters.some(ch=>!ch.title.trim()||!ch.lessons.length||ch.lessons.some(l=>!l.title.trim())))){notice(form,'Give every chapter a title and at least one named lesson.');return false}
  if(key==='quizzes')for(const ch of [...model.chapters,{quiz:model.final}])for(const q of ch.quiz||[])if(!q.q.trim()||q.options.some(o=>!o.trim())||!q.explanation.trim()){notice(form,'Complete each quiz question, all four answers and its explanation.');return false}
  return true
@@ -44,7 +45,7 @@ function validate(form,key){
 function chapterOptions(model){return model.chapters.map((ch,i)=>`<option value="${i}">${escape(ch.title||`Chapter ${i+1}`)}</option>`).join('')}
 function renderChapters(form){
  const model=states.get(form).model,area=form.querySelector('[data-chapter-list]')
- area.innerHTML=model.chapters.map((ch,ci)=>`<article class="studio-item"><header><strong>Chapter ${ci+1}</strong>${button('Remove chapter',`remove-chapter:${ci}`)}</header><div class="studio-input-grid">${field('Chapter title',`chapters.${ci}.title`,ch.title)}${field('Release date (optional)',`chapters.${ci}.unlock_date`,ch.unlock_date,'date')}</div>${(ch.lessons||[]).map((l,li)=>`<details class="studio-lesson" open><summary>Lesson ${li+1}</summary><div class="studio-input-grid">${field('Lesson title',`chapters.${ci}.lessons.${li}.title`,l.title)}${field('Lesson notes',`chapters.${ci}.lessons.${li}.content`,l.content,'textarea')}${field('Interactive activity',`chapters.${ci}.lessons.${li}.interactive`,l.interactive,'textarea')}${field('Homework',`chapters.${ci}.lessons.${li}.homework`,l.homework,'textarea')}${field('Classwork',`chapters.${ci}.lessons.${li}.classwork`,l.classwork,'textarea')}${field('Release date (optional)',`chapters.${ci}.lessons.${li}.unlock_date`,l.unlock_date,'date')}</div>${button('Remove lesson',`remove-lesson:${ci}:${li}`)}</details>`).join('')}${button('+ Add lesson',`add-lesson:${ci}`)}</article>`).join('')||'<p class="studio-empty">No chapters yet. Add your first chapter to begin.</p>'
+ area.innerHTML=model.chapters.map((ch,ci)=>`<article class="studio-item"><header><strong>Chapter ${ci+1}</strong>${button('Remove chapter',`remove-chapter:${ci}`)}</header><div class="studio-input-grid">${field('Chapter title',`chapters.${ci}.title`,ch.title)}${field('Release date (optional)',`chapters.${ci}.unlock_date`,ch.unlock_date,'date')}</div>${(ch.lessons||[]).map((l,li)=>`<details class="studio-lesson" open><summary>Lesson ${li+1}</summary><div class="studio-input-grid">${field('Lesson title',`chapters.${ci}.lessons.${li}.title`,l.title)}${field('Lesson notes',`chapters.${ci}.lessons.${li}.content`,l.content,'textarea')}${field('Interactive activity',`chapters.${ci}.lessons.${li}.interactive`,l.interactive,'textarea')}${field('Homework',`chapters.${ci}.lessons.${li}.homework`,l.homework,'textarea')}${field('Classwork instructions',`chapters.${ci}.lessons.${li}.classwork`,l.classwork,'textarea')}<label>Interactive tool<select data-model="chapters.${ci}.lessons.${li}.interactive_tool"><option value="reflection" ${l.interactive_tool==='reflection'?'selected':''}>Reflection / working area</option><option value="angle" ${l.interactive_tool==='angle'?'selected':''}>Movable strips: angles, vertex and sides</option></select></label>${field('Homework due date (UTC)',`chapters.${ci}.lessons.${li}.homework_due`,l.homework_due?.slice(0,16)||'','datetime-local')}${field('Release date (optional)',`chapters.${ci}.lessons.${li}.unlock_date`,l.unlock_date,'date')}</div><h4>After-lesson multiple-choice classwork</h4>${(l.classwork_questions||[]).map((q,qi)=>{const base=`chapters.${ci}.lessons.${li}.classwork_questions.${qi}`;return `<div class="studio-item"><div class="studio-input-grid">${field('Question',base+'.q',q.q,'textarea')}${q.options.map((o,i)=>field('Option '+'ABCD'[i],base+'.options.'+i,o)).join('')}<label>Correct answer<select data-model="${base}.answer">${[...'ABCD'].map(a=>`<option ${q.answer===a?'selected':''}>${a}</option>`).join('')}</select></label>${field('Explanation',base+'.explanation',q.explanation,'textarea')}</div>${button('Remove classwork question',`remove-classwork:${ci}:${li}:${qi}`)}</div>`}).join('')}${button('+ Add classwork question',`add-classwork:${ci}:${li}`)}${button('Remove lesson',`remove-lesson:${ci}:${li}`)}</details>`).join('')}${button('+ Add lesson',`add-lesson:${ci}`)}</article>`).join('')||'<p class="studio-empty">No chapters yet. Add your first chapter to begin.</p>'
 }
 function renderFiles(form){
  const model=states.get(form).model,area=form.querySelector('[data-file-list]')
@@ -100,7 +101,7 @@ document.addEventListener('input',event=>{
  const el=event.target,form=el.closest('#courseAdminForm');if(!form||!el.dataset.model)return
  const keys=el.dataset.model.split('.');let target=states.get(form).model
  for(const key of keys.slice(0,-1))target=target[key]
- target[keys.at(-1)]=el.value;sync(form)
+ target[keys.at(-1)]=el.type==='datetime-local'&&el.value?el.value+':00Z':el.value;sync(form)
 },true)
 document.addEventListener('change',event=>{const form=event.target.closest('#courseAdminForm');if(!form)return;if(event.target.matches('[data-model]'))event.target.dispatchEvent(new Event('input',{bubbles:true}));if(event.target.matches('[data-file-chapter]'))updateLessons(form);if(event.target.matches('[data-lesson-upload]'))upload(event.target,form)},true)
 async function upload(input,form){
@@ -121,6 +122,8 @@ document.addEventListener('click',event=>{
  event.preventDefault();const state=states.get(form)
  if(el.dataset.studioTab){if(save(form))show(form,el.dataset.studioTab);return}
  const [action,a,b,c]=el.dataset.studioAction.split(':');const model=state.model
+ if(action==='add-classwork')(model.chapters[a].lessons[b].classwork_questions||=[]).push({q:'',options:['','','',''],answer:'A',explanation:''})
+ if(action==='remove-classwork')model.chapters[a].lessons[b].classwork_questions.splice(Number(c),1)
  if(action==='save'){save(form);return}
  if(action==='continue'){if(validate(form,state.active)&&save(form))show(form,sections[sections.findIndex(s=>s[0]===state.active)+1][0]);return}
  if(action==='add-chapter')model.chapters.push({title:'',unlock_date:'',lessons:[],quiz:[],homework:[],classwork:[]})
@@ -134,7 +137,7 @@ document.addEventListener('click',event=>{
  if(action==='remove-file')model.chapters[a].lessons[b][c]=''
  if(action==='attach-link'){const link=form.querySelector('[data-file-link]');if(!link.value||!link.reportValidity())return;if(!/^https?:\/\//i.test(link.value)){notice(form,'Use an https:// or http:// link.');return};const lesson=model.chapters[form.querySelector('[data-file-chapter]').value]?.lessons[form.querySelector('[data-file-lesson]').value];if(!lesson){notice(form,'Add a chapter and lesson first.');return}lesson[form.querySelector('[data-file-kind]').value]=link.value}
  sync(form)
- if(action.includes('chapter')||action.includes('lesson')){renderChapters(form);renderFiles(form);renderQuizzes(form)}
+ if(action.includes('chapter')||action.includes('lesson')||action.includes('classwork')){renderChapters(form);renderFiles(form);renderQuizzes(form)}
  else if(action.includes('quiz'))renderQuizzes(form)
  else if(action.includes('announcement'))renderAnnouncements(form)
  else renderFiles(form)
