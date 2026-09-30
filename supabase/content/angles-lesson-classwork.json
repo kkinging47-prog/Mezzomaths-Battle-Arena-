@@ -1,0 +1,30 @@
+[
+ [
+  {"q":"What is an angle?","options":["The length of one line","The opening between two rays with a common endpoint","The distance between two points","The area inside a shape"],"answer":"B","explanation":"An angle is the opening between two rays that share an endpoint."},
+  {"q":"In ∠PQR, which point is the vertex?","options":["P","R","Q","All three points"],"answer":"C","explanation":"The middle letter names the vertex, so Q is the vertex of ∠PQR."},
+  {"q":"How many sides does an angle have?","options":["One","Three","Four","Two"],"answer":"D","explanation":"An angle has two sides, each represented by a ray starting at the vertex."},
+  {"q":"Where should you mark the vertex when drawing an angle?","options":["At the shared endpoint of its two sides","At the far end of either side","Halfway along a side","Anywhere inside the opening"],"answer":"A","explanation":"The vertex is the endpoint shared by both rays."},
+  {"q":"If you draw the sides longer but keep the opening unchanged, what happens to the angle's size?","options":["It doubles","It becomes a straight angle","It stays the same","It becomes smaller"],"answer":"C","explanation":"The size of an angle depends on its opening, not on how long its sides are drawn."}
+ ],
+ [
+  {"q":"What type of angle measures 25°?","options":["Right","Acute","Obtuse","Straight"],"answer":"B","explanation":"25° is greater than 0° and less than 90°, so it is acute."},
+  {"q":"What type of angle measures 45°?","options":["Acute","Right","Obtuse","Straight"],"answer":"A","explanation":"45° is less than 90° and greater than 0°, so it is acute."},
+  {"q":"What type of angle measures 89°?","options":["Straight","Obtuse","Right","Acute"],"answer":"D","explanation":"89° is just below 90°, so it is acute."},
+  {"q":"What type of angle measures 90°?","options":["Acute","Obtuse","Right","Straight"],"answer":"C","explanation":"A right angle measures exactly 90°."},
+  {"q":"Why is an angle measuring 90° not acute?","options":["Acute angles measure more than 180°","Acute angles measure less than 90°","Acute angles have only one side","Acute angles measure exactly 90°"],"answer":"B","explanation":"An acute angle has an opening greater than 0° but less than 90°. Exactly 90° is right."}
+ ],
+ [
+  {"q":"Classify an angle measuring 90°.","options":["Right","Obtuse","Straight","Acute"],"answer":"A","explanation":"Exactly 90° is a right angle."},
+  {"q":"Classify an angle measuring 91°.","options":["Acute","Straight","Right","Obtuse"],"answer":"D","explanation":"91° is greater than 90° and less than 180°, so it is obtuse."},
+  {"q":"Classify an angle measuring 135°.","options":["Straight","Obtuse","Acute","Right"],"answer":"B","explanation":"135° lies between 90° and 180°, so it is obtuse."},
+  {"q":"Classify an angle measuring 180°.","options":["Right","Acute","Straight","Obtuse"],"answer":"C","explanation":"A straight angle measures exactly 180° and forms a straight line."},
+  {"q":"Why is 179° obtuse but 180° straight?","options":["Both measurements are less than 90°","179° has no vertex","Both are right angles","179° is between 90° and 180°, while 180° forms a straight line"],"answer":"D","explanation":"Obtuse angles are greater than 90° but less than 180°. At exactly 180°, the angle is straight."}
+ ],
+ [
+  {"q":"Classify an angle measuring 35°.","options":["Obtuse","Acute","Straight","Right"],"answer":"B","explanation":"35° is between 0° and 90°, so it is acute."},
+  {"q":"Classify an angle measuring 90°.","options":["Acute","Obtuse","Right","Straight"],"answer":"C","explanation":"Exactly 90° is a right angle."},
+  {"q":"Classify an angle measuring 125°.","options":["Obtuse","Straight","Acute","Right"],"answer":"A","explanation":"125° is between 90° and 180°, so it is obtuse."},
+  {"q":"Classify an angle measuring 180°.","options":["Acute","Right","Obtuse","Straight"],"answer":"D","explanation":"Exactly 180° is a straight angle."},
+  {"q":"How should you position a protractor to measure an angle correctly?","options":["Put its centre at the end of one side, away from the vertex","Place its centre on the vertex and align its zero line with one side","Put it anywhere between the sides","Read the scale without aligning it"],"answer":"B","explanation":"Place the centre on the vertex, align a zero line with one side, and read where the other side crosses the scale starting from that zero."}
+ ]
+]
