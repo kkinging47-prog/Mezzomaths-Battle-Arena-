@@ -17,13 +17,6 @@ function shuffleBySeed(list, seed) {
   }
   return arr
 }
-function getBankCorrect(question) {
-  try {
-    const bank = JSON.parse(localStorage.getItem('mezzo_question_bank') || '[]')
-    const found = bank.find(q => String(q.question_text || '').trim() === question)
-    return found?.correct_answer || found?.answer || ''
-  } catch { return '' }
-}
 function textOfButton(button, type) {
   if (type === 'bece') return button.querySelector('span')?.textContent?.trim() || button.textContent.trim()
   return button.querySelector('strong')?.textContent?.trim() || button.textContent.trim()
@@ -74,25 +67,20 @@ function randomizeCard(card, type) {
     const letter = btn.dataset.soloAnswer || btn.dataset.battleAnswer || btn.dataset.beceAnswer
     return [letter, textOfButton(btn, type)]
   }))
-  const correctOriginal = type === 'bece' ? (card.dataset.correctAnswer || 'B') : (getBankCorrect(question) || 'B')
-  const correctText = originalOptions[correctOriginal] || originalOptions.B || ''
-  const correctDisplay = LETTERS[seed % 4]
-  const wrongOriginals = LETTERS.filter(letter => letter !== correctOriginal)
-  const wrongDisplays = shuffleBySeed(LETTERS.filter(letter => letter !== correctDisplay), seed + 11)
-  const displayMap = { [correctDisplay]: { original: correctOriginal, text: correctText } }
-  wrongDisplays.forEach((display, index) => {
-    const original = wrongOriginals[index] || wrongOriginals[0]
-    displayMap[display] = { original, text: originalOptions[original] || `Option ${display}` }
-  })
+  const correctOriginal = card.dataset.correctAnswer || ''
+  // Shuffle option identities together with their text; grading uses the original letter.
+  const order = shuffleBySeed(LETTERS, seed + 11)
+  const displayMap = Object.fromEntries(LETTERS.map((display,i)=>[display,{original:order[i],text:originalOptions[order[i]]}]))
+  const correctDisplay = LETTERS[order.indexOf(correctOriginal)] || ''
 
   buttons.forEach(button => {
     const display = button.dataset.visibleLetter || (button.querySelector(type === 'bece' ? 'b' : 'span')?.textContent?.trim()) || 'A'
     const item = displayMap[display] || displayMap.A
     setButton(button, type, display, item.original, item.text)
   })
-  applySelectedClasses(buttons, beforeSelected, correctOriginal, type)
+  if(correctOriginal) applySelectedClasses(buttons, beforeSelected, correctOriginal, type)
   const answerBadge = document.querySelector('.result-banner span')
-  if (answerBadge && answerBadge.textContent.includes('Answer:')) answerBadge.textContent = `Answer: ${correctDisplay}`
+  if (correctDisplay && answerBadge && answerBadge.textContent.includes('Answer:')) answerBadge.textContent = `Answer: ${correctDisplay}`
   card.dataset.optionRandomized = signature
   card.dataset.visibleCorrectAnswer = correctDisplay
 }

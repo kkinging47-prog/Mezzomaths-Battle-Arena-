@@ -13,7 +13,7 @@ function selectedResultFromPage() {
   const isWrong = Boolean(card.querySelector('.answer-card.wrong, [data-bece-answer].bece-wrong'))
   const banner = document.querySelector('.result-banner strong, .bece-feedback strong')?.textContent || ''
   const explanation = document.querySelector('.explanation-card p, .bece-feedback p')?.textContent || ''
-  const correctAnswer = card.dataset.correctAnswer || document.querySelector('.result-banner span')?.textContent || ''
+  const correctAnswer = (card.dataset.visibleCorrectAnswer ? 'Answer: '+card.dataset.visibleCorrectAnswer : card.dataset.correctAnswer ? 'Answer: '+card.dataset.correctAnswer : '') || document.querySelector('.result-banner span')?.textContent || ''
   if (!selected && !banner) return null
   const correct = isCorrect || /correct/i.test(banner) && !/not correct/i.test(banner)
   const wrong = isWrong || /not correct|wrong/i.test(banner)

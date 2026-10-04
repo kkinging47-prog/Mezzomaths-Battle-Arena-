@@ -188,6 +188,7 @@ function levelForTopicSelect(select) {
 }
 function syncWorkbookOptions() {
   document.querySelectorAll('select').forEach(select => {
+    if(['smartTopic','soloTopic','battleTopic'].includes(select.id))return
     const label = select.closest('label')?.textContent?.toLowerCase() || ''
     const isClass = select.name === 'class_level' || ['smartClass', 'soloClass', 'battleClass', 'adminLevel', 'manualLevel', 'aClass', 'bClass'].includes(select.id) || label.includes('class') || label.includes('level')
     if (isClass) addOptions(select, CLASS_LEVELS)
