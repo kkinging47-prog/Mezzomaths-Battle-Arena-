@@ -20,6 +20,10 @@ function trialWindow(now = new Date()) {
   const end = new Date(start)
   end.setUTCHours(20, 0, 0, 0)
 
+  if (now < new Date('2026-10-18T18:00:00Z')) {
+    const launch = new Date('2026-10-18T18:00:00Z')
+    return { open: false, start: launch, end: new Date('2026-10-18T20:00:00Z'), ms: launch - now }
+  }
   if (day === 0 && now >= start && now < end) {
     return { open: true, start, end, ms: end - now }
   }
