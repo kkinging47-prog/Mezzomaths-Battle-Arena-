@@ -82,7 +82,7 @@ async function saveAttempt(attempt) {
 async function dbLeaders() {
   if (!supabase || !isSupabaseConfigured) return []
   try {
-    const { data, error } = await supabase.from('bece_sunday_trial_attempts').select('full_name,school_name,region,score,total,percent,time_taken_seconds,week_start').eq('week_start', weekStartIso()).order('score', { ascending: false }).order('time_taken_seconds', { ascending: true }).limit(20)
+    const { data, error } = await supabase.rpc('bece_sunday_official_leaderboard', {p_week_start:weekStartIso()})
     return error ? [] : data || []
   } catch { return [] }
 }
@@ -104,8 +104,8 @@ function shell(content) {
 async function schoolResults() {
   const {data,error}=await supabase.rpc('bece_sunday_school_results')
   if(error) return alert('School reports unavailable. Confirm database migration and school sign-in.')
-  const rows=(data||[]).map(x=>'<tr><td>'+esc(x.full_name)+'</td><td>'+esc(x.class_level)+'</td><td>'+esc(x.week_start)+'</td><td>'+esc(x.score)+'/'+esc(x.total)+'</td></tr>').join('')
-  shell('<section class="sunday-report light-card"><h2>School examination results</h2><p>Official Sunday and supervised laboratory results.</p><div style="overflow-x:auto"><table><thead><tr><th>Student</th><th>Class</th><th>Sunday paper</th><th>Score</th></tr></thead><tbody>'+rows+'</tbody></table></div><button class="btn btn-blue" data-sunday-school-mode>Back to School Portal</button></section>')
+  const rows=(data||[]).map(x=>'<tr><td>'+esc(x.full_name)+'</td><td>'+esc(x.class_level)+'</td><td>'+esc(x.week_start)+'</td><td>'+esc(x.score)+'/'+esc(x.total)+'</td><td>'+esc(Object.entries(x.topics||{}).filter(([t,v])=>v.correct<v.total).map(([t,v])=>t+': '+(v.total-v.correct)+' missed').join('; ')||'None')+'</td></tr>').join('')
+  shell('<section class="sunday-report light-card"><h2>School examination results</h2><p>Official Sunday and supervised laboratory results.</p><div style="overflow-x:auto"><table><thead><tr><th>Student</th><th>Class</th><th>Sunday paper</th><th>Score</th><th>Areas to improve</th></tr></thead><tbody>'+rows+'</tbody></table></div><button class="btn btn-blue" data-sunday-school-mode>Back to School Portal</button></section>')
 }
 async function schoolPortal() {
   if (!supabase) return alert('School service unavailable.')
