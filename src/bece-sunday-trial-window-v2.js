@@ -161,8 +161,17 @@ async function selectSundaySchoolStudent(candidateId) {
   renderSundayHome()
 }
 
+async function accessSchoolCandidate(form) {
+ const v=Object.fromEntries(new FormData(form))
+ const response=await fetch('/api/bece-sunday-candidate-access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(v)})
+ const result=await response.json().catch(()=>({}))
+ if(!response.ok) return alert(result.error||'Student verification failed.')
+ active=null
+ saveJson(CANDIDATE_KEY,result)
+ renderSundayHome()
+}
 function registerHtml() {
-  return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
+  return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p><button type="button" class="btn btn-blue" data-school-student-access>Already registered by your school? Access your profile</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
 }
 function registeredHtml(c, w, tried) {
   return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions">${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : (w.open || (labOpen() && c.school_managed)) ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}${c.school_managed ? '<button class="btn btn-blue" data-sunday-school-mode="true">Switch Student</button>' : '<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button>'}</div></section>`
@@ -305,6 +314,12 @@ function updateCountdowns() { const w = trialWindow(); document.querySelectorAll
 function sync() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; injectBanner(); updateCountdowns() }) }
 
 document.addEventListener('click', e => {
+  if(e.target.closest('[data-school-student-access]')) {
+    e.preventDefault()
+    shell('<form id="sundaySchoolCandidateAccess" class="sunday-register light-card"><h2>School-registered student access</h2><p>Use the candidate ID and admission number supplied by your school.</p><label>Candidate ID<input name="candidate_id" required></label><label>Admission number<input name="student_reference" required></label><button class="btn btn-gold" type="submit">Continue</button><button class="btn btn-ghost" type="button" data-bece-sunday-open>Back</button></form>')
+    return
+  }
+
   if (e.target.closest('[data-sunday-school-results]')) { e.preventDefault(); schoolResults(); return }
   if (e.target.closest('[data-sunday-school-mode]')) { e.preventDefault(); schoolPortal(); return }
   const sc = e.target.closest('[data-school-candidate]')
@@ -325,6 +340,7 @@ document.addEventListener('click', e => {
 }, true)
 window.addEventListener('mezzoSundayPreview', event => { if (event.detail?.setId) startAdminPreview(event.detail.setId) })
 document.addEventListener('submit', e => {
+  if(e.target?.id==='sundaySchoolCandidateAccess') {e.preventDefault();accessSchoolCandidate(e.target);return}
   if (e.target?.id === 'sundaySchoolForm') { e.preventDefault(); createSundaySchool(e.target); return }
   if (e.target?.id === 'sundaySchoolStudentForm') { e.preventDefault(); addSundaySchoolStudent(e.target); return } if (e.target?.id === 'beceSundayRegisterForm') { e.preventDefault(); register(e.target) } }, true)
 
