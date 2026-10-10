@@ -30,7 +30,7 @@ export function verifyTrialSession(token) {
 }
 
 export function sundayWindowOpen(now = new Date()) {
-  return now.getUTCDay() === 0 && now.getUTCHours() >= 18 && now.getUTCHours() < 20
+  return now >= new Date('2026-10-18T18:00:00Z') && now.getUTCDay() === 0 && now.getUTCHours() >= 18 && now.getUTCHours() < 20
 }
 
 export function safeQuestion(row) {
