@@ -1,6 +1,8 @@
 -- One official attempt per candidate per Sunday paper, including school-lab sittings.
 alter table public.bece_sunday_weekly_claims
  add column if not exists session_data jsonb,
+ add column if not exists session_token text,
+ add column if not exists session_expires_at timestamptz,
  add column if not exists result jsonb,
  add column if not exists school_id uuid references public.bece_sunday_schools(id),
  add column if not exists mode text not null default 'sunday';
