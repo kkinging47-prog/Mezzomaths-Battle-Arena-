@@ -1,12 +1,12 @@
 import { verifyTrialSession, supabaseRows, requireSundayAdmin } from './_bece-sunday-security.js'
 
-async function persistOfficialResult(session, score, total) {
+async function persistOfficialResult(session, score, total, results) {
   if (!session.candidateId || !session.weekStart) throw new Error('Candidate session is missing identity.')
   const url = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/,'')
   const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '')
   if (!url || !key) throw new Error('Results database is not configured.')
   const endpoint = url+'/rest/v1/bece_sunday_weekly_claims?candidate_id=eq.'+encodeURIComponent(session.candidateId)+'&week_start=eq.'+encodeURIComponent(session.weekStart)+'&completed_at=is.null'
-  const response = await fetch(endpoint,{method:'PATCH',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({completed_at:new Date().toISOString(),result:{score,total},mode:session.mode||'sunday',school_id:session.schoolId||null})})
+  const response = await fetch(endpoint,{method:'PATCH',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({completed_at:new Date().toISOString(),result:{score,total,topics:results.reduce((acc,item)=>{const t=item.topic_area||item.topic||'General';acc[t] ||= {total:0,correct:0};acc[t].total++;if(item.correct)acc[t].correct++;return acc},{})},mode:session.mode||'sunday',school_id:session.schoolId||null})})
   const saved = await response.json().catch(()=>[])
   if (!response.ok) throw new Error('Official result could not be saved.')
   if (!Array.isArray(saved) || saved.length!==1) throw new Error('This candidate has already submitted this weekly paper, or the session is no longer valid.')
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
         }
       })
       const score = results.filter(result => result.correct).length
-      if (!session.preview) await persistOfficialResult(session,score,results.length)
+      if (!session.preview) await persistOfficialResult(session,score,results.length,results)
       res.setHeader('Cache-Control', 'no-store')
       return res.status(200).json({ results, score })
     }
