@@ -22,3 +22,17 @@ grant execute on function public.bece_sunday_school_results() to authenticated;
 -- Disable insecure anonymous writes of score/answers: server stores official results.
 drop policy if exists "Public insert Sunday BECE attempts" on public.bece_sunday_trial_attempts;
 revoke insert on public.bece_sunday_trial_attempts from anon,authenticated;
+
+-- Public ranking returns only display fields, never contact details or answer data.
+create or replace function public.bece_sunday_official_leaderboard(p_week_start date)
+returns table(full_name text,school_name text,region text,score integer,total integer,week_start date)
+language sql stable security definer set search_path=public as $$
+ select r.full_name,r.school_name,r.region,(c.result->>'score')::integer,
+ (c.result->>'total')::integer,c.week_start
+ from public.bece_sunday_weekly_claims c
+ join public.bece_sunday_trial_registrations r on r.candidate_id=c.candidate_id
+ where c.week_start=p_week_start and c.completed_at is not null
+ order by (c.result->>'score')::integer desc,c.completed_at asc limit 20
+$$;
+revoke all on function public.bece_sunday_official_leaderboard(date) from public;
+grant execute on function public.bece_sunday_official_leaderboard(date) to anon,authenticated;
