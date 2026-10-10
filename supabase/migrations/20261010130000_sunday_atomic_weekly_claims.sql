@@ -1,6 +1,6 @@
 -- Atomic once-per-week claims across devices; server-only access.
 create table if not exists public.bece_sunday_weekly_claims (
- candidate_id text not null references public.bece_sunday_trial_registrations(candidate_id),
+ candidate_id text not null,
  week_start date not null,
  claimed_at timestamptz not null default now(),
  completed_at timestamptz,
