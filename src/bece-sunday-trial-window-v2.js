@@ -111,10 +111,25 @@ function leaderboardHtml(rows) {
   return `<section class="sunday-board glass-card" data-sunday-leaderboard><div class="sunday-board-head"><div><span>🏆 Weekly Leaderboard</span><h2>Score + Time Ranking</h2></div><small>Week of ${weekStartIso()}</small></div>${rows.length ? rows.map((r, i) => `<div class="sunday-rank"><b>${i + 1}</b><span><strong>${esc(r.full_name || r.candidate?.full_name || 'Candidate')}</strong><small>${esc(r.school_name || r.candidate?.school_name || '')} • ${esc(r.region || r.candidate?.region || '')}</small></span><em>${r.score}/${r.total || QUESTION_COUNT}</em><small>${fmt((r.time_taken_seconds || 0) * 1000)}</small></div>`).join('') : '<p>No results yet this week.</p>'}</section>`
 }
 async function refreshDbLeaders() { const rows = await dbLeaders(); const box = document.querySelector('[data-sunday-leaderboard]'); if (rows.length && box) box.outerHTML = leaderboardHtml(rows) }
+async function showSundayAdminSummary() {
+  if (!supabase) return alert('Database connection unavailable.')
+  const { data, error } = await supabase.rpc('bece_sunday_admin_registration_summary')
+  if (error) return alert('Admin registration report unavailable. Please sign in as an administrator and confirm the latest database migration has been applied.')
+  const rows = data || []
+  const table = rows.map(r => `<tr><td>${esc(r.school_name)}</td><td>${esc(r.region)}</td><td>${Number(r.registered) || 0}</td></tr>`).join('')
+  shell(`<section class="sunday-report light-card"><h2>Sunday BECE registrations by school and region</h2><p>Total registered: <strong>${rows.reduce((n,r) => n + (Number(r.registered) || 0), 0)}</strong></p><div style="overflow-x:auto"><table><thead><tr><th>School</th><th>Region</th><th>Candidates</th></tr></thead><tbody>${table || '<tr><td colspan="3">No registrations yet</td></tr>'}</tbody></table></div><button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button></section>`)
+}
 function renderSundayHome() {
   const c = candidate(), w = trialWindow(), tried = currentAttempt()
   shell(`<section class="sunday-hero glass-card"><div><span>Free National Practice Window</span><h1>Sunday BECE Maths Trial</h1><p>Open every Sunday, 6:00pm – 8:00pm Ghana time.</p></div><div class="sunday-big-count"><small>${w.open ? 'Window closes in' : 'Next trial starts in'}</small><strong data-bece-sunday-countdown>${fmt(w.ms)}</strong><em>40 BECE objectives</em></div></section>${c ? registeredHtml(c, w, tried) : registerHtml()}${leaderboardHtml(localLeaders())}`)
   refreshDbLeaders()
+  if (supabase) supabase.auth.getUser().then(({data}) => {
+    if (!data?.user || !document.querySelector('.bece-sunday-page')) return
+    supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle().then(({data:profile}) => {
+      if (profile?.role === 'admin' && document.querySelector('.sunday-hero') && !document.querySelector('[data-sunday-admin-summary]'))
+        document.querySelector('.sunday-hero').insertAdjacentHTML('afterend', '<button class="btn btn-blue" type="button" data-sunday-admin-summary="true">Admin: Registration by School and Region</button>')
+    })
+  }).catch(() => {})
 }
 async function register(form) {
   const c = Object.fromEntries(new FormData(form).entries())
@@ -228,6 +243,7 @@ function updateCountdowns() { const w = trialWindow(); document.querySelectorAll
 function sync() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; injectBanner(); updateCountdowns() }) }
 
 document.addEventListener('click', e => {
+  if (e.target.closest('[data-sunday-admin-summary]')) { e.preventDefault(); showSundayAdminSummary(); return }
   if (e.target.closest('[data-bece-sunday-open]')) { e.preventDefault(); e.stopImmediatePropagation(); renderSundayHome(); return }
   if (e.target.closest('[data-bece-sunday-start]')) { e.preventDefault(); startTrial(); return }
   if (e.target.closest('[data-bece-sunday-change-profile]')) { e.preventDefault(); localStorage.removeItem(CANDIDATE_KEY); renderSundayHome(); return }
