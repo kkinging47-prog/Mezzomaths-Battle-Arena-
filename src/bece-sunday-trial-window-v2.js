@@ -49,18 +49,22 @@ function newCandidateId() {
   return 'MSB-' + [...bytes].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase()
 }
 function attempts() { return readJson(ATTEMPTS_KEY, []) }
-function currentAttempt() { return attempts().find(a => a.week_start === weekStartIso()) }
+function currentAttempt() { return attempts().find(a => a.week_start === weekStartIso() && a.candidate?.candidate_id === candidate()?.candidate_id) }
+function labOpen() { const d=new Date(); return d>=new Date('2026-10-19T00:00:00Z') && d.getUTCDay()>=1 && d.getUTCDay()<=5 }
+function activeForCandidate() { const a=readJson(ACTIVE_KEY,null); return a?.candidate?.candidate_id===candidate()?.candidate_id ? a : null }
 async function loadTrialQuestions() {
+  const {data:auth} = candidate()?.school_managed ? await supabase.auth.getSession() : {data:{session:null}}
+  if (labOpen() && !auth?.session?.access_token) throw new Error('School sign-in required for weekday lab examinations.')
   const response = await fetch('/api/bece-sunday-start', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(auth?.session?.access_token ? {Authorization:'Bearer '+auth.session.access_token}:{}) },
     body: JSON.stringify({ week_start: weekStartIso(), candidate_id: candidate()?.candidate_id })
   })
   const data = await response.json().catch(() => ({}))
   if (!response.ok) throw new Error(data.error || 'Unable to load the secured Sunday BECE questions.')
   return {
     questions: Array.isArray(data.questions) ? data.questions : [],
-    sessionToken: data.session_token || ''
+    sessionToken: data.session_token || '', weekStart: data.week_start || weekStartIso(), mode: data.mode || 'sunday'
   }
 }
 function analyse(attempt) {
@@ -73,12 +77,7 @@ function analyse(attempt) {
 }
 async function saveAttempt(attempt) {
   saveJson(ATTEMPTS_KEY, [attempt, ...attempts().filter(a => a.id !== attempt.id)].slice(0, 40))
-  if (supabase && isSupabaseConfigured) {
-    const c = attempt.candidate
-    try {
-      await supabase.from('bece_sunday_trial_attempts').insert({ week_start: attempt.week_start, full_name: c.full_name, contact: c.contact, school_name: c.school_name, location: c.location, region: c.region, score: attempt.score, total: attempt.total, percent: attempt.percent, time_taken_seconds: attempt.time_taken_seconds, answers: attempt.answers, ai_analysis: attempt.ai_analysis })
-    } catch {}
-  }
+
 }
 async function dbLeaders() {
   if (!supabase || !isSupabaseConfigured) return []
@@ -142,6 +141,7 @@ async function selectSundaySchoolStudent(candidateId) {
   if (!school) return alert('School not found.')
   const {data:student} = await supabase.from('bece_sunday_school_students').select('*').eq('school_id',school.id).eq('candidate_id',candidateId).single()
   if (!student) return alert('Student not found.')
+  active = null
   saveJson(CANDIDATE_KEY,{candidate_id:student.candidate_id,full_name:student.full_name,class_level:student.class_level,contact:'school:'+school.id+':'+student.student_reference,school_name:school.school_name,location:school.location,region:school.region,registration_status:'confirmed',school_managed:true})
   renderSundayHome()
 }
@@ -150,7 +150,7 @@ function registerHtml() {
   return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
 }
 function registeredHtml(c, w, tried) {
-  return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions">${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : w.open ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}${c.school_managed ? '<button class="btn btn-blue" data-sunday-school-mode="true">Switch Student</button>' : '<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button>'}</div></section>`
+  return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions">${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : (w.open || (labOpen() && c.school_managed)) ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}${c.school_managed ? '<button class="btn btn-blue" data-sunday-school-mode="true">Switch Student</button>' : '<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button>'}</div></section>`
 }
 function leaderboardHtml(rows) {
   return `<section class="sunday-board glass-card" data-sunday-leaderboard><div class="sunday-board-head"><div><span>🏆 Weekly Leaderboard</span><h2>Score + Time Ranking</h2></div><small>Week of ${weekStartIso()}</small></div>${rows.length ? rows.map((r, i) => `<div class="sunday-rank"><b>${i + 1}</b><span><strong>${esc(r.full_name || r.candidate?.full_name || 'Candidate')}</strong><small>${esc(r.school_name || r.candidate?.school_name || '')} • ${esc(r.region || r.candidate?.region || '')}</small></span><em>${r.score}/${r.total || QUESTION_COUNT}</em><small>${fmt((r.time_taken_seconds || 0) * 1000)}</small></div>`).join('') : '<p>No results yet this week.</p>'}</section>`
@@ -204,13 +204,14 @@ async function register(form) {
   }
 }
 async function startTrial() {
-  if (!trialWindow().open) return renderSundayHome()
+  if (!trialWindow().open && !(labOpen() && candidate()?.school_managed)) return renderSundayHome()
   if (!candidate() || candidate().registration_status !== 'confirmed') return renderSundayHome()
   if (currentAttempt()) return renderReport(currentAttempt())
+  if (activeForCandidate()) { active = activeForCandidate(); return renderQuestion() }
   try {
     const secured = await loadTrialQuestions()
     if (!secured.questions.length || !secured.sessionToken) throw new Error('The secured question service returned no questions.')
-    active = { id: `trial_${Date.now()}`, week_start: weekStartIso(), candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: 0, selections: {}, started_at: Date.now() }
+    active = { id: `trial_${Date.now()}`, week_start: secured.weekStart, mode: secured.mode, candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: 0, selections: {}, started_at: Date.now() }
     saveJson(ACTIVE_KEY, active)
     renderQuestion()
   } catch (error) {
@@ -231,7 +232,7 @@ async function startAdminPreview(setId) {
 }
 function selectedCount() { return Object.keys(active?.selections || {}).length }
 function renderQuestion() {
-  active ||= readJson(ACTIVE_KEY, null)
+  active ||= activeForCandidate()
   if (!active) return renderSundayHome()
   const q = active.questions[active.index]
   const selected = active.selections?.[q.id] || ''
