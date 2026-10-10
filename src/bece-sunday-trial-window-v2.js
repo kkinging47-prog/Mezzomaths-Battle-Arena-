@@ -67,7 +67,7 @@ async function loadTrialQuestions() {
       body:JSON.stringify({candidate_id:candidate()?.candidate_id})
     })
     const existing=await resumed.json().catch(()=>({}))
-    if(resumed.ok) return {questions:existing.questions||[],sessionToken:existing.session_token||'',weekStart:existing.week_start,mode:existing.mode,resumed:true}
+    if(resumed.ok) return {questions:existing.questions||[],sessionToken:existing.session_token||'',weekStart:existing.week_start,mode:existing.mode,startedAt:existing.started_at,resumed:true}
     throw new Error(existing.error || data.error || 'This week’s examination attempt is already reserved.')
   }
   if (!response.ok) throw new Error(data.error || 'Unable to load the secured Sunday BECE questions.')
@@ -226,7 +226,7 @@ async function startTrial() {
   try {
     const secured = await loadTrialQuestions()
     if (!secured.questions.length || !secured.sessionToken) throw new Error('The secured question service returned no questions.')
-    active = { id: `trial_${Date.now()}`, week_start: secured.weekStart, mode: secured.mode, candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: 0, selections: {}, started_at: Date.now() }
+    active = { id: `trial_${Date.now()}`, week_start: secured.weekStart, mode: secured.mode, candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: 0, selections: {}, started_at: secured.startedAt || Date.now() }
     saveJson(ACTIVE_KEY, active)
     if (secured.resumed) alert('Your previous examination session has been recovered. The original time limit still applies.')
     renderQuestion()
