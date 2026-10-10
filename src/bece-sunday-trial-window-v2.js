@@ -101,8 +101,53 @@ function injectBanner() {
 function shell(content) {
   document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-sunday-page"><nav class="screen-tabs"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE Sunday Trial</small></div></div><div class="tab-scroll"><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button>${active?.preview || previewReport ? '<button class="screen-tab" data-target="admin"><span>🛠️</span>Admin workspace</button>' : '<button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Practice</button><button class="screen-tab active" data-bece-sunday-open="true"><span>⏰</span>Sunday Trial</button>'}</div></nav>${content}</section></main>`
 }
+
+async function schoolPortal() {
+  if (!supabase) return alert('School service unavailable.')
+  const {data:auth} = await supabase.auth.getUser()
+  if (!auth?.user) return shell('<section class="sunday-register light-card"><h2>School account required</h2><p>Sign in using the main Mezzo Maths account page, then return here to create or access your school roster.</p><button class="btn btn-ghost" data-bece-sunday-open="true">Back</button></section>')
+  const {data:school,error} = await supabase.from('bece_sunday_schools').select('*').eq('owner_id',auth.user.id).maybeSingle()
+  if (error) return alert('School database is unavailable. Please apply the school migration.')
+  if (!school) return shell('<form id="sundaySchoolForm" class="sunday-register light-card"><h2>Register your school</h2><label>School name<input name="school_name" required></label><label>Town<input name="location" required></label><label>Region<select name="region">'+optionHtml(REGIONS)+'</select></label><button class="btn btn-gold" type="submit">Create school profile</button></form>')
+  const {data:students,error:rosterError} = await supabase.from('bece_sunday_school_students').select('candidate_id,full_name,class_level,student_reference').eq('school_id',school.id).order('full_name').limit(500)
+  if (rosterError) return alert('Unable to load school roster.')
+  const studentButtons = (students || []).map(x => '<button class="btn btn-blue" type="button" data-school-candidate="'+esc(x.candidate_id)+'">'+esc(x.full_name)+' — '+esc(x.class_level)+' ('+esc(x.student_reference)+')</button>').join('')
+  shell('<section class="sunday-register light-card"><h2>'+esc(school.school_name)+' — School Portal</h2><p>Each student has a separate candidate record and weekly attempt.</p><form id="sundaySchoolStudentForm"><h3>Add student</h3><label>Full name<input name="full_name" required></label><label>Class<select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label><label>Admission / student number<input name="student_reference" required></label><button class="btn btn-gold" type="submit">Add student</button></form><h3>Student roster ('+(students || []).length+')</h3><p>Select the student who is using this computer.</p><div class="sunday-actions">'+studentButtons+'</div><button class="btn btn-ghost" data-bece-sunday-open="true">Back</button></section>')
+}
+async function createSundaySchool(form) {
+  const {data:auth} = await supabase.auth.getUser()
+  if (!auth?.user) return alert('Sign in first.')
+  const {error} = await supabase.from('bece_sunday_schools').insert({...Object.fromEntries(new FormData(form)),owner_id:auth.user.id})
+  if (error) return alert('School registration failed. Check the database setup.')
+  schoolPortal()
+}
+async function addSundaySchoolStudent(form) {
+  const {data:auth} = await supabase.auth.getUser()
+  if (!auth?.user) return alert('Sign in first.')
+  const {data:school} = await supabase.from('bece_sunday_schools').select('*').eq('owner_id',auth.user.id).single()
+  if (!school) return alert('School account unavailable.')
+  const v = Object.fromEntries(new FormData(form))
+  const candidateId = newCandidateId()
+  const contact = 'school:'+school.id+':'+v.student_reference
+  const {error:registrationError} = await supabase.from('bece_sunday_trial_registrations').insert({candidate_id:candidateId,full_name:v.full_name,contact,school_name:school.school_name,location:school.location,region:school.region,class_level:v.class_level})
+  if (registrationError) return alert('Unable to register this student.')
+  const {error} = await supabase.from('bece_sunday_school_students').insert({...v,school_id:school.id,candidate_id:candidateId})
+  if (error) return alert('Roster entry failed. Contact support before retrying.')
+  schoolPortal()
+}
+async function selectSundaySchoolStudent(candidateId) {
+  const {data:auth} = await supabase.auth.getUser()
+  if (!auth?.user) return alert('School sign-in required.')
+  const {data:school} = await supabase.from('bece_sunday_schools').select('*').eq('owner_id',auth.user.id).single()
+  if (!school) return alert('School not found.')
+  const {data:student} = await supabase.from('bece_sunday_school_students').select('*').eq('school_id',school.id).eq('candidate_id',candidateId).single()
+  if (!student) return alert('Student not found.')
+  saveJson(CANDIDATE_KEY,{candidate_id:student.candidate_id,full_name:student.full_name,class_level:student.class_level,contact:'school:'+school.id+':'+student.student_reference,school_name:school.school_name,location:school.location,region:school.region,registration_status:'confirmed'})
+  renderSundayHome()
+}
+
 function registerHtml() {
-  return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
+  return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
 }
 function registeredHtml(c, w, tried) {
   return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions">${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : w.open ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button></div></section>`
@@ -243,6 +288,9 @@ function updateCountdowns() { const w = trialWindow(); document.querySelectorAll
 function sync() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; injectBanner(); updateCountdowns() }) }
 
 document.addEventListener('click', e => {
+  if (e.target.closest('[data-sunday-school-mode]')) { e.preventDefault(); schoolPortal(); return }
+  const sc = e.target.closest('[data-school-candidate]')
+  if (sc) { e.preventDefault(); selectSundaySchoolStudent(sc.dataset.schoolCandidate); return }
   if (e.target.closest('[data-sunday-admin-summary]')) { e.preventDefault(); showSundayAdminSummary(); return }
   if (e.target.closest('[data-bece-sunday-open]')) { e.preventDefault(); e.stopImmediatePropagation(); renderSundayHome(); return }
   if (e.target.closest('[data-bece-sunday-start]')) { e.preventDefault(); startTrial(); return }
@@ -258,7 +306,9 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-sunday-exit-preview]')) { e.preventDefault(); active = null; previewReport = false; document.querySelector('.screen-tabs [data-target="admin"]')?.click(); return }
 }, true)
 window.addEventListener('mezzoSundayPreview', event => { if (event.detail?.setId) startAdminPreview(event.detail.setId) })
-document.addEventListener('submit', e => { if (e.target?.id === 'beceSundayRegisterForm') { e.preventDefault(); register(e.target) } }, true)
+document.addEventListener('submit', e => {
+  if (e.target?.id === 'sundaySchoolForm') { e.preventDefault(); createSundaySchool(e.target); return }
+  if (e.target?.id === 'sundaySchoolStudentForm') { e.preventDefault(); addSundaySchoolStudent(e.target); return } if (e.target?.id === 'beceSundayRegisterForm') { e.preventDefault(); register(e.target) } }, true)
 
 new MutationObserver(sync).observe(document.body, { childList: true, subtree: true, attributes: false })
 window.addEventListener('load', sync)
