@@ -29,3 +29,21 @@ create policy "School owner creates roster" on public.bece_sunday_school_student
  for insert to authenticated with check(exists(select 1 from public.bece_sunday_schools s where s.id=school_id and s.owner_id=auth.uid()));
 -- A student ID is stable and unique within the school; no password is stored on student records.
 create index if not exists bece_sunday_roster_class_idx on public.bece_sunday_school_students(school_id,class_level);
+
+-- Prevent school owners from attaching another school's candidate ID to their roster.
+create or replace function public.validate_sunday_school_roster_candidate()
+returns trigger language plpgsql security definer set search_path=public as $$
+begin
+ if not exists (
+   select 1 from public.bece_sunday_trial_registrations r
+   where r.candidate_id=new.candidate_id
+   and r.contact='school:'||new.school_id::text||':'||new.student_reference
+   and r.full_name=new.full_name
+   and r.class_level=new.class_level
+ ) then raise exception 'Candidate registration does not match this school roster.';
+ end if;
+ return new;
+end $$;
+drop trigger if exists validate_sunday_school_roster_candidate on public.bece_sunday_school_students;
+create trigger validate_sunday_school_roster_candidate before insert or update on public.bece_sunday_school_students
+for each row execute function public.validate_sunday_school_roster_candidate();
