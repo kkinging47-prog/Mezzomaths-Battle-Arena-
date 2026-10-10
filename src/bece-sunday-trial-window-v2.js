@@ -61,6 +61,15 @@ async function loadTrialQuestions() {
     body: JSON.stringify({ week_start: weekStartIso(), candidate_id: candidate()?.candidate_id })
   })
   const data = await response.json().catch(() => ({}))
+  if (response.status === 409) {
+    const resumed = await fetch('/api/bece-sunday-resume',{
+      method:'POST',headers:{'Content-Type':'application/json',...(auth?.session?.access_token ? {Authorization:'Bearer '+auth.session.access_token}:{})},
+      body:JSON.stringify({candidate_id:candidate()?.candidate_id})
+    })
+    const existing=await resumed.json().catch(()=>({}))
+    if(resumed.ok) return {questions:existing.questions||[],sessionToken:existing.session_token||'',weekStart:existing.week_start,mode:existing.mode,resumed:true}
+    throw new Error(existing.error || data.error || 'This week’s examination attempt is already reserved.')
+  }
   if (!response.ok) throw new Error(data.error || 'Unable to load the secured Sunday BECE questions.')
   return {
     questions: Array.isArray(data.questions) ? data.questions : [],
@@ -219,6 +228,7 @@ async function startTrial() {
     if (!secured.questions.length || !secured.sessionToken) throw new Error('The secured question service returned no questions.')
     active = { id: `trial_${Date.now()}`, week_start: secured.weekStart, mode: secured.mode, candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: 0, selections: {}, started_at: Date.now() }
     saveJson(ACTIVE_KEY, active)
+    if (secured.resumed) alert('Your previous examination session has been recovered. The original time limit still applies.')
     renderQuestion()
   } catch (error) {
     shell(`<section class="sunday-report light-card"><h2>Trial temporarily unavailable</h2><p>${esc(error.message || 'Please check your connection and try again shortly.')}</p><button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button></section>`)
