@@ -39,6 +39,11 @@ function fmt(ms) {
   return d ? `${d}d ${h}h ${m}m` : `${h}h ${m}m ${sec}s`
 }
 function candidate() { return readJson(CANDIDATE_KEY, null) }
+function newCandidateId() {
+  const bytes = new Uint8Array(9)
+  crypto.getRandomValues(bytes)
+  return 'MSB-' + [...bytes].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase()
+}
 function attempts() { return readJson(ATTEMPTS_KEY, []) }
 function currentAttempt() { return attempts().find(a => a.week_start === weekStartIso()) }
 async function loadTrialQuestions() {
@@ -96,7 +101,7 @@ function registerHtml() {
   return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
 }
 function registeredHtml(c, w, tried) {
-  return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p></div><div class="sunday-actions">${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : w.open ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button></div></section>`
+  return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions">${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : w.open ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button></div></section>`
 }
 function leaderboardHtml(rows) {
   return `<section class="sunday-board glass-card" data-sunday-leaderboard><div class="sunday-board-head"><div><span>🏆 Weekly Leaderboard</span><h2>Score + Time Ranking</h2></div><small>Week of ${weekStartIso()}</small></div>${rows.length ? rows.map((r, i) => `<div class="sunday-rank"><b>${i + 1}</b><span><strong>${esc(r.full_name || r.candidate?.full_name || 'Candidate')}</strong><small>${esc(r.school_name || r.candidate?.school_name || '')} • ${esc(r.region || r.candidate?.region || '')}</small></span><em>${r.score}/${r.total || QUESTION_COUNT}</em><small>${fmt((r.time_taken_seconds || 0) * 1000)}</small></div>`).join('') : '<p>No results yet this week.</p>'}</section>`
@@ -110,13 +115,33 @@ function renderSundayHome() {
 async function register(form) {
   const c = Object.fromEntries(new FormData(form).entries())
   c.created_at = new Date().toISOString()
-  saveJson(CANDIDATE_KEY, c)
-  if (supabase && isSupabaseConfigured) { try { await supabase.from('bece_sunday_trial_registrations').insert(c) } catch {} }
-  renderSundayHome()
+  c.candidate_id = newCandidateId()
+  c.registration_status = 'pending'
+  if (!supabase || !isSupabaseConfigured) {
+    alert('Registration is temporarily unavailable. Please try again when the service is connected.')
+    return
+  }
+  const submit = form.querySelector('[type="submit"]')
+  if (submit) { submit.disabled = true; submit.textContent = 'Registering…' }
+  try {
+    const { error } = await supabase.from('bece_sunday_trial_registrations').insert({
+      candidate_id: c.candidate_id, full_name: c.full_name, contact: c.contact,
+      school_name: c.school_name, location: c.location, region: c.region,
+      class_level: c.class_level, created_at: c.created_at
+    })
+    if (error) throw error
+    c.registration_status = 'confirmed'
+    saveJson(CANDIDATE_KEY, c)
+    renderSundayHome()
+  } catch (error) {
+    alert('We could not confirm your registration. Please check your connection and try again. No registration has been confirmed.')
+  } finally {
+    if (submit?.isConnected) { submit.disabled = false; submit.textContent = 'Create Free Candidate Profile' }
+  }
 }
 async function startTrial() {
   if (!trialWindow().open) return renderSundayHome()
-  if (!candidate()) return renderSundayHome()
+  if (!candidate() || candidate().registration_status !== 'confirmed') return renderSundayHome()
   if (currentAttempt()) return renderReport(currentAttempt())
   try {
     const secured = await loadTrialQuestions()
