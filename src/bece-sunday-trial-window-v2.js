@@ -101,6 +101,12 @@ function shell(content) {
   document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-sunday-page"><nav class="screen-tabs"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE Sunday Trial</small></div></div><div class="tab-scroll"><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button>${active?.preview || previewReport ? '<button class="screen-tab" data-target="admin"><span>🛠️</span>Admin workspace</button>' : '<button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Practice</button><button class="screen-tab active" data-bece-sunday-open="true"><span>⏰</span>Sunday Trial</button>'}</div></nav>${content}</section></main>`
 }
 
+async function schoolResults() {
+  const {data,error}=await supabase.rpc('bece_sunday_school_results')
+  if(error) return alert('School reports unavailable. Confirm database migration and school sign-in.')
+  const rows=(data||[]).map(x=>'<tr><td>'+esc(x.full_name)+'</td><td>'+esc(x.class_level)+'</td><td>'+esc(x.week_start)+'</td><td>'+esc(x.score)+'/'+esc(x.total)+'</td></tr>').join('')
+  shell('<section class="sunday-report light-card"><h2>School examination results</h2><p>Official Sunday and supervised laboratory results.</p><div style="overflow-x:auto"><table><thead><tr><th>Student</th><th>Class</th><th>Sunday paper</th><th>Score</th></tr></thead><tbody>'+rows+'</tbody></table></div><button class="btn btn-blue" data-sunday-school-mode>Back to School Portal</button></section>')
+}
 async function schoolPortal() {
   if (!supabase) return alert('School service unavailable.')
   const {data:auth} = await supabase.auth.getUser()
@@ -111,7 +117,7 @@ async function schoolPortal() {
   const {data:students,error:rosterError} = await supabase.from('bece_sunday_school_students').select('candidate_id,full_name,class_level,student_reference').eq('school_id',school.id).order('full_name').limit(500)
   if (rosterError) return alert('Unable to load school roster.')
   const studentButtons = (students || []).map(x => '<button class="btn btn-blue" type="button" data-school-candidate="'+esc(x.candidate_id)+'">'+esc(x.full_name)+' — '+esc(x.class_level)+' ('+esc(x.student_reference)+')</button>').join('')
-  shell('<section class="sunday-register light-card"><h2>'+esc(school.school_name)+' — School Portal</h2><p>Each student has a separate candidate record and weekly attempt.</p><form id="sundaySchoolStudentForm"><h3>Add student</h3><label>Full name<input name="full_name" required></label><label>Class<select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label><label>Admission / student number<input name="student_reference" required></label><button class="btn btn-gold" type="submit">Add student</button></form><h3>Student roster ('+(students || []).length+')</h3><p>Select the student who is using this computer.</p><div class="sunday-actions">'+studentButtons+'</div><button class="btn btn-ghost" data-bece-sunday-open="true">Back</button></section>')
+  shell('<section class="sunday-register light-card"><h2>'+esc(school.school_name)+' — School Portal</h2><p>Each student has a separate candidate record and weekly attempt.</p><form id="sundaySchoolStudentForm"><h3>Add student</h3><label>Full name<input name="full_name" required></label><label>Class<select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label><label>Admission / student number<input name="student_reference" required></label><button class="btn btn-gold" type="submit">Add student</button></form><button class="btn btn-blue" data-sunday-school-results type="button">View School Results</button><h3>Student roster ('+(students || []).length+')</h3><p>Select the student who is using this computer.</p><div class="sunday-actions">'+studentButtons+'</div><button class="btn btn-ghost" data-bece-sunday-open="true">Back</button></section>')
 }
 async function createSundaySchool(form) {
   const {data:auth} = await supabase.auth.getUser()
@@ -289,6 +295,7 @@ function updateCountdowns() { const w = trialWindow(); document.querySelectorAll
 function sync() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; injectBanner(); updateCountdowns() }) }
 
 document.addEventListener('click', e => {
+  if (e.target.closest('[data-sunday-school-results]')) { e.preventDefault(); schoolResults(); return }
   if (e.target.closest('[data-sunday-school-mode]')) { e.preventDefault(); schoolPortal(); return }
   const sc = e.target.closest('[data-school-candidate]')
   if (sc) { e.preventDefault(); selectSundaySchoolStudent(sc.dataset.schoolCandidate); return }
