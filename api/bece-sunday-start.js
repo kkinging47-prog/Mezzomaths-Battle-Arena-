@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     const registrations = await supabaseRows('bece_sunday_trial_registrations?select=candidate_id&candidate_id=eq.'+encodeURIComponent(candidateId)+'&limit=1')
     if (!registrations.length) return res.status(403).json({ error: 'Candidate is not registered.' })
     const schoolId = lab ? await schoolOwner(req,candidateId) : null
-    const scheduled = await supabaseRows(`sunday_bece_sets?select=id,set_number&scheduled_sunday=eq.${sunday}&status=eq.ready&limit=1`)
+    const scheduled = await supabaseRows(`sunday_bece_sets?select=id,set_number&scheduled_sunday=eq.${sunday}&status=in.(ready,solved)&limit=1`)
     if (!scheduled.length) return res.status(503).json({ error: 'No Sunday BECE set is scheduled for today.' })
     const rows = await supabaseRows(`bece_question_bank?select=${encodeURIComponent(SUNDAY_QUESTION_COLUMNS)}&sunday_set_id=eq.${encodeURIComponent(scheduled[0].id)}&status=eq.Published&order=created_at.asc,id.asc&limit=40`)
     const usable = rows.filter(row =>
