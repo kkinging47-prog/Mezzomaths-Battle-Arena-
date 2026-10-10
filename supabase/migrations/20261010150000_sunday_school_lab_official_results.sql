@@ -7,10 +7,10 @@ alter table public.bece_sunday_weekly_claims
 create index if not exists bece_sunday_claim_school_idx on public.bece_sunday_weekly_claims(school_id,week_start);
 -- An authenticated school owner may see only their own students' completed summary.
 create or replace function public.bece_sunday_school_results()
-returns table(candidate_id text,full_name text,class_level text,week_start date,score integer,total integer,completed_at timestamptz)
+returns table(candidate_id text,full_name text,class_level text,week_start date,score integer,total integer,topics jsonb,completed_at timestamptz)
 language sql stable security definer set search_path=public as $$
  select c.candidate_id,st.full_name,st.class_level,c.week_start,
- (c.result->>'score')::integer,(c.result->>'total')::integer,c.completed_at
+ (c.result->>'score')::integer,(c.result->>'total')::integer,c.result->'topics',c.completed_at
  from public.bece_sunday_weekly_claims c
  join public.bece_sunday_school_students st on st.candidate_id=c.candidate_id
  join public.bece_sunday_schools s on s.id=st.school_id
