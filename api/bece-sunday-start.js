@@ -66,6 +66,13 @@ export default async function handler(req, res) {
       expiresAt: now + (2 * 60 * 60 * 1000)
     })
 
+    const serviceUrl = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/,'')
+    const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '')
+    const stored = await fetch(serviceUrl+'/rest/v1/bece_sunday_weekly_claims?candidate_id=eq.'+encodeURIComponent(candidateId)+'&week_start=eq.'+sunday,{
+      method:'PATCH',headers:{apikey:serviceKey,Authorization:'Bearer '+serviceKey,'Content-Type':'application/json',Prefer:'return=representation'},
+      body:JSON.stringify({session_token:token,session_expires_at:new Date(now+7200000).toISOString(),school_id:schoolId,mode:lab?'school_lab':'sunday'})
+    })
+    if(!stored.ok) throw new Error('Unable to save the examination session.')
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({
       questions: selected.map(safeQuestion),
