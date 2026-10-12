@@ -64,7 +64,7 @@ async function loadTrialQuestions() {
   if (response.status === 409) {
     const resumed = await fetch('/api/bece-sunday-resume',{
       method:'POST',headers:{'Content-Type':'application/json',...(auth?.session?.access_token ? {Authorization:'Bearer '+auth.session.access_token}:{})},
-      body:JSON.stringify({candidate_id:candidate()?.candidate_id})
+      body:JSON.stringify({candidate_id:candidate()?.candidate_id,session_token:activeForCandidate()?.session_token||''})
     })
     const existing=await resumed.json().catch(()=>({}))
     if(resumed.ok) return {questions:existing.questions||[],sessionToken:existing.session_token||'',weekStart:existing.week_start,mode:existing.mode,startedAt:existing.started_at,resumed:true}
