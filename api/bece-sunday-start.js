@@ -68,11 +68,13 @@ export default async function handler(req, res) {
 
     const serviceUrl = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/,'')
     const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '')
-    const stored = await fetch(serviceUrl+'/rest/v1/bece_sunday_weekly_claims?candidate_id=eq.'+encodeURIComponent(candidateId)+'&week_start=eq.'+sunday,{
+    const stored = await fetch(serviceUrl+'/rest/v1/bece_sunday_weekly_claims?candidate_id=eq.'+encodeURIComponent(candidateId)+'&week_start=eq.'+sunday+'&session_token=is.null&completed_at=is.null',{
       method:'PATCH',headers:{apikey:serviceKey,Authorization:'Bearer '+serviceKey,'Content-Type':'application/json',Prefer:'return=representation'},
       body:JSON.stringify({session_token:token,session_expires_at:new Date(now+7200000).toISOString(),school_id:schoolId,mode:lab?'school_lab':'sunday'})
     })
     if(!stored.ok) throw new Error('Unable to save the examination session.')
+    const savedClaims = await stored.json().catch(()=>[])
+    if(!Array.isArray(savedClaims) || savedClaims.length!==1) throw new Error('This examination session has already been reserved or changed.')
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({
       questions: selected.map(safeQuestion),
