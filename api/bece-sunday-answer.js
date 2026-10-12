@@ -5,7 +5,7 @@ async function persistOfficialResult(session, score, total, results) {
   const url = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/,'')
   const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '')
   if (!url || !key) throw new Error('Results database is not configured.')
-  const endpoint = url+'/rest/v1/bece_sunday_weekly_claims?candidate_id=eq.'+encodeURIComponent(session.candidateId)+'&week_start=eq.'+encodeURIComponent(session.weekStart)+'&completed_at=is.null'
+  const endpoint = url+'/rest/v1/bece_sunday_weekly_claims?candidate_id=eq.'+encodeURIComponent(session.candidateId)+'&week_start=eq.'+encodeURIComponent(session.weekStart)+'&completed_at=is.null&session_token=eq.'+encodeURIComponent(session.rawToken)
   const response = await fetch(endpoint,{method:'PATCH',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({completed_at:new Date().toISOString(),result:{score,total,topics:results.reduce((acc,item)=>{const t=item.topic_area||item.topic||'General';acc[t] ||= {total:0,correct:0};acc[t].total++;if(item.correct)acc[t].correct++;return acc},{})},mode:session.mode||'sunday',school_id:session.schoolId||null})})
   const saved = await response.json().catch(()=>[])
   if (!response.ok) throw new Error('Official result could not be saved.')
@@ -16,6 +16,7 @@ export default async function handler(req, res) {
   try {
     const { session_token: token } = req.body || {}
     const session = verifyTrialSession(token)
+    session.rawToken = token
     if (session.preview) await requireSundayAdmin(req)
     if (Array.isArray(req.body?.answers)) {
       const answers = req.body.answers
