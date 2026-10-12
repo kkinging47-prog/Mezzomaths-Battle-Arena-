@@ -4,10 +4,12 @@ export default async function handler(req,res) {
   if(req.method!=='POST') return res.status(405).json({error:'Method not allowed'})
   try {
     const candidateId=String(req.body?.candidate_id||'').trim()
+    const providedSession=String(req.body?.session_token||'').trim()
     if(!/^MSB-[0-9A-F]{18}$/.test(candidateId)) return res.status(400).json({error:'Invalid candidate ID.'})
     const claims=await supabaseRows('bece_sunday_weekly_claims?select=session_token,session_expires_at,completed_at,week_start,school_id&candidate_id=eq.'+encodeURIComponent(candidateId)+'&order=week_start.desc&limit=1')
     const claim=claims[0]
     if(!claim || claim.completed_at || !claim.session_token || new Date(claim.session_expires_at)<=new Date()) return res.status(409).json({error:'No recoverable active examination. Contact the examination supervisor.'})
+    if(!claim.school_id && (!providedSession || providedSession!==claim.session_token)) return res.status(403).json({error:'Resume requires the original examination session on this device. Contact support if it is unavailable.'})
     if(claim.school_id) {
       const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'').trim()
       const url=String(process.env.SUPABASE_URL||process.env.VITE_SUPABASE_URL||'').replace(/\/$/,'')
