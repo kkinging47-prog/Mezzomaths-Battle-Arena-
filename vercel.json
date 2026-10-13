@@ -4,6 +4,22 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/api/bece-sunday-answer",
+      "destination": "/api/bece-sunday-start?action=answer"
+    },
+    {
+      "source": "/api/bece-sunday-resume",
+      "destination": "/api/bece-sunday-start?action=resume"
+    },
+    {
+      "source": "/api/bece-sunday-progress",
+      "destination": "/api/bece-sunday-start?action=progress"
+    },
+    {
+      "source": "/api/bece-sunday-candidate-access",
+      "destination": "/api/bece-sunday-start?action=candidate-access"
+    },
+    {
       "source": "/((?!api/|assets/|.*\\..*).*)",
       "destination": "/index.html"
     }
