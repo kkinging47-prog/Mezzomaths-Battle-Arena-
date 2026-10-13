@@ -1,3 +1,7 @@
+import answerHandler from '../server/bece-sunday-answer.js'
+import resumeHandler from '../server/bece-sunday-resume.js'
+import progressHandler from '../server/bece-sunday-progress.js'
+import accessHandler from '../server/bece-sunday-candidate-access.js'
 import { signTrialSession, sundayWindowOpen, safeQuestion, supabaseRows, SUNDAY_QUESTION_COLUMNS } from './_bece-sunday-security.js'
 
 const QUESTION_COUNT = 40
@@ -29,6 +33,12 @@ async function claimCandidate(candidateId, sunday, schoolId, mode, token, expire
 }
 
 export default async function handler(req, res) {
+  const action=String(req.query?.action || 'start')
+  if(action==='answer') return answerHandler(req,res)
+  if(action==='resume') return resumeHandler(req,res)
+  if(action==='progress') return progressHandler(req,res)
+  if(action==='candidate-access') return accessHandler(req,res)
+  if(action!=='start') return res.status(404).json({error:'Unknown examination operation.'})
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
   const nowDate = new Date()
   const lab = nowDate.getUTCDay() >= 1 && nowDate.getUTCDay() <= 5 && nowDate >= new Date('2026-10-19T00:00:00Z')
