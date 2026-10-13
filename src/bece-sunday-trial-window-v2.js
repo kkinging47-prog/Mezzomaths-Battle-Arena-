@@ -67,7 +67,7 @@ async function loadTrialQuestions() {
       body:JSON.stringify({candidate_id:candidate()?.candidate_id,session_token:activeForCandidate()?.session_token||''})
     })
     const existing=await resumed.json().catch(()=>({}))
-    if(resumed.ok) return {questions:existing.questions||[],sessionToken:existing.session_token||'',weekStart:existing.week_start,mode:existing.mode,startedAt:existing.started_at,resumed:true}
+    if(resumed.ok) return {questions:existing.questions||[],sessionToken:existing.session_token||'',weekStart:existing.week_start,mode:existing.mode,startedAt:existing.started_at,selections:existing.selections||{},index:existing.index||0,resumed:true}
     throw new Error(existing.error || data.error || 'This week’s examination attempt is already reserved.')
   }
   if (!response.ok) throw new Error(data.error || 'Unable to load the secured Sunday BECE questions.')
@@ -235,7 +235,7 @@ async function startTrial() {
   try {
     const secured = await loadTrialQuestions()
     if (!secured.questions.length || !secured.sessionToken) throw new Error('The secured question service returned no questions.')
-    active = { id: `trial_${Date.now()}`, week_start: secured.weekStart, mode: secured.mode, candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: 0, selections: {}, started_at: secured.startedAt || Date.now() }
+    active = { id: `trial_${Date.now()}`, week_start: secured.weekStart, mode: secured.mode, candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: secured.index || 0, selections: secured.selections || {}, started_at: secured.startedAt || Date.now() }
     saveJson(ACTIVE_KEY, active)
     if (secured.resumed) alert('Your previous examination session has been recovered. The original time limit still applies.')
     renderQuestion()
@@ -264,12 +264,24 @@ function renderQuestion() {
   const complete = selectedCount() === active.questions.length
   shell(`<section class="sunday-live"><div class="sunday-live-top glass-card"><span>${active.preview ? `Admin trial · Set ${esc(active.set_number)}` : 'Sunday BECE Trial'} · Question ${active.index + 1}/${active.questions.length}</span><strong>${selectedCount()} answered</strong><em>${fmt(Date.now() - active.started_at)}</em></div><article class="sunday-question light-card"><p class="sunday-question-topic">${esc(q.topic_area || q.topic)}</p><h2>${esc(q.question_text)}</h2>${q.question_image_url ? `<img class="sunday-question-img" src="${esc(q.question_image_url)}" alt="Question diagram">` : ''}<div class="sunday-options">${q.options.map((op, i) => { const letter = String.fromCharCode(65 + i); return `<button type="button" class="${selected === letter ? 'selected' : ''}" data-sunday-answer="${letter}" aria-pressed="${selected === letter}"><b>${letter}</b>${q.option_image_urls?.[i] ? `<img src="${esc(q.option_image_urls[i])}" alt="Option ${letter}">` : ''}<span>${esc(op)}</span></button>` }).join('')}</div></article><nav class="sunday-question-nav" aria-label="Question navigation"><button type="button" class="btn btn-blue" data-sunday-prev ${active.index === 0 ? 'disabled' : ''}>← Previous</button><span>${selected ? 'Answer saved' : 'Choose an answer'}</span><button type="button" class="btn btn-blue" data-sunday-next ${active.index + 1 === active.questions.length ? 'disabled' : ''}>Next →</button></nav><div class="sunday-question-jump" aria-label="Jump to question">${active.questions.map((item, i) => `<button type="button" data-sunday-jump="${i}" class="${i === active.index ? 'current' : ''} ${active.selections?.[item.id] ? 'answered' : ''}" aria-label="Question ${i + 1}${active.selections?.[item.id] ? ', answered' : ', unanswered'}" aria-current="${i === active.index ? 'step' : 'false'}">${i + 1}</button>`).join('')}</div><div class="sunday-submit-row"><p>${complete ? 'All questions answered. Submit to see your feedback and explanations.' : `${active.questions.length - selectedCount()} question(s) still need an answer.`}</p><button type="button" class="btn btn-gold" data-sunday-submit ${complete ? '' : 'disabled'}>Submit all answers</button>${active.preview ? '<button type="button" class="btn btn-ghost" data-sunday-exit-preview>Exit admin trial</button>' : ''}</div></section>`)
 }
+let progressTimer = null
+function queueProgressSave() {
+  if (!active || active.preview || !active.session_token) return
+  const snapshot = {session_token:active.session_token,selections:{...active.selections},index:active.index}
+  clearTimeout(progressTimer)
+  progressTimer=setTimeout(async()=>{
+    try {
+      const response=await fetch('/api/bece-sunday-progress',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(snapshot)})
+      if(!response.ok) console.warn('Examination progress was not saved to the server; local backup remains.')
+    } catch { console.warn('Offline: examination progress is saved on this device.') }
+  },400)
+}
 function answer(letter) {
   if (!active || !/^[ABCD]$/.test(letter)) return
   const q = active.questions[active.index]
   active.selections ||= {}
   active.selections[q.id] = letter
-  if (!active.preview) saveJson(ACTIVE_KEY, active)
+  if (!active.preview) {saveJson(ACTIVE_KEY, active);queueProgressSave()}
   renderQuestion()
 }
 function nextQuestion(delta = 1) {
