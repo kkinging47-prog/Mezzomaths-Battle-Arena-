@@ -15,15 +15,16 @@ async function schoolOwner(req, candidateId) {
   if (!roster.length) throw new Error('This candidate is not on your school roster.')
   return schools[0].id
 }
-async function claimCandidate(candidateId, sunday, schoolId, mode) {
+async function claimCandidate(candidateId, sunday, schoolId, mode, token, expiresAt) {
   const url = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
   const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '')
   if (!url || !key) throw new Error('Sunday BECE database service is not configured.')
-  const response = await fetch(url + '/rest/v1/rpc/claim_bece_sunday_week', {
-    method: 'POST', headers: { apikey:key, Authorization:'Bearer '+key, 'Content-Type':'application/json' },
-    body: JSON.stringify({ p_candidate_id:candidateId, p_week_start:sunday })
+  const response = await fetch(url + '/rest/v1/rpc/begin_bece_sunday_session', {
+    method:'POST',
+    headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},
+    body:JSON.stringify({p_candidate_id:candidateId,p_week_start:sunday,p_session_token:token,p_session_expires_at:new Date(expiresAt).toISOString(),p_school_id:schoolId,p_mode:mode})
   })
-  if (!response.ok) throw new Error('Unable to verify the candidate or reserve this week’s attempt.')
+  if (!response.ok) throw new Error('Unable to reserve the examination session.')
   return response.json()
 }
 
@@ -52,7 +53,6 @@ export default async function handler(req, res) {
     )
     if (usable.length !== QUESTION_COUNT) return res.status(503).json({ error: 'The scheduled BECE set must contain 40 complete published questions.' })
 
-    if (!(await claimCandidate(candidateId, sunday, schoolId, lab?'school_lab':'sunday'))) return res.status(409).json({ error: 'This candidate has already started the Sunday trial this week. A second attempt is not permitted.' })
     const selected = usable
     const now = Date.now()
     const token = signTrialSession({
@@ -66,15 +66,7 @@ export default async function handler(req, res) {
       expiresAt: now + (2 * 60 * 60 * 1000)
     })
 
-    const serviceUrl = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/,'')
-    const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '')
-    const stored = await fetch(serviceUrl+'/rest/v1/bece_sunday_weekly_claims?candidate_id=eq.'+encodeURIComponent(candidateId)+'&week_start=eq.'+sunday+'&session_token=is.null&completed_at=is.null',{
-      method:'PATCH',headers:{apikey:serviceKey,Authorization:'Bearer '+serviceKey,'Content-Type':'application/json',Prefer:'return=representation'},
-      body:JSON.stringify({session_token:token,session_expires_at:new Date(now+7200000).toISOString(),school_id:schoolId,mode:lab?'school_lab':'sunday'})
-    })
-    if(!stored.ok) throw new Error('Unable to save the examination session.')
-    const savedClaims = await stored.json().catch(()=>[])
-    if(!Array.isArray(savedClaims) || savedClaims.length!==1) throw new Error('This examination session has already been reserved or changed.')
+    if (!(await claimCandidate(candidateId, sunday, schoolId, lab?'school_lab':'sunday',token,now+7200000))) return res.status(409).json({error:'This weekly examination already has an attempt. Resume the existing session.'})
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({
       questions: selected.map(safeQuestion),
