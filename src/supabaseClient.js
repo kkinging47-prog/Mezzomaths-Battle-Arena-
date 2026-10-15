@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { createReliableFetch } from './reliable-fetch.js'
 
 const cleanEnv = value => String(value || '').trim()
 const placeholder = value => !value || /your-|project-ref|anon-key|publishable-key/i.test(value)
@@ -28,6 +29,7 @@ export const isSupabaseConfigured = Boolean(
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
+      global: { fetch: createReliableFetch() },
       auth: {
         persistSession: true,
         autoRefreshToken: true,
