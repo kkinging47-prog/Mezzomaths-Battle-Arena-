@@ -531,6 +531,7 @@ document.addEventListener('submit', event => {
   }
 }, true)
 
+window.addEventListener('online', () => { if (accessState === 'unavailable') { checked = false; mountedAdminScreen = null; scheduleBoot() } })
 window.addEventListener('load', () => setTimeout(boot, 1300))
 window.addEventListener('mezzoProfileUpdated', () => { checked = false; mountedAdminScreen = null; scheduleBoot() })
 new MutationObserver(scheduleBoot).observe(document.documentElement, { childList: true, subtree: true })
