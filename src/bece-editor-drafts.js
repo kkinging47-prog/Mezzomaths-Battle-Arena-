@@ -5,7 +5,7 @@ const selector = '#sundaySpecialQuestionForm, #beceAdminQuestionForm'
 function keyFor(form) {
   let owner = ''
   try { const profile = JSON.parse(localStorage.getItem('mezzo_profile') || '{}'); owner = profile.id || profile.email || '' } catch {}
-  return JSON.stringify([owner, form.id, form.elements.namedItem('sunday_set_id')?.value || '', form.elements.namedItem('id')?.value || 'new'])
+  return JSON.stringify([owner, form.getAttribute('id'), form.elements.namedItem('sunday_set_id')?.value || '', form.elements.namedItem('id')?.value || 'new'])
 }
 export function rememberBeceDraft(form) {
   if (!form?.matches(selector)) return
