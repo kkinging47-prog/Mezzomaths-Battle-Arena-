@@ -561,7 +561,7 @@ document.addEventListener('click', async event => {
 }, true)
 
 document.addEventListener('submit', event => {
-  if (event.target?.id === 'sundaySpecialQuestionForm') saveQuestion(event)
+  if (event.target?.matches?.('form#sundaySpecialQuestionForm')) saveQuestion(event)
   if (event.target?.matches?.('[data-sunday-set-schedule]')) {
     event.preventDefault()
     const date = new FormData(event.target).get('scheduled_sunday')

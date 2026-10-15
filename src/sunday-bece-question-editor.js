@@ -336,7 +336,7 @@ document.addEventListener('change', event => {
   if (event.target?.matches?.('[data-image-field]')) handleImageInput(event.target)
 })
 document.addEventListener('submit', event => {
-  if (event.target?.id !== 'sundayBeceQuestionEditorForm') return
+  if (!event.target?.matches?.('form#sundayBeceQuestionEditorForm')) return
   event.preventDefault()
   saveQuestion()
 }, true)

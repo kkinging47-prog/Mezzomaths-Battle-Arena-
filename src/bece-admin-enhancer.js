@@ -143,7 +143,7 @@ function downloadTemplate() {
 }
 
 document.addEventListener('submit', event => {
-  if (event.target?.id === 'beceAdminQuestionForm') {
+  if (event.target?.matches?.('form#beceAdminQuestionForm')) {
     event.preventDefault()
     event.stopImmediatePropagation()
     saveQuestion(event.target)
