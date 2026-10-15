@@ -350,6 +350,7 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-sunday-submit]')) { e.preventDefault(); finishTrial(); return }
   if (e.target.closest('[data-sunday-exit-preview]')) { e.preventDefault(); active = null; previewReport = false; document.querySelector('.screen-tabs [data-target="admin"]')?.click(); return }
 }, true)
+window.addEventListener('mezzoOpenSundayTest', () => { try { renderSundayHome() } catch (error) { console.error('Sunday Test page failed to open', error); alert('Unable to open Sunday Test. Please refresh the page and try again.') } })
 window.addEventListener('mezzoSundayPreview', event => { if (event.detail?.setId) startAdminPreview(event.detail.setId) })
 document.addEventListener('submit', e => {
   if(e.target?.id==='sundaySchoolCandidateAccess') {e.preventDefault();accessSchoolCandidate(e.target);return}
