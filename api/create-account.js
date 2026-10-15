@@ -1,3 +1,5 @@
+import { registerSundayAccount } from '../server/sunday-account-registration.js'
+
 const WINDOW_MS = 15 * 60 * 1000
 const MAX_ATTEMPTS = 6
 const attempts = new Map()
@@ -142,6 +144,8 @@ export default async function handler(req, res) {
     windowMinutes: 15
   })
   if (!dbAllowed) return res.status(429).json({ error: 'Too many signup attempts. Please wait 15 minutes and try again.' })
+
+  if (req.body?.action === 'sunday-register') return registerSundayAccount(req, res, { supabaseUrl, serviceKey })
 
   const body = req.body || {}
   const email = clean(body.email, 254).toLowerCase()

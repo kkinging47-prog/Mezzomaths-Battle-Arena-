@@ -171,7 +171,7 @@ async function accessSchoolCandidate(form) {
  renderSundayHome()
 }
 function registerHtml() {
-  return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p><button type="button" class="btn btn-blue" data-school-student-access>Already registered by your school? Access your profile</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
+  return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p><button type="button" class="btn btn-blue" data-school-student-access>Already registered by your school? Access your profile</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Create your main Mezzo Maths student account and Sunday BECE registration together. Already have an account? Use its email and password.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Email for platform sign-in</span><input name="email" type="email" autocomplete="username" required></label><label><span>Password</span><input name="password" type="password" autocomplete="new-password" minlength="6" maxlength="128" required></label><label><span>Phone Number (optional)</span><input name="phone_number" type="tel" autocomplete="tel"></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Student Account &amp; Register Free</button></form>`
 }
 function registeredHtml(c, w, tried) {
   return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions">${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : (w.open || (labOpen() && c.school_lab_authorized)) ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}${c.school_lab_authorized ? '<button class="btn btn-blue" data-sunday-school-mode="true">Switch Student</button>' : '<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button>'}</div></section>`
@@ -201,32 +201,42 @@ function renderSundayHome() {
   }).catch(() => {})
 }
 async function register(form) {
-  const c = Object.fromEntries(new FormData(form).entries())
-  c.created_at = new Date().toISOString()
-  c.candidate_id = newCandidateId()
-  c.registration_status = 'pending'
-  if (!supabase || !isSupabaseConfigured) {
-    alert('Registration is temporarily unavailable. Please try again when the service is connected.')
-    return
-  }
+  if (submitting) return
+  if (!supabase || !isSupabaseConfigured) return alert('Registration is temporarily unavailable. Please try again shortly.')
+  const fields = Object.fromEntries(new FormData(form).entries())
+  const email = String(fields.email || '').trim().toLowerCase()
+  const password = String(fields.password || '')
   const submit = form.querySelector('[type="submit"]')
-  if (submit) { submit.disabled = true; submit.textContent = 'Registering…' }
+  submitting = true
+  if (submit) { submit.disabled = true; submit.textContent = 'Creating account and registering…' }
   try {
-    const { error } = await supabase.from('bece_sunday_trial_registrations').insert({
-      candidate_id: c.candidate_id, full_name: c.full_name, contact: c.contact,
-      school_name: c.school_name, location: c.location, region: c.region,
-      class_level: c.class_level, created_at: c.created_at
+    const created = await fetch('/api/create-account', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...fields, email, role: 'student', curriculum: 'GES' })
     })
-    if (error) throw error
-    c.registration_status = 'confirmed'
-    saveJson(CANDIDATE_KEY, c)
+    const result = await created.json().catch(() => ({}))
+    if (!created.ok && created.status !== 409) throw new Error(result.error || 'Student account could not be created.')
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error || !data?.session) throw new Error(created.status === 409 ? 'An account already uses this email. Enter its correct password or reset it on the platform sign-in page.' : 'Your platform account was created. Sign-in could not finish; retry with the same email and password.')
+    const registered = await fetch('/api/create-account', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+      body: JSON.stringify({ action: 'sunday-register', full_name: fields.full_name, school_name: fields.school_name, location: fields.location, region: fields.region, class_level: fields.class_level })
+    })
+    const saved = await registered.json().catch(() => ({}))
+    if (!registered.ok || !saved.candidate) throw new Error(saved.error || 'Your account is ready, but Sunday registration could not be confirmed. Retry with the same details.')
+    active = null
+    saveJson(CANDIDATE_KEY, saved.candidate)
+    saveJson('mezzo_profile', saved.profile)
+    window.dispatchEvent(new CustomEvent('mezzoProfileUpdated', { detail: saved.profile }))
     renderSundayHome()
   } catch (error) {
-    alert('We could not confirm your registration. Please check your connection and try again. No registration has been confirmed.')
+    alert(error.message || 'Registration could not be confirmed. Please retry.')
   } finally {
-    if (submit?.isConnected) { submit.disabled = false; submit.textContent = 'Create Free Candidate Profile' }
+    submitting = false
+    if (submit?.isConnected) { submit.disabled = false; submit.textContent = 'Create Student Account & Register Free' }
   }
 }
+
 async function startTrial() {
   if (!trialWindow().open && !(labOpen() && candidate()?.school_lab_authorized)) return renderSundayHome()
   if (!candidate() || candidate().registration_status !== 'confirmed') return renderSundayHome()

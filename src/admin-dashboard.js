@@ -42,7 +42,7 @@ function overview() {
 }
 function sundayCandidates() {
   const rows=candidates.filter(c=>[c.full_name,c.contact,c.school_name,c.location,c.region].some(v=>String(v||'').toLowerCase().includes(search.toLowerCase())))
-  return `<h2>Sunday BECE candidates (${candidates.length})</h2><p>Free trial registrations are separate from sign-in accounts. These candidates do not have account roles to edit.</p><div class="admin-report">${rows.map(c=>`<div><span><strong>${esc(c.full_name)}</strong><br>${esc(c.contact)} · ${esc(c.school_name)} · ${esc(c.region)}<br>Candidate ID: ${esc(c.candidate_id)}</span><small>${new Date(c.created_at).toLocaleDateString()}</small></div>`).join('')||'<p>No matching Sunday BECE registrations.</p>'}</div>`
+  return `<h2>Sunday BECE candidates (${candidates.length})</h2><p>Sunday BECE registrations are shown here. Students who register with email and password also appear in the main account list below. Earlier candidate-only registrations may not yet have a platform account.</p><div class="admin-report">${rows.map(c=>`<div><span><strong>${esc(c.full_name)}</strong><br>${esc(c.contact)} · ${esc(c.school_name)} · ${esc(c.region)}<br>Candidate ID: ${esc(c.candidate_id)}</span><small>${new Date(c.created_at).toLocaleDateString()}</small></div>`).join('')||'<p>No matching Sunday BECE registrations.</p>'}</div>`
 }
 function people() {
   if (needsSignIn) return `${warning()}<h2>Users & roles</h2><p>Account records will appear after you sign in as an administrator.</p>`
