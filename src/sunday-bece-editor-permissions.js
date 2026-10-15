@@ -1,3 +1,4 @@
+import { restoreBeceDrafts, clearBeceDraft, rememberBeceDraft } from './bece-editor-drafts.js'
 import './sunday-bece-editor-permissions.css'
 import { supabase, isSupabaseConfigured } from './supabaseClient.js'
 
@@ -219,11 +220,13 @@ function renderAdminSections() {
     return
   }
   mount.innerHTML = `${assignmentHtml()}${editorFormHtml()}`
+  restoreBeceDrafts(mount)
 }
 function refreshPreview() {
   const form = document.getElementById('sundaySpecialQuestionForm')
   const box = document.querySelector('[data-sunday-live-preview]')
   if (!form || !box) return
+  rememberBeceDraft(form)
   const f = Object.fromEntries(new FormData(form).entries())
   box.innerHTML = `<strong>Live Preview</strong>${previewHtml(normalise(f))}`
 }
@@ -427,6 +430,7 @@ async function saveQuestion(event) {
       result = await supabase.from('bece_question_bank').insert({ ...payload, created_by: userData?.user?.id || null }).select(QUESTIONS).single()
     }
     if (result.error) throw result.error
+    clearBeceDraft(formEl)
     selectedId = result.data?.id || id
     toast(id ? 'Question updated successfully.' : 'New Sunday BECE question added.', 'success')
     await loadQuestions()
@@ -440,6 +444,7 @@ async function archiveQuestion() {
   const { error } = await supabase.from('bece_question_bank').update({ status: 'Archived', updated_at: new Date().toISOString() }).eq('id', selectedId)
   if (error) { toast(error.message, 'error'); return }
   toast('Question archived.', 'success')
+  clearBeceDraft(document.getElementById('sundaySpecialQuestionForm'))
   selectedId = ''
   await loadQuestions()
   renderAdminSections()

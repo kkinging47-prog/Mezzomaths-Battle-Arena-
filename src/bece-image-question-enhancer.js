@@ -1,3 +1,4 @@
+import { clearBeceDraft } from './bece-editor-drafts.js'
 import './bece-image-question.css'
 
 const STORE_KEY = 'mezzo_bece_admin_bank'
@@ -90,6 +91,7 @@ async function saveWithImages() {
   if (idx >= 0) list[idx] = item
   else list.unshift(item)
   saveJson(STORE_KEY, list)
+  clearBeceDraft(form)
   window.dispatchEvent(new CustomEvent('beceAdminBankUpdated'))
   toast('BECE question saved with image support.')
 }
