@@ -1,3 +1,4 @@
+import { restoreBeceDrafts, clearBeceDraft } from './bece-editor-drafts.js'
 import './bece-admin.css'
 import './bece-year-upload.css'
 import * as XLSX from 'xlsx'
@@ -66,6 +67,7 @@ function installPanel(force = false) {
   if (old && !force && old.dataset.beceSignature === sig) return
   if (old) old.outerHTML = panelHtml(sig)
   else admin.insertAdjacentHTML('beforeend', panelHtml(sig))
+  restoreBeceDrafts(admin)
 }
 function queueInstall() {
   if (queued) return
@@ -82,6 +84,7 @@ function saveQuestion(form) {
   const idx = list.findIndex(q => q.id === item.id)
   if (idx >= 0) list[idx] = item
   else list.unshift(item)
+  clearBeceDraft(form)
   editingId = ''
   saveBank(list)
   installPanel(true)
@@ -152,7 +155,7 @@ document.addEventListener('click', event => {
   if (edit) { editingId = edit.dataset.beceEdit; installPanel(true); return }
   const del = event.target.closest('[data-bece-delete]')
   if (del) { deleteQuestion(del.dataset.beceDelete); return }
-  if (event.target.closest('[data-bece-cancel-edit]')) { editingId = ''; installPanel(true); return }
+  if (event.target.closest('[data-bece-cancel-edit]')) { clearBeceDraft(document.getElementById('beceAdminQuestionForm')); editingId = ''; installPanel(true); return }
   if (event.target.closest('[data-bece-download-template]')) { downloadTemplate(); return }
   if (event.target.closest('[data-bece-clear-filter]')) { setSelectedYear('All'); installPanel(true); return }
   const yearCard = event.target.closest('[data-bece-year-card]')

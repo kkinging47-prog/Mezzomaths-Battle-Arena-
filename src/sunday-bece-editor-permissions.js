@@ -1,3 +1,4 @@
+import { restoreBeceDrafts, clearBeceDraft, rememberBeceDraft } from './bece-editor-drafts.js'
 import './sunday-bece-editor-permissions.css'
 import { supabase, isSupabaseConfigured } from './supabaseClient.js'
 
@@ -152,7 +153,7 @@ function editorFormHtml() {
   const q = normalise(questions.find(x => x.id === selectedId) || {})
   return `${setManagerHtml()}<details class="sunday-set-editor-details" ${selectedId?'open':''}><summary>${q.id ? `Edit question in Set ${selectedSet().set_number}` : `Add a new question to Set ${selectedSet().set_number}`}</summary><section class="sunday-special-admin-editor glass-card" data-sunday-editor-root="true" data-permission-safe-editor="true">
     <div class="sunday-special-editor-head"><div><span>${isAdmin ? 'Admin + Assigned Editors' : 'Assigned Editor'}</span><h2>Sunday BECE Special Question Editor</h2><p>Add and edit BECE questions with original maths symbols, powers, roots, fractions and diagrams. Image questions and image options are supported.</p></div><button class="btn btn-blue" type="button" data-load-sunday-questions="true">Load Questions</button></div>
-    <form id="sundaySpecialQuestionForm" class="sunday-special-form-grid">
+    <form id="sundaySpecialQuestionForm" class="sunday-special-form-grid" novalidate>
       <input type="hidden" name="id" value="${esc(q.id)}">
       <label><span>Year</span><select name="year">${optionHtml(YEARS, q.year)}</select></label>
       <label><span>Type</span><select name="type">${optionHtml(TYPES, q.type)}</select></label>
@@ -183,7 +184,7 @@ function editorFormHtml() {
       <label class="full"><span>Editor Notes</span><textarea name="editor_notes">${esc(q.editor_notes)}</textarea></label>
       <div class="sunday-special-image-preview"><strong>Current Images</strong>${imagePreview(q)}</div>
       <div class="sunday-special-live-preview" data-sunday-live-preview><strong>Live Preview</strong>${previewHtml(q)}</div>
-      <div class="sunday-special-actions full"><button class="btn btn-gold" type="submit">${q.id ? 'Save Edited Question' : 'Add New Question'}</button><button class="btn btn-blue" type="button" data-new-sunday-question="true">New Question</button>${q.id ? '<button class="btn btn-danger" type="button" data-archive-sunday-question="true">Archive Question</button>' : ''}</div>
+      <p class="full" data-sunday-save-status role="status" aria-live="polite"></p><div class="sunday-special-actions full"><button class="btn btn-gold" type="submit">${q.id ? 'Save Edited Question' : 'Add New Question'}</button><button class="btn btn-blue" type="button" data-new-sunday-question="true">New Question</button>${q.id ? '<button class="btn btn-danger" type="button" data-archive-sunday-question="true">Archive Question</button>' : ''}</div>
     </form>
   </section></details>`
 }
@@ -204,6 +205,7 @@ function installDashboardButton() {
   dash.insertAdjacentHTML('beforeend', `<div class="sunday-editor-permission-panel"><div class="sunday-editor-permission-head"><div><span>Sunday BECE Editor Access</span><h2>Question Editor Available</h2><p>You have permission to add or edit Sunday BECE Special questions.</p></div><button class="btn btn-gold" type="button" data-open-sunday-editor="true">Open Sunday BECE Editor</button></div></div>`)
 }
 function renderAdminSections() {
+  if (saving) return
   removeLegacyEditor()
   const adminScreen = document.querySelector('.admin-screen')
   if (!adminScreen) return
@@ -219,11 +221,13 @@ function renderAdminSections() {
     return
   }
   mount.innerHTML = `${assignmentHtml()}${editorFormHtml()}`
+  restoreBeceDrafts(mount)
 }
 function refreshPreview() {
   const form = document.getElementById('sundaySpecialQuestionForm')
   const box = document.querySelector('[data-sunday-live-preview]')
   if (!form || !box) return
+  rememberBeceDraft(form)
   const f = Object.fromEntries(new FormData(form).entries())
   box.innerHTML = `<strong>Live Preview</strong>${previewHtml(normalise(f))}`
 }
@@ -383,19 +387,38 @@ async function uploadImage(form, fileField, urlField) {
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
   return data?.publicUrl || currentUrl
 }
+function saveStatus(form, message, state = 'info') {
+  const status = form.querySelector('[data-sunday-save-status]')
+  if (status) { status.textContent = message; status.dataset.state = state; status.setAttribute('role', state === 'error' ? 'alert' : 'status') }
+}
 async function saveQuestion(event) {
   event.preventDefault()
   if (saving) return
+  const formEl = event.target
+  rememberBeceDraft(formEl)
+  const form = new FormData(formEl)
+  const button = formEl.querySelector('[type="submit"]')
+  const originalLabel = button?.textContent
+  const id = String(form.get('id') || '').trim()
+  const setId = String(form.get('sunday_set_id') || '').trim()
+  let saved = false
   saving = true
+  if (button) { button.disabled = true; button.textContent = 'Saving…' }
+  saveStatus(formEl, 'Saving your question…')
   try {
-    if (!canEdit) throw new Error('You are not assigned to edit Sunday BECE questions.')
-    const formEl = event.target
-    const form = new FormData(formEl)
-    const id = String(form.get('id') || '').trim()
+    if (!supabase || !isSupabaseConfigured) throw new Error('The question service is unavailable. Your edits are still here; please retry.')
+    const imagePresent = prefix => String(form.get(prefix + '_image_url') || '').trim() || form.get(prefix + '_image_file')?.size
+    if (!String(form.get('question_text') || '').trim() && !imagePresent('question')) throw new Error('Add question text or a question image before saving.')
+    for (const letter of ['a','b','c','d']) {
+      if (!String(form.get('option_' + letter) || '').trim() && !imagePresent('option_' + letter)) throw new Error(`Add text or an image for option ${letter.toUpperCase()} before saving.`)
+    }
+    if (!setId) throw new Error('Select a Sunday set before saving. Your edits have been kept.')
+    if (!canEdit) await checkAccess(true)
+    if (!canEdit) throw new Error(accessState === 'signed_out' ? 'Your session has ended. Sign in again before saving.' : 'Editor access could not be confirmed. Your edits have been kept; retry when connected.')
     const payload = {
       year: String(form.get('year') || '2027 Prep'),
       type: String(form.get('type') || 'pastStyle'),
-      sunday_set_id: selectedSetId,
+      sunday_set_id: setId,
       topic: String(form.get('topic') || 'BECE Exam Practice'),
       topic_area: String(form.get('topic_area') || form.get('topic') || 'BECE Exam Practice'),
       curriculum_strand: String(form.get('topic_area') || form.get('topic') || ''),
@@ -419,27 +442,43 @@ async function saveQuestion(event) {
       editor_notes: String(form.get('editor_notes') || ''),
       updated_at: new Date().toISOString()
     }
-    if (!payload.question_text || !payload.option_a || !payload.option_b || !payload.option_c || !payload.option_d) throw new Error('Question text and all four options are required.')
     let result
     if (id) result = await supabase.from('bece_question_bank').update(payload).eq('id', id).select(QUESTIONS).single()
     else {
-      const { data: userData } = await supabase.auth.getUser()
-      result = await supabase.from('bece_question_bank').insert({ ...payload, created_by: userData?.user?.id || null }).select(QUESTIONS).single()
+      const { data: userData, error: authError } = await supabase.auth.getUser()
+      if (authError || !userData?.user) throw new Error('Your session has ended. Sign in again before saving.')
+      result = await supabase.from('bece_question_bank').insert({ ...payload, created_by: userData.user.id }).select(QUESTIONS).single()
     }
     if (result.error) throw result.error
-    selectedId = result.data?.id || id
-    toast(id ? 'Question updated successfully.' : 'New Sunday BECE question added.', 'success')
-    await loadQuestions()
-    renderAdminSections()
+    if (!result.data?.id) throw new Error('The database did not confirm the save. Your edits have been kept; please retry.')
+    const row = normalise(result.data)
+    questions = questions.some(q => q.id === row.id) ? questions.map(q => q.id === row.id ? row : q) : [...questions, row]
+    selectedId = row.id
+    selectedSetId = row.sunday_set_id || setId
+    clearBeceDraft(formEl)
+    saved = true
   } catch (error) {
-    toast(error.message || 'Question could not be saved.', 'error')
-  } finally { saving = false }
+    const message = `Save failed: ${error.message || 'Could not reach the question service.'} Your edits have been kept.`
+    saveStatus(formEl, message, 'error')
+    toast(message, 'error')
+  } finally {
+    saving = false
+    if (button) { button.disabled = false; button.textContent = originalLabel }
+    if (saved) {
+      renderAdminSections()
+      const current = document.getElementById('sundaySpecialQuestionForm')
+      if (current) saveStatus(current, 'Saved to the database successfully.', 'success')
+      toast(id ? 'Question updated successfully.' : 'New Sunday BECE question added.', 'success')
+    }
+  }
 }
+
 async function archiveQuestion() {
   if (!selectedId) return
   const { error } = await supabase.from('bece_question_bank').update({ status: 'Archived', updated_at: new Date().toISOString() }).eq('id', selectedId)
   if (error) { toast(error.message, 'error'); return }
   toast('Question archived.', 'success')
+  clearBeceDraft(document.getElementById('sundaySpecialQuestionForm'))
   selectedId = ''
   await loadQuestions()
   renderAdminSections()
