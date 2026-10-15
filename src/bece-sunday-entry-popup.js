@@ -132,7 +132,11 @@ document.addEventListener('click', event => {
     return
   }
   if (event.target.closest('[data-sunday-entry-go]')) {
-    setTimeout(closePopup, 50)
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    closePopup()
+    window.dispatchEvent(new CustomEvent('mezzoOpenSundayTest'))
+    return
   }
 }, true)
 
