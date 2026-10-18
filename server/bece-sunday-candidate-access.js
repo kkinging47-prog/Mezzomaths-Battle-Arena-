@@ -1,3 +1,4 @@
+import { signHistoryAccess } from './bece-sunday-history.js'
 import { supabaseRows } from '../api/_bece-sunday-security.js'
 export default async function handler(req,res) {
  if(req.method!=='POST') return res.status(405).json({error:'Method not allowed'})
@@ -12,7 +13,7 @@ export default async function handler(req,res) {
     const result=await response.json()
     if(!response.ok) return res.status(400).json({error:'Registration could not be confirmed. Check your original details or contact Mezzo support.'})
     res.setHeader('Cache-Control','no-store')
-    return res.status(200).json(result)
+    return res.status(200).json({...result,history_token:signHistoryAccess(result.candidate_id)})
   }
   const id=String(req.body?.candidate_id||'').trim().toUpperCase()
   const ref=String(req.body?.student_reference||'').trim()
@@ -22,6 +23,6 @@ export default async function handler(req,res) {
   const schools=await supabaseRows('bece_sunday_schools?select=school_name,location,region&id=eq.'+encodeURIComponent(roster[0].school_id)+'&limit=1')
   if(!schools.length) return res.status(404).json({error:'School not found.'})
   res.setHeader('Cache-Control','no-store')
-  return res.status(200).json({candidate_id:id,full_name:roster[0].full_name,class_level:roster[0].class_level,contact:'school:'+roster[0].school_id+':'+ref,school_name:schools[0].school_name,location:schools[0].location,region:schools[0].region,registration_status:'confirmed',school_managed:true})
+  return res.status(200).json({candidate_id:id,full_name:roster[0].full_name,class_level:roster[0].class_level,contact:'school:'+roster[0].school_id+':'+ref,school_name:schools[0].school_name,location:schools[0].location,region:schools[0].region,registration_status:'confirmed',school_managed:true,history_token:signHistoryAccess(id)})
  } catch {return res.status(500).json({error:'Unable to verify student access.'})}
 }

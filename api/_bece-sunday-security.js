@@ -16,7 +16,7 @@ export function signTrialSession(payload) {
   return `${body}.${signature}`
 }
 
-export function verifyTrialSession(token) {
+export function verifyTrialSession(token, { allowExpired = false } = {}) {
   const [body, supplied] = String(token || '').split('.')
   if (!body || !supplied) throw new Error('Invalid trial session.')
   const expected = crypto.createHmac('sha256', secret()).update(body).digest('base64url')
@@ -25,7 +25,7 @@ export function verifyTrialSession(token) {
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) throw new Error('Invalid trial session.')
   const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'))
   if (!payload?.ids?.length || !Number.isInteger(payload.index)) throw new Error('Invalid trial session.')
-  if (Date.now() >= trialDeadline(payload)) throw new Error('Trial session expired.')
+  if (!allowExpired && Date.now() >= trialDeadline(payload)) throw new Error('Trial session expired.')
   return payload
 }
 

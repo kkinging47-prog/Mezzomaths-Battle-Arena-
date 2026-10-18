@@ -11,6 +11,7 @@ let queued = false
 let previewReport = false
 let submitting = false
 let starting = false
+let historyCache = null
 let restoringLegacy = false
 let lastWindowOpen = null
 
@@ -111,7 +112,7 @@ function injectBanner() {
   anchor?.insertAdjacentHTML('afterend', bannerHtml())
 }
 function shell(content) {
-  document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-sunday-page"><nav class="screen-tabs"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE Sunday Trial</small></div></div><div class="tab-scroll"><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button>${active?.preview || previewReport ? '<button class="screen-tab" data-target="admin"><span>🛠️</span>Admin workspace</button>' : '<button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Practice</button><button class="screen-tab active" data-bece-sunday-open="true"><span>⏰</span>Sunday Trial</button>'}</div></nav>${content}</section></main>`
+  document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-sunday-page"><nav class="screen-tabs"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE Sunday Trial</small></div></div><div class="tab-scroll"><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button>${active?.preview || previewReport ? '<button class="screen-tab" data-target="admin"><span>🛠️</span>Admin workspace</button>' : '<button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Practice</button><button class="screen-tab active" data-bece-sunday-open="true"><span>⏰</span>Sunday Trial</button><button class="screen-tab" data-sunday-history>📊 My Results</button>'}</div></nav>${content}</section></main>`
 }
 
 async function schoolResults() {
@@ -178,7 +179,7 @@ function registerHtml() {
   return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p><button type="button" class="btn btn-blue" data-sunday-legacy-access>Restore earlier registration</button></p><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p><button type="button" class="btn btn-blue" data-school-student-access>Already registered by your school? Access your profile</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
 }
 function registeredHtml(c, w, tried) {
-  return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions">${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : (w.open || (labOpen() && c.school_lab_authorized)) ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}${c.school_lab_authorized ? '<button class="btn btn-blue" data-sunday-school-mode="true">Switch Student</button>' : '<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button>'}</div></section>`
+  return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions"><button type="button" class="btn btn-blue" data-sunday-history>My Results · Scores & Review</button>${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : (w.open || (labOpen() && c.school_lab_authorized)) ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}${c.school_lab_authorized ? '<button class="btn btn-blue" data-sunday-school-mode="true">Switch Student</button>' : '<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button>'}</div></section>`
 }
 function leaderboardHtml(rows) {
   return `<section class="sunday-board glass-card" data-sunday-leaderboard><div class="sunday-board-head"><div><span>🏆 Weekly Leaderboard</span><h2>Score + Time Ranking</h2></div><small>Week of ${weekStartIso()}</small></div>${rows.length ? rows.map((r, i) => `<div class="sunday-rank"><b>${i + 1}</b><span><strong>${esc(r.full_name || r.candidate?.full_name || 'Candidate')}</strong><small>${esc(r.school_name || r.candidate?.school_name || '')} • ${esc(r.region || r.candidate?.region || '')}</small></span><em>${r.score}/${r.total || QUESTION_COUNT}</em><small>${fmt((r.time_taken_seconds || 0) * 1000)}</small></div>`).join('') : '<p>No results yet this week.</p>'}</section>`
@@ -360,8 +361,8 @@ function renderReport(attempt = currentAttempt()) {
   if (!attempt) return renderSundayHome()
   previewReport = Boolean(attempt.preview)
   const a = attempt.ai_analysis || analyse(attempt)
-  const review = (attempt.answers || []).map((item, index) => `<article class="sunday-review-item ${item.correct ? 'correct' : 'incorrect'}"><h3>Question ${index + 1} · ${esc(item.topic_area || item.topic || 'General')} · ${item.correct ? 'Correct' : 'Needs review'}</h3><p>${esc(item.question_text || '')}</p>${item.question_image_url ? `<img src="${esc(item.question_image_url)}" alt="Question diagram">` : ''}<p>Your answer: <b>${esc(item.selected_answer || '—')}${item.options?.['ABCD'.indexOf(item.selected_answer)] ? ` · ${esc(item.options['ABCD'.indexOf(item.selected_answer)])}` : ''}</b> · Correct answer: <b>${esc(item.correct_answer || '—')}</b></p><p><strong>How to solve it:</strong> ${esc(item.explanation || 'A worked explanation is awaiting editor review.')}</p></article>`).join('')
-  shell(`<section class="sunday-report light-card"><div class="report-score"><span>${attempt.preview ? `Admin trial · Set ${esc(attempt.set_number)}` : '📊 Progress Report'}</span><h1>${attempt.score}/${attempt.total}</h1><p>${attempt.percent}% · Time: ${fmt(attempt.time_taken_seconds * 1000)}</p></div><div class="report-ai"><h2>Performance analysis</h2><p>${esc(a.speed)}</p>${a.strong?.length ? `<p><b>Strong areas:</b> ${a.strong.map(esc).join(', ')}</p>` : ''}${a.weak?.length ? `<p><b>Areas to improve:</b> ${a.weak.slice(0,5).map(([t,v]) => `${esc(t)} (${v.wrong} missed)`).join(', ')}</p>` : '<p><b>Excellent:</b> no weak area detected.</p>'}<ul>${(a.advice || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="sunday-actions"><button class="btn btn-blue" ${attempt.preview ? 'data-sunday-exit-preview' : 'data-bece-sunday-open'}>${attempt.preview ? 'Return to admin workspace' : 'Back to Sunday Trial'}</button><button class="btn btn-gold" onclick="window.print()">Print / Save Report</button></div></section><section class="sunday-review light-card"><h2>Question by question feedback</h2>${review || '<p>Detailed review is unavailable for this earlier attempt.</p>'}</section>${attempt.preview ? '' : leaderboardHtml(localLeaders())}`)
+  const review = (attempt.answers || []).map((item, index) => `<article class="sunday-review-item ${item.correct ? 'correct' : 'incorrect'}"><h3>Question ${index + 1} · ${esc(item.topic_area || item.topic || 'General')} · ${item.correct ? 'Correct' : 'Needs review'}</h3><p>${esc(item.question_text || '')}</p>${item.question_image_url ? `<img src="${esc(item.question_image_url)}" alt="Question diagram">` : ''}${(item.options || []).map((option,i)=>'<p><b>'+String.fromCharCode(65+i)+'.</b> '+esc(option)+(item.option_image_urls?.[i] ? '<img src="'+esc(item.option_image_urls[i])+'" alt="Option '+String.fromCharCode(65+i)+'">' : '')+'</p>').join('')}<p>Your answer: <b>${esc(item.selected_answer || '—')}${item.options?.['ABCD'.indexOf(item.selected_answer)] ? ` · ${esc(item.options['ABCD'.indexOf(item.selected_answer)])}` : ''}</b> · Correct answer: <b>${esc(item.correct_answer || '—')}</b></p><p><strong>How to solve it:</strong> ${esc(item.explanation || 'A worked explanation is awaiting editor review.')}</p></article>`).join('')
+  shell(`<section class="sunday-report light-card"><div class="report-score"><span>${attempt.preview ? `Admin trial · Set ${esc(attempt.set_number)}` : '📊 Progress Report'}</span><h1>${attempt.score}/${attempt.total}</h1><p>${attempt.percent}% · Time: ${fmt(attempt.time_taken_seconds * 1000)}</p></div><div class="report-ai"><h2>Performance analysis</h2><p>${esc(a.speed)}</p>${a.strong?.length ? `<p><b>Strong areas:</b> ${a.strong.map(esc).join(', ')}</p>` : ''}${a.weak?.length ? `<p><b>Areas to improve:</b> ${a.weak.slice(0,5).map(([t,v]) => `${esc(t)} (${v.wrong} missed)`).join(', ')}</p>` : '<p><b>Excellent:</b> no weak area detected.</p>'}<ul>${(a.advice || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="sunday-actions"><button class="btn btn-blue" ${attempt.preview ? 'data-sunday-exit-preview' : 'data-bece-sunday-open'}>${attempt.preview ? 'Return to admin workspace' : 'Back to Sunday Trial'}</button>${!attempt.preview ? '<button class="btn btn-blue" data-sunday-history>My weekly scores and rank</button>' : ''}<button class="btn btn-gold" onclick="window.print()">Print / Save Report</button></div></section><section class="sunday-review light-card"><h2>Question by question feedback</h2>${attempt.reconstructed ? '<p>Earlier review uses saved selections and the current question bank. Your recorded score is unchanged.</p>' : ''}${review || '<p>Detailed review is unavailable for this earlier attempt.</p>'}</section>${attempt.preview ? '' : leaderboardHtml(localLeaders())}`)
   if (!attempt.preview) refreshDbLeaders()
 }
 function updateCountdowns() {
@@ -377,6 +378,9 @@ function updateCountdowns() {
 function sync() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; injectBanner(); updateCountdowns() }) }
 
 document.addEventListener('click', e => {
+  if(e.target.closest('[data-sunday-history]')) { e.preventDefault(); e.stopImmediatePropagation(); showResultsHistory(); return }
+  const reviewWeek=e.target.closest('[data-sunday-review-week]')?.dataset.sundayReviewWeek
+  if(reviewWeek) { e.preventDefault(); showWeeklyReview(reviewWeek); return }
   if(e.target.closest('[data-sunday-legacy-access]')) { e.preventDefault(); shell('<form id="sundayLegacyAccessForm" class="sunday-register light-card"><h2>Restore earlier registration</h2><p>Enter the name and phone number or email used for your original registration.</p><label>Full Name<input name="full_name" required></label><label>Original Phone Number or Email<input name="contact" required></label><button class="btn btn-blue" type="submit">Restore candidate profile</button><button class="btn btn-ghost" type="button" data-bece-sunday-open>Back</button></form>'); return }
   if(e.target.closest('[data-sunday-refresh-open]')) { e.preventDefault(); document.querySelector('[data-sunday-opening-notice]')?.remove(); renderSundayHome(); return }
   if(e.target.closest('[data-school-student-access]')) {
@@ -415,3 +419,43 @@ new MutationObserver(sync).observe(document.body, { childList: true, subtree: tr
 window.addEventListener('load', sync)
 setInterval(updateCountdowns, 1000)
 setTimeout(sync, 500)
+
+async function resultsRequest(weekStart='') {
+  let c=candidate()
+  if(!c) throw new Error('Register or restore your Sunday candidate profile first.')
+  if(!c.history_token) {
+    const restored=await fetch('/api/bece-sunday-start?action=candidate-access',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(25000),body:JSON.stringify({action:'restore-legacy',full_name:c.full_name,contact:c.contact})})
+    const profile=await restored.json()
+    if(!restored.ok || !profile.history_token) throw new Error(profile.error || 'Restore your candidate profile to view results.')
+    c={...c,...profile}; saveJson(CANDIDATE_KEY,c)
+  }
+  const response=await fetch('/api/bece-sunday-start?action=history',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(25000),body:JSON.stringify({history_token:c.history_token,week_start:weekStart})})
+  const data=await response.json()
+  if(!response.ok) {
+    if(response.status===403) {delete c.history_token;saveJson(CANDIDATE_KEY,c)}
+    throw new Error(data.error || 'Results could not be loaded.')
+  }
+  return data
+}
+async function showResultsHistory() {
+  shell('<section class="light-card sunday-register" role="status"><h2>Loading your results…</h2></section>')
+  try {
+    historyCache=await resultsRequest()
+    const summary=historyCache.summary
+    const number=value=>Number(value||0).toFixed(1)
+    const weeks=historyCache.weeks||[]
+    const rows=weeks.map(w=>'<tr><td>'+esc(w.week_start)+'</td><td>'+w.score+'/'+w.total+'</td><td>'+number(100*w.score/w.total)+'%</td><td>'+fmt(w.time_taken_seconds*1000)+'</td><td>'+w.weekly_rank+' of '+w.weekly_candidates+'</td><td><button class="btn btn-blue" data-sunday-review-week="'+esc(w.week_start)+'">Review work</button></td></tr>').join('')
+    shell('<section class="sunday-register light-card"><h1>My Sunday BECE Results</h1><h2>'+esc(candidate()?.full_name||'Candidate')+'</h2>'+
+      (summary ? '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px"><p><strong>'+summary.completed_weeks+'</strong><br>Completed weeks</p><p><strong>'+number(summary.average_score)+'/40</strong><br>Average score · '+number(summary.average_percent)+'%</p><p><strong>'+summary.total_score+'/'+summary.total_possible+'</strong><br>Cumulative marks</p><p><strong>'+summary.overall_rank+' of '+summary.ranked_candidates+'</strong><br>Overall rank</p></div>' : '<p>No submitted Sunday tests yet. Your scores will appear here after submission.</p>')+
+      '<p>Averages include completed weeks only. Overall rank uses average percentage, then average completion time. Weekly ranks use score, then time.</p><div style="overflow-x:auto"><table style="width:100%;text-align:left"><thead><tr><th>Week</th><th>Score</th><th>Percent</th><th>Time</th><th>Weekly rank</th><th>Review</th></tr></thead><tbody>'+rows+'</tbody></table></div><button class="btn btn-blue" data-bece-sunday-open>Back to Sunday Trial</button></section>')
+  } catch(error) { shell('<section class="sunday-register light-card" role="alert"><h2>Results unavailable</h2><p>'+esc(error.message)+'</p><button class="btn btn-blue" data-sunday-history>Retry</button><button class="btn btn-blue" data-sunday-legacy-access>Restore candidate profile</button><button class="btn btn-blue" data-bece-sunday-open>Back to Sunday Trial</button></section>') }
+}
+async function showWeeklyReview(week) {
+  shell('<section class="sunday-register light-card" role="status"><h2>Loading your work…</h2></section>')
+  try {
+    const data=await resultsRequest(week)
+    const attempt=data.weeks?.[0]
+    if(!attempt) throw new Error('No submitted work found for this week.')
+    renderReport({...attempt,candidate:candidate(),percent:Math.round(100*attempt.score/attempt.total)})
+  } catch(error) { shell('<section class="sunday-register light-card" role="alert"><h2>Review unavailable</h2><p>'+esc(error.message)+'</p><button class="btn btn-blue" data-sunday-history>Back to My Results</button></section>') }
+}
