@@ -9,6 +9,7 @@ const rows=Array.from({length:40},(_,i)=>({id:String(i),question_text:'Test',opt
 let savedResult,patches=0,legacyFound=true
 const reply=x=>new Response(JSON.stringify(x),{status:200})
 globalThis.fetch=async(url,options={})=>{
+ if(url.includes('register_or_recover_sunday_candidate')){const d=JSON.parse(options.body).p_details;assert.equal(d.recover_only,true);return new Response(JSON.stringify(legacyFound?{candidate_id:'MSB-1234567890ABCDEF12',registration_status:'confirmed'}:{message:'No match'}),{status:legacyFound?200:400})}
  if(url.includes('begin_bece_sunday_session')){let body=JSON.parse(options.body);assert.equal(body.p_session_expires_at,'2026-10-18T20:00:00.000Z');return reply(true)}
  if(url.includes('bece_sunday_trial_registrations'))return reply(legacyFound?[{candidate_id:'MSB-1234567890ABCDEF12'}]:[])
  if(url.includes('sunday_bece_sets'))return reply([{id:'set1',set_number:1}])
@@ -21,6 +22,6 @@ let r=await run(start,{candidate_id:'MSB-1234567890ABCDEF12'});assert.equal(r.st
 now='2026-10-18T19:59:30Z';r=await run(answer,{session_token:token,answers:rows.map(q=>({question_id:q.id,selected_answer:'A'}))});assert.equal(r.status,200);assert.equal(savedResult.time_taken_seconds,30)
 now='2026-10-18T20:00:00Z';assert.throws(()=>verifyTrialSession(token),/expired/);r=await run(answer,{session_token:token,answers:rows.map(q=>({question_id:q.id,selected_answer:'A'}))});assert.equal(r.status,401);assert.equal(patches,1)
 now='2026-10-18T14:00:00Z';r=await run(legacy,{action:'restore-legacy',full_name:'Eliezer Nkrumah',contact:'synthetic-contact'});assert.equal(r.status,200);assert.equal(r.body.registration_status,'confirmed')
-legacyFound=false;r=await run(legacy,{action:'restore-legacy',full_name:'Eliezer Nkrumah',contact:'wrong-contact'});assert.equal(r.status,403)
-now='2026-10-19T10:00:00Z';r=await run(legacy,{action:'restore-legacy',full_name:'Eliezer Nkrumah',contact:'synthetic-contact'});assert.equal(r.status,403)
-console.log('PASS: late start expires at 8 PM; server elapsed time; submission rejected exactly at cutoff; matching legacy recovery; wrong-contact and next-day rejection. No production writes.')
+legacyFound=false;r=await run(legacy,{action:'restore-legacy',full_name:'Eliezer Nkrumah',contact:'wrong-contact'});assert.equal(r.status,400)
+legacyFound=true;now='2026-10-19T10:00:00Z';r=await run(legacy,{action:'restore-legacy',full_name:'Eliezer Nkrumah',contact:'synthetic-contact'});assert.equal(r.status,200)
+console.log('PASS: late start expires at 8 PM; server elapsed time; submission rejected exactly at cutoff; matching recovery; wrong-contact rejection; recovery available after launch day. No production writes.')

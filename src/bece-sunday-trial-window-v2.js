@@ -189,8 +189,11 @@ async function showSundayAdminSummary() {
   const { data, error } = await supabase.rpc('bece_sunday_admin_registration_summary')
   if (error) return alert('Admin registration report unavailable. Please sign in as an administrator and confirm the latest database migration has been applied.')
   const rows = data || []
+  const audit = await supabase.rpc('sunday_duplicate_registration_report',{p_week_start:weekStartIso()})
+  const duplicates = Array.isArray(audit.data) ? audit.data : []
+  const duplicateHtml = '<h3>Duplicate identity review</h3>' + (audit.error ? '<p>Duplicate report unavailable. Retry when connected.</p>' : duplicates.length ? duplicates.map(r=>'<p>'+esc(r.full_name)+' — '+Number(r.candidate_ids)+' candidate IDs; '+Number(r.started_sessions)+' sessions started; '+Number(r.submissions)+' submitted. Review historical entries; results are unchanged.</p>').join('') : '<p>No duplicate candidate identities found.</p>')
   const table = rows.map(r => `<tr><td>${esc(r.school_name)}</td><td>${esc(r.region)}</td><td>${Number(r.registered) || 0}</td></tr>`).join('')
-  shell(`<section class="sunday-report light-card"><h2>Sunday BECE registrations by school and region</h2><p>Total registered: <strong>${rows.reduce((n,r) => n + (Number(r.registered) || 0), 0)}</strong></p><div style="overflow-x:auto"><table><thead><tr><th>School</th><th>Region</th><th>Candidates</th></tr></thead><tbody>${table || '<tr><td colspan="3">No registrations yet</td></tr>'}</tbody></table></div><button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button></section>`)
+  shell(`<section class="sunday-report light-card"><h2>Sunday BECE registrations by school and region</h2><p>Total registered: <strong>${rows.reduce((n,r) => n + (Number(r.registered) || 0), 0)}</strong></p><div style="overflow-x:auto"><table><thead><tr><th>School</th><th>Region</th><th>Candidates</th></tr></thead><tbody>${table || '<tr><td colspan="3">No registrations yet</td></tr>'}</tbody></table></div>${duplicateHtml}<button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button></section>`)
 }
 function renderSundayHome() {
   const c = candidate(), w = trialWindow(), tried = currentAttempt()
@@ -217,17 +220,16 @@ async function register(form) {
   const submit = form.querySelector('[type="submit"]')
   if (submit) { submit.disabled = true; submit.textContent = 'Registering…' }
   try {
-    const { error } = await supabase.from('bece_sunday_trial_registrations').insert({
-      candidate_id: c.candidate_id, full_name: c.full_name, contact: c.contact,
-      school_name: c.school_name, location: c.location, region: c.region,
-      class_level: c.class_level, created_at: c.created_at
+    const response = await fetch('/api/bece-sunday-start?action=candidate-access', {
+      method:'POST',headers:{'Content-Type':'application/json'},
+      signal:AbortSignal.timeout(25000),body:JSON.stringify({...c,action:'register'})
     })
-    if (error) throw error
-    c.registration_status = 'confirmed'
-    saveJson(CANDIDATE_KEY, c)
+    const confirmed = await response.json()
+    if (!response.ok || !confirmed.candidate_id) throw new Error(confirmed.error || 'Registration unavailable.')
+    saveJson(CANDIDATE_KEY, confirmed)
     renderSundayHome()
   } catch (error) {
-    alert('We could not confirm your registration. Please check your connection and try again. No registration has been confirmed.')
+    alert(error.message || 'We could not confirm your registration. Please retry when connected.')
   } finally {
     if (submit?.isConnected) { submit.disabled = false; submit.textContent = 'Create Free Candidate Profile' }
   }
