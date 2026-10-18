@@ -103,36 +103,8 @@ function scheduleRun() {
   requestAnimationFrame(() => { queued = false; run() })
 }
 
-document.addEventListener('click', async event => {
-  const startButton = event.target.closest('[data-bece-sunday-start]')
-  if (!startButton) return
-  if (Date.now() - Number(window.__mezzoSundayAttemptApprovedAt || 0) < ATTEMPT_APPROVAL_MS) return
-  if (approving) { event.preventDefault(); event.stopImmediatePropagation(); return }
-
-  event.preventDefault()
-  event.stopImmediatePropagation()
-  approving = true
-
-  const candidate = readJson(CANDIDATE_KEY, null)
-  if (!candidate?.contact) {
-    approving = false
-    toast('Register with phone number or email before starting the Sunday BECE trial.', 'error')
-    return
-  }
-
-  const alreadyAttempted = await hasDatabaseAttempt(candidate.contact)
-  if (alreadyAttempted) {
-    approving = false
-    toast('This candidate has already taken this week’s Sunday BECE trial. One official attempt is allowed per week.', 'warn')
-    const reportButton = document.querySelector('[data-bece-sunday-report]')
-    if (reportButton) reportButton.click()
-    return
-  }
-
-  window.__mezzoSundayAttemptApprovedAt = Date.now()
-  approving = false
-  startButton.click()
-}, true)
+// Start and duplicate-attempt checks are owned by the secured trial endpoint.
+// Do not intercept/replay clicks with the obsolete contact-based RPC.
 
 window.addEventListener('load', () => setTimeout(run, 1200))
 window.addEventListener('mezzoProfileUpdated', scheduleRun)
