@@ -27,6 +27,6 @@ export default async function handler(req,res) {
     const byId=new Map(rows.map(x=>[String(x.id),x]))
     if(session.ids.some(id=>!byId.has(String(id)))) return res.status(409).json({error:'Question set unavailable.'})
     res.setHeader('Cache-Control','no-store')
-    return res.status(200).json({questions:session.ids.map(id=>safeQuestion(byId.get(String(id)))),session_token:claim.session_token,week_start:claim.week_start,mode:session.mode||'sunday',started_at:session.startedAt,selections:claim.session_data?.selections||{},index:claim.session_data?.index||0})
+    return res.status(200).json({questions:session.ids.map(id=>safeQuestion(byId.get(String(id)))),session_token:claim.session_token,week_start:claim.week_start,mode:session.mode||'sunday',started_at:session.startedAt,session_expires_at:claim.session_expires_at,selections:claim.session_data?.selections||{},index:claim.session_data?.index||0})
   } catch { return res.status(500).json({error:'Unable to recover the examination session.'}) }
 }

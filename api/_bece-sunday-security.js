@@ -25,8 +25,15 @@ export function verifyTrialSession(token) {
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) throw new Error('Invalid trial session.')
   const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'))
   if (!payload?.ids?.length || !Number.isInteger(payload.index)) throw new Error('Invalid trial session.')
-  if (Date.now() > Number(payload.expiresAt || 0)) throw new Error('Trial session expired.')
+  if (Date.now() >= trialDeadline(payload)) throw new Error('Trial session expired.')
   return payload
+}
+
+export function trialDeadline(session) {
+  const expiry = Number(session.expiresAt || 0)
+  if (session.preview || session.mode === 'school_lab') return expiry
+  const cutoff = Date.parse(`${session.weekStart}T20:00:00Z`)
+  return Number.isFinite(cutoff) ? Math.min(expiry, cutoff) : 0
 }
 
 export function sundayWindowOpen(now = new Date()) {
