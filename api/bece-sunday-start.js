@@ -65,6 +65,7 @@ export default async function handler(req, res) {
 
     const selected = usable
     const now = Date.now()
+    const expiresAt = lab ? now + 7200000 : Math.min(now + 7200000, Date.parse(sunday + 'T20:00:00Z'))
     const token = signTrialSession({
       ids: selected.map(row => row.id),
       candidateId,
@@ -73,16 +74,17 @@ export default async function handler(req, res) {
       schoolId,
       index: 0,
       startedAt: now,
-      expiresAt: now + (2 * 60 * 60 * 1000)
+      expiresAt
     })
 
-    if (!(await claimCandidate(candidateId, sunday, schoolId, lab?'school_lab':'sunday',token,now+7200000))) return res.status(409).json({error:'This weekly examination already has an attempt. Resume the existing session.'})
+    if (!(await claimCandidate(candidateId, sunday, schoolId, lab?'school_lab':'sunday',token,expiresAt))) return res.status(409).json({error:'This weekly examination already has an attempt. Resume the existing session.'})
     res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({
       questions: selected.map(safeQuestion),
       set_number: scheduled[0].set_number,
       week_start: sunday,
       mode: lab?'school_lab':'sunday',
+      session_expires_at: new Date(expiresAt).toISOString(),
       session_token: token
     })
   } catch (error) {

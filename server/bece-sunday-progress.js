@@ -1,4 +1,4 @@
-import {verifyTrialSession,supabaseRows} from '../api/_bece-sunday-security.js'
+import {verifyTrialSession,supabaseRows,trialDeadline} from '../api/_bece-sunday-security.js'
 
 export default async function handler(req,res) {
   if(req.method!=='POST') return res.status(405).json({error:'Method not allowed'})
@@ -13,6 +13,7 @@ export default async function handler(req,res) {
     if(entries.length>session.ids.length || entries.some(([id,answer])=>!ids.has(String(id)) || !/^[ABCD]$/.test(String(answer)))) return res.status(400).json({error:'Invalid answer selections.'})
     const index=Number(req.body?.index||0)
     if(!Number.isInteger(index)||index<0||index>=session.ids.length) return res.status(400).json({error:'Invalid question position.'})
+    if (Date.now() >= trialDeadline(session)) return res.status(409).json({error:'The examination has closed.'})
     const url=String(process.env.SUPABASE_URL||process.env.VITE_SUPABASE_URL||'').replace(/\/$/,'')
     const key=String(process.env.SUPABASE_SERVICE_ROLE_KEY||'')
     const endpoint=url+'/rest/v1/bece_sunday_weekly_claims?candidate_id=eq.'+encodeURIComponent(session.candidateId)+'&week_start=eq.'+encodeURIComponent(session.weekStart)+'&session_token=eq.'+encodeURIComponent(token)+'&completed_at=is.null&session_expires_at=gt.'+encodeURIComponent(new Date().toISOString())

@@ -10,6 +10,8 @@ let active = null
 let queued = false
 let previewReport = false
 let submitting = false
+let restoringLegacy = false
+let lastWindowOpen = null
 
 const esc = (v = '') => String(v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
 const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
@@ -67,13 +69,13 @@ async function loadTrialQuestions() {
       body:JSON.stringify({candidate_id:candidate()?.candidate_id,session_token:activeForCandidate()?.session_token||''})
     })
     const existing=await resumed.json().catch(()=>({}))
-    if(resumed.ok) return {questions:existing.questions||[],sessionToken:existing.session_token||'',weekStart:existing.week_start,mode:existing.mode,startedAt:existing.started_at,selections:existing.selections||{},index:existing.index||0,resumed:true}
+    if(resumed.ok) return {questions:existing.questions||[],sessionToken:existing.session_token||'',weekStart:existing.week_start,mode:existing.mode,startedAt:existing.started_at,expiresAt:existing.session_expires_at,selections:existing.selections||{},index:existing.index||0,resumed:true}
     throw new Error(existing.error || data.error || 'This week’s examination attempt is already reserved.')
   }
   if (!response.ok) throw new Error(data.error || 'Unable to load the secured Sunday BECE questions.')
   return {
     questions: Array.isArray(data.questions) ? data.questions : [],
-    sessionToken: data.session_token || '', weekStart: data.week_start || weekStartIso(), mode: data.mode || 'sunday'
+    sessionToken: data.session_token || '', expiresAt:data.session_expires_at, weekStart: data.week_start || weekStartIso(), mode: data.mode || 'sunday'
   }
 }
 function analyse(attempt) {
@@ -171,7 +173,7 @@ async function accessSchoolCandidate(form) {
  renderSundayHome()
 }
 function registerHtml() {
-  return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p><button type="button" class="btn btn-blue" data-school-student-access>Already registered by your school? Access your profile</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
+  return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p><button type="button" class="btn btn-blue" data-sunday-legacy-access>Restore earlier registration</button></p><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p><button type="button" class="btn btn-blue" data-school-student-access>Already registered by your school? Access your profile</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
 }
 function registeredHtml(c, w, tried) {
   return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions">${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : (w.open || (labOpen() && c.school_lab_authorized)) ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}${c.school_lab_authorized ? '<button class="btn btn-blue" data-sunday-school-mode="true">Switch Student</button>' : '<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button>'}</div></section>`
@@ -192,6 +194,7 @@ function renderSundayHome() {
   const c = candidate(), w = trialWindow(), tried = currentAttempt()
   shell(`<section class="sunday-hero glass-card"><div><span>Free National Practice Window</span><h1>Sunday BECE Maths Trial</h1><p>Open every Sunday, 6:00pm – 8:00pm Ghana time.</p></div><div class="sunday-big-count"><small>${w.open ? 'Window closes in' : 'Next trial starts in'}</small><strong data-bece-sunday-countdown>${fmt(w.ms)}</strong><em>40 BECE objectives</em></div></section>${c ? registeredHtml(c, w, tried) : registerHtml()}${leaderboardHtml(localLeaders())}`)
   refreshDbLeaders()
+  if (c && !c.candidate_id && !restoringLegacy) restoreLegacyCandidate()
   if (supabase) supabase.auth.getUser().then(({data}) => {
     if (!data?.user || !document.querySelector('.bece-sunday-page')) return
     supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle().then(({data:profile}) => {
@@ -227,7 +230,36 @@ async function register(form) {
     if (submit?.isConnected) { submit.disabled = false; submit.textContent = 'Create Free Candidate Profile' }
   }
 }
+async function restoreLegacyCandidate(details = candidate()) {
+  const old = details
+  if (!old || old.candidate_id || restoringLegacy) return
+  restoringLegacy = true
+  try {
+    const response = await fetch('/api/bece-sunday-candidate-access', {
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'restore-legacy',full_name:old.full_name,contact:old.contact})
+    })
+    const restored = await response.json().catch(()=>({}))
+    if (!response.ok || !restored.candidate_id) throw new Error(restored.error || 'Please register again to receive your candidate ID.')
+    saveJson(CANDIDATE_KEY,restored)
+    renderSundayHome()
+  } catch (error) {
+    const box=document.querySelector('.sunday-registered, #sundayLegacyAccessForm')
+    if(box && !box.querySelector('[data-legacy-error]')) box.insertAdjacentHTML('beforeend',`<p role="alert" data-legacy-error>${esc(error.message)}</p>`)
+  } finally { restoringLegacy = false }
+}
+function officialDeadline(current = active) {
+  if (!current || current.preview || current.mode === 'school_lab') return Infinity
+  const cutoff=Date.parse(`${current.week_start}T20:00:00Z`)
+  const serverExpiry=Date.parse(current.expires_at || '')
+  return Math.min(Number.isFinite(cutoff)?cutoff:Infinity,Number.isFinite(serverExpiry)?serverExpiry:Infinity)
+}
+function examinationClosed() { return active && Date.now() >= officialDeadline() }
+function renderClosedExamination() {
+  shell('<section class="sunday-report light-card" role="alert"><h1>Sunday BECE examination closed</h1><p>The examination closed at 8:00 PM Ghana time. Answers can no longer be changed or submitted.</p><button type="button" class="btn btn-blue" data-bece-sunday-open>Back to Sunday Trial</button></section>')
+}
 async function startTrial() {
+  if(candidate() && !candidate().candidate_id) await restoreLegacyCandidate()
   if (!trialWindow().open && !(labOpen() && candidate()?.school_lab_authorized)) return renderSundayHome()
   if (!candidate() || candidate().registration_status !== 'confirmed') return renderSundayHome()
   if (currentAttempt()) return renderReport(currentAttempt())
@@ -235,7 +267,7 @@ async function startTrial() {
   try {
     const secured = await loadTrialQuestions()
     if (!secured.questions.length || !secured.sessionToken) throw new Error('The secured question service returned no questions.')
-    active = { id: `trial_${Date.now()}`, week_start: secured.weekStart, mode: secured.mode, candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: secured.index || 0, selections: secured.selections || {}, started_at: secured.startedAt || Date.now() }
+    active = { id: `trial_${Date.now()}`, week_start: secured.weekStart, mode: secured.mode, candidate: candidate(), questions: secured.questions, session_token: secured.sessionToken, index: secured.index || 0, selections: secured.selections || {}, started_at: secured.startedAt || Date.now(), expires_at:secured.expiresAt || '' }
     saveJson(ACTIVE_KEY, active)
     if (secured.resumed) alert('Your previous examination session has been recovered. The original time limit still applies.')
     renderQuestion()
@@ -257,12 +289,13 @@ async function startAdminPreview(setId) {
 }
 function selectedCount() { return Object.keys(active?.selections || {}).length }
 function renderQuestion() {
+  if (examinationClosed()) return renderClosedExamination()
   active ||= activeForCandidate()
   if (!active) return renderSundayHome()
   const q = active.questions[active.index]
   const selected = active.selections?.[q.id] || ''
   const complete = selectedCount() === active.questions.length
-  shell(`<section class="sunday-live"><div class="sunday-live-top glass-card"><span>${active.preview ? `Admin trial · Set ${esc(active.set_number)}` : 'Sunday BECE Trial'} · Question ${active.index + 1}/${active.questions.length}</span><strong>${selectedCount()} answered</strong><em>${fmt(Date.now() - active.started_at)}</em></div><article class="sunday-question light-card"><p class="sunday-question-topic">${esc(q.topic_area || q.topic)}</p><h2>${esc(q.question_text)}</h2>${q.question_image_url ? `<img class="sunday-question-img" src="${esc(q.question_image_url)}" alt="Question diagram">` : ''}<div class="sunday-options">${q.options.map((op, i) => { const letter = String.fromCharCode(65 + i); return `<button type="button" class="${selected === letter ? 'selected' : ''}" data-sunday-answer="${letter}" aria-pressed="${selected === letter}"><b>${letter}</b>${q.option_image_urls?.[i] ? `<img src="${esc(q.option_image_urls[i])}" alt="Option ${letter}">` : ''}<span>${esc(op)}</span></button>` }).join('')}</div></article><nav class="sunday-question-nav" aria-label="Question navigation"><button type="button" class="btn btn-blue" data-sunday-prev ${active.index === 0 ? 'disabled' : ''}>← Previous</button><span>${selected ? 'Answer saved' : 'Choose an answer'}</span><button type="button" class="btn btn-blue" data-sunday-next ${active.index + 1 === active.questions.length ? 'disabled' : ''}>Next →</button></nav><div class="sunday-question-jump" aria-label="Jump to question">${active.questions.map((item, i) => `<button type="button" data-sunday-jump="${i}" class="${i === active.index ? 'current' : ''} ${active.selections?.[item.id] ? 'answered' : ''}" aria-label="Question ${i + 1}${active.selections?.[item.id] ? ', answered' : ', unanswered'}" aria-current="${i === active.index ? 'step' : 'false'}">${i + 1}</button>`).join('')}</div><div class="sunday-submit-row"><p>${complete ? 'All questions answered. Submit to see your feedback and explanations.' : `${active.questions.length - selectedCount()} question(s) still need an answer.`}</p><button type="button" class="btn btn-gold" data-sunday-submit ${complete ? '' : 'disabled'}>Submit all answers</button>${active.preview ? '<button type="button" class="btn btn-ghost" data-sunday-exit-preview>Exit admin trial</button>' : ''}</div></section>`)
+  shell(`<section class="sunday-live"><div class="sunday-live-top glass-card"><span>${active.preview ? `Admin trial · Set ${esc(active.set_number)}` : 'Sunday BECE Trial'} · Question ${active.index + 1}/${active.questions.length}</span><strong>${selectedCount()} answered</strong>${!active.preview && active.mode !== 'school_lab' ? '<span>Submit before 8:00 PM Ghana time</span>' : ''}<em>${fmt(Date.now() - active.started_at)}</em></div><article class="sunday-question light-card"><p class="sunday-question-topic">${esc(q.topic_area || q.topic)}</p><h2>${esc(q.question_text)}</h2>${q.question_image_url ? `<img class="sunday-question-img" src="${esc(q.question_image_url)}" alt="Question diagram">` : ''}<div class="sunday-options">${q.options.map((op, i) => { const letter = String.fromCharCode(65 + i); return `<button type="button" class="${selected === letter ? 'selected' : ''}" data-sunday-answer="${letter}" aria-pressed="${selected === letter}"><b>${letter}</b>${q.option_image_urls?.[i] ? `<img src="${esc(q.option_image_urls[i])}" alt="Option ${letter}">` : ''}<span>${esc(op)}</span></button>` }).join('')}</div></article><nav class="sunday-question-nav" aria-label="Question navigation"><button type="button" class="btn btn-blue" data-sunday-prev ${active.index === 0 ? 'disabled' : ''}>← Previous</button><span>${selected ? 'Answer saved' : 'Choose an answer'}</span><button type="button" class="btn btn-blue" data-sunday-next ${active.index + 1 === active.questions.length ? 'disabled' : ''}>Next →</button></nav><div class="sunday-question-jump" aria-label="Jump to question">${active.questions.map((item, i) => `<button type="button" data-sunday-jump="${i}" class="${i === active.index ? 'current' : ''} ${active.selections?.[item.id] ? 'answered' : ''}" aria-label="Question ${i + 1}${active.selections?.[item.id] ? ', answered' : ', unanswered'}" aria-current="${i === active.index ? 'step' : 'false'}">${i + 1}</button>`).join('')}</div><div class="sunday-submit-row"><p>${complete ? 'All questions answered. Submit to see your feedback and explanations.' : `${active.questions.length - selectedCount()} question(s) still need an answer.`}</p><button type="button" class="btn btn-gold" data-sunday-submit ${complete ? '' : 'disabled'}>Submit all answers</button>${active.preview ? '<button type="button" class="btn btn-ghost" data-sunday-exit-preview>Exit admin trial</button>' : ''}</div></section>`)
 }
 let progressTimer = null
 function queueProgressSave() {
@@ -277,6 +310,7 @@ function queueProgressSave() {
   },400)
 }
 function answer(letter) {
+  if (examinationClosed()) return renderClosedExamination()
   if (!active || !/^[ABCD]$/.test(letter)) return
   const q = active.questions[active.index]
   active.selections ||= {}
@@ -291,6 +325,7 @@ function nextQuestion(delta = 1) {
   renderQuestion()
 }
 async function finishTrial() {
+  if (examinationClosed()) return renderClosedExamination()
   if (!active || submitting || selectedCount() !== active.questions.length) return
   if (!window.confirm('Submit all answers? You will see feedback and explanations after submission.')) return
   submitting = true
@@ -303,7 +338,7 @@ async function finishTrial() {
     const response = await fetch('/api/bece-sunday-answer', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ session_token: current.session_token, answers: current.questions.map(q => ({ question_id: q.id, selected_answer: current.selections[q.id] })) }) })
     const marked = await response.json().catch(() => ({}))
     if (!response.ok) throw new Error(marked.error || 'The answers could not be marked.')
-    const seconds = Math.round((Date.now() - current.started_at) / 1000)
+    const seconds = Number.isFinite(marked.time_taken_seconds) ? marked.time_taken_seconds : Math.round((Date.now() - current.started_at) / 1000)
     const byId = new Map(marked.results.map(result => [String(result.question_id), result]))
     const answers = current.questions.map(q => ({ ...byId.get(String(q.id)), question_text: q.question_text, options: q.options, question_image_url: q.question_image_url }))
     const attempt = { id: current.id, week_start: current.week_start, candidate: current.candidate, preview: current.preview, set_number: current.set_number, score: marked.score, total: current.questions.length, percent: Math.round(marked.score / current.questions.length * 100), time_taken_seconds: seconds, answers, completed_at: new Date().toISOString() }
@@ -322,10 +357,21 @@ function renderReport(attempt = currentAttempt()) {
   shell(`<section class="sunday-report light-card"><div class="report-score"><span>${attempt.preview ? `Admin trial · Set ${esc(attempt.set_number)}` : '📊 Progress Report'}</span><h1>${attempt.score}/${attempt.total}</h1><p>${attempt.percent}% · Time: ${fmt(attempt.time_taken_seconds * 1000)}</p></div><div class="report-ai"><h2>Performance analysis</h2><p>${esc(a.speed)}</p>${a.strong?.length ? `<p><b>Strong areas:</b> ${a.strong.map(esc).join(', ')}</p>` : ''}${a.weak?.length ? `<p><b>Areas to improve:</b> ${a.weak.slice(0,5).map(([t,v]) => `${esc(t)} (${v.wrong} missed)`).join(', ')}</p>` : '<p><b>Excellent:</b> no weak area detected.</p>'}<ul>${(a.advice || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="sunday-actions"><button class="btn btn-blue" ${attempt.preview ? 'data-sunday-exit-preview' : 'data-bece-sunday-open'}>${attempt.preview ? 'Return to admin workspace' : 'Back to Sunday Trial'}</button><button class="btn btn-gold" onclick="window.print()">Print / Save Report</button></div></section><section class="sunday-review light-card"><h2>Question by question feedback</h2>${review || '<p>Detailed review is unavailable for this earlier attempt.</p>'}</section>${attempt.preview ? '' : leaderboardHtml(localLeaders())}`)
   if (!attempt.preview) refreshDbLeaders()
 }
-function updateCountdowns() { const w = trialWindow(); document.querySelectorAll('[data-bece-sunday-countdown]').forEach(el => { el.textContent = fmt(w.ms) }) }
+function updateCountdowns() {
+  const w = trialWindow()
+  document.querySelectorAll('[data-bece-sunday-countdown]').forEach(el => { el.textContent = fmt(w.ms) })
+  if (lastWindowOpen === false && w.open && !active && !document.querySelector('[data-sunday-opening-notice]')) {
+    document.body.insertAdjacentHTML('beforeend','<section role="alert" data-sunday-opening-notice style="position:fixed;bottom:20px;left:5%;right:5%;z-index:100200;padding:20px;background:#fff;color:#163357;border:3px solid #168ed8;border-radius:16px;box-shadow:0 8px 28px #0005"><strong>It is 6 PM — Sunday BECE is now open!</strong><p>Refresh the Sunday Test page to enable Start. Your confirmed registration will be kept.</p><button type="button" class="btn btn-blue" data-sunday-refresh-open>Refresh Sunday Test</button></section>')
+  }
+  lastWindowOpen=w.open
+  if (examinationClosed() && document.querySelector('.sunday-live')) renderClosedExamination()
+}
+
 function sync() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; injectBanner(); updateCountdowns() }) }
 
 document.addEventListener('click', e => {
+  if(e.target.closest('[data-sunday-legacy-access]')) { e.preventDefault(); shell('<form id="sundayLegacyAccessForm" class="sunday-register light-card"><h2>Restore earlier registration</h2><p>Enter the name and phone number or email used for your original registration.</p><label>Full Name<input name="full_name" required></label><label>Original Phone Number or Email<input name="contact" required></label><button class="btn btn-blue" type="submit">Restore candidate profile</button><button class="btn btn-ghost" type="button" data-bece-sunday-open>Back</button></form>'); return }
+  if(e.target.closest('[data-sunday-refresh-open]')) { e.preventDefault(); document.querySelector('[data-sunday-opening-notice]')?.remove(); renderSundayHome(); return }
   if(e.target.closest('[data-school-student-access]')) {
     e.preventDefault()
     shell('<form id="sundaySchoolCandidateAccess" class="sunday-register light-card"><h2>School-registered student access</h2><p>Use the candidate ID and admission number supplied by your school.</p><label>Candidate ID<input name="candidate_id" required></label><label>Admission number<input name="student_reference" required></label><button class="btn btn-gold" type="submit">Continue</button><button class="btn btn-ghost" type="button" data-bece-sunday-open>Back</button></form>')
@@ -353,6 +399,7 @@ document.addEventListener('click', e => {
 window.addEventListener('mezzoOpenSundayTest', () => { try { renderSundayHome() } catch (error) { console.error('Sunday Test page failed to open', error); alert('Unable to open Sunday Test. Please refresh the page and try again.') } })
 window.addEventListener('mezzoSundayPreview', event => { if (event.detail?.setId) startAdminPreview(event.detail.setId) })
 document.addEventListener('submit', e => {
+  if(e.target?.matches?.('form#sundayLegacyAccessForm')) { e.preventDefault(); restoreLegacyCandidate(Object.fromEntries(new FormData(e.target))); return }
   if(e.target?.id==='sundaySchoolCandidateAccess') {e.preventDefault();accessSchoolCandidate(e.target);return}
   if (e.target?.id === 'sundaySchoolForm') { e.preventDefault(); createSundaySchool(e.target); return }
   if (e.target?.id === 'sundaySchoolStudentForm') { e.preventDefault(); addSundaySchoolStudent(e.target); return } if (e.target?.id === 'beceSundayRegisterForm') { e.preventDefault(); register(e.target) } }, true)
