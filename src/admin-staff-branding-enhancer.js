@@ -1,17 +1,22 @@
 import './admin-staff-branding.css'
+import { supabase } from './supabaseClient.js'
 
 const SIGNUP_ROLE_OPTIONS = [['student', 'Student'], ['teacher', 'School Teacher'], ['mezzo_staff', 'Mezzo Tutor — approval required']]
 const ACCESS_KEY = 'mezzo_staff_access'
 const LOGO_KEY = 'mezzo_custom_logo'
 const DEFAULT_ACCESS = { home: true, dashboard: true, leaderboard: true, smartboard: false, battle: false, solo: false, bece: false, brain: true, prep: false, courses: true }
 let queued = false
+let sharedAccess = {}
+let accessLoading = false
+let accessSaving = false
+let accessPanelDirty = false
 
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
 function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
 function profile() { return readJson('mezzo_profile', null) || {} }
 function isAdmin() { return profile().role === 'admin' }
 function isStaff() { return profile().role === 'mezzo_staff' }
-function staffAccess() { return { ...DEFAULT_ACCESS, ...readJson(ACCESS_KEY, DEFAULT_ACCESS) } }
+function staffAccess() { return { ...DEFAULT_ACCESS, ...readJson(ACCESS_KEY, DEFAULT_ACCESS), ...sharedAccess } }
 function escapeHtml(value = '') { return String(value).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])) }
 function roleOptionsHtml(options, selected = 'student') { return options.map(([value, label]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${label}</option>`).join('') }
 function toast(message) { const old = document.querySelector('.staff-admin-toast'); if (old) old.remove(); const node = document.createElement('div'); node.className = 'staff-admin-toast'; node.textContent = message; document.body.appendChild(node); setTimeout(() => node.remove(), 4200) }
@@ -85,12 +90,37 @@ function clearCustomLogo() {
   document.querySelectorAll('[data-live-logo-preview]').forEach(box => { box.innerHTML = '<span>No saved logo yet</span>' })
   toast('Uploaded logo removed.')
 }
-function saveStaffAccessFromPanel() {
+async function loadStaffAccess() {
+  if (!supabase || accessLoading || accessSaving) return
+  accessLoading = true
+  try {
+    const { data, error } = await supabase.from('app_settings').select('value').eq('key', ACCESS_KEY).maybeSingle()
+    if (error) throw error
+    sharedAccess = data?.value || {}
+    saveJson(ACCESS_KEY, staffAccess())
+    if (!accessPanelDirty) document.querySelectorAll('[data-staff-access-key]').forEach(input => { input.checked = staffAccess()[input.dataset.staffAccessKey] !== false })
+    enforceStaffAccess()
+  } catch (error) { console.warn('Could not refresh staff access settings:', error.message) }
+  finally { accessLoading = false }
+}
+async function saveStaffAccessFromPanel() {
+  if (!isAdmin() || accessSaving) return
   const access = { ...DEFAULT_ACCESS }
   document.querySelectorAll('[data-staff-access-key]').forEach(input => { access[input.dataset.staffAccessKey] = Boolean(input.checked) })
-  saveJson(ACCESS_KEY, access)
-  toast('Mezzo Staff access settings saved.')
-  enforceStaffAccess()
+  accessSaving = true
+  const button = document.querySelector('[data-save-staff-access]')
+  if (button) button.disabled = true
+  try {
+    if (!supabase) throw new Error('Connection unavailable')
+    const { data, error } = await supabase.from('app_settings').upsert({ key: ACCESS_KEY, value: access, updated_at: new Date().toISOString() }, { onConflict: 'key' }).select('value').single()
+    if (error) throw error
+    sharedAccess = data.value
+    saveJson(ACCESS_KEY, sharedAccess)
+    accessPanelDirty = false
+    toast('Mezzo Staff access saved for all tutor devices.')
+    enforceStaffAccess()
+  } catch (error) { toast('Access was not saved. Please retry: ' + error.message) }
+  finally { accessSaving = false; if (button) button.disabled = false }
 }
 function modeFromElement(el) {
   if (!el) return ''
@@ -122,7 +152,9 @@ function enforceStaffAccess() {
   const access = staffAccess()
   document.querySelectorAll('[data-target], [data-brain-test-page], [data-start-brain], [data-courses-page], [data-open-course], [data-prep-open], [data-bece-page], [data-start-bece], [data-start-bot], #startBotBattle, #startBattle, #startBattle2, [data-start-daily], .game-mode-card, .home-mode-card').forEach(el => {
     const mode = modeFromElement(el)
-    if (!mode || access[mode] !== false) return
+    if (!mode || access[mode] !== false) {
+      el.classList.remove('staff-mode-locked'); el.removeAttribute('aria-disabled'); el.removeAttribute('title'); return
+    }
     el.classList.add('staff-mode-locked')
     el.setAttribute('aria-disabled', 'true')
     el.setAttribute('title', 'Locked by admin for Mezzo Staff')
@@ -166,3 +198,8 @@ observer.observe(document.body, { childList: true, subtree: true, characterData:
 window.addEventListener('load', syncAll)
 window.addEventListener('storage', syncAll)
 setTimeout(syncAll, 350)
+
+document.addEventListener('change', event => { if (event.target.matches('[data-staff-access-key]')) accessPanelDirty = true })
+window.addEventListener('focus', loadStaffAccess)
+setInterval(() => { if (!document.hidden) loadStaffAccess() }, 30000)
+loadStaffAccess()
