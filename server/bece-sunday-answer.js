@@ -1,4 +1,4 @@
-import { verifyTrialSession, supabaseRows, requireSundayAdmin, trialDeadline } from '../api/_bece-sunday-security.js'
+import { verifyTrialSession, supabaseRows, requireSundayAdmin, trialDeadline, safeQuestion, SUNDAY_QUESTION_COLUMNS } from '../api/_bece-sunday-security.js'
 
 async function persistOfficialResult(session, score, total, results) {
   if (!session.candidateId || !session.weekStart) throw new Error('Candidate session is missing identity.')
@@ -8,7 +8,7 @@ async function persistOfficialResult(session, score, total, results) {
   if (Date.now() >= trialDeadline(session)) throw new Error('The examination closed at 8 PM. Submission is no longer available.')
   const elapsedSeconds = Math.max(0, Math.floor((Date.now() - Number(session.startedAt)) / 1000))
   const endpoint = url+'/rest/v1/bece_sunday_weekly_claims?candidate_id=eq.'+encodeURIComponent(session.candidateId)+'&week_start=eq.'+encodeURIComponent(session.weekStart)+'&completed_at=is.null&session_expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&session_token=eq.'+encodeURIComponent(session.rawToken)
-  const response = await fetch(endpoint,{method:'PATCH',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({completed_at:new Date().toISOString(),result:{score,total,time_taken_seconds:elapsedSeconds,topics:results.reduce((acc,item)=>{const t=item.topic_area||item.topic||'General';acc[t] ||= {total:0,correct:0};acc[t].total++;if(item.correct)acc[t].correct++;return acc},{})},mode:session.mode||'sunday',school_id:session.schoolId||null})})
+  const response = await fetch(endpoint,{method:'PATCH',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({completed_at:new Date().toISOString(),result:{score,total,review:results,time_taken_seconds:elapsedSeconds,topics:results.reduce((acc,item)=>{const t=item.topic_area||item.topic||'General';acc[t] ||= {total:0,correct:0};acc[t].total++;if(item.correct)acc[t].correct++;return acc},{})},mode:session.mode||'sunday',school_id:session.schoolId||null})})
   const saved = await response.json().catch(()=>[])
   if (!response.ok) throw new Error('Official result could not be saved.')
   if (!Array.isArray(saved) || saved.length!==1) throw new Error('This candidate has already submitted this weekly paper, or the session is no longer valid.')
@@ -30,13 +30,14 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'The submitted answers do not match this set.' })
       }
       const ids = session.ids.map(id => encodeURIComponent(id)).join(',')
-      const rows = await supabaseRows(`bece_question_bank?select=id,topic,topic_area,correct_answer,explanation&id=in.(${ids})`)
+      const rows = await supabaseRows(`bece_question_bank?select=${encodeURIComponent(SUNDAY_QUESTION_COLUMNS)}&id=in.(${ids})`)
       const byId = new Map(rows.map(row => [String(row.id), row]))
       if (byId.size !== answers.length) return res.status(409).json({ error: 'A question changed during this trial. Please start again.' })
       const results = answers.map(answer => {
         const row = byId.get(String(answer.question_id))
         const correctAnswer = String(row.correct_answer || '').trim().toUpperCase().slice(0, 1)
         return {
+          ...safeQuestion(row),
           question_id: row.id,
           selected_answer: answer.selected_answer,
           correct_answer: correctAnswer,
