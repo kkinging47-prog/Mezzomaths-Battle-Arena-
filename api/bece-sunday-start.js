@@ -1,3 +1,4 @@
+import historyHandler from '../server/bece-sunday-history.js'
 import answerHandler from '../server/bece-sunday-answer.js'
 import resumeHandler from '../server/bece-sunday-resume.js'
 import progressHandler from '../server/bece-sunday-progress.js'
@@ -34,6 +35,7 @@ async function claimCandidate(candidateId, sunday, schoolId, mode, token, expire
 
 export default async function handler(req, res) {
   const action=String(req.query?.action || 'start')
+  if(action==='history') return historyHandler(req,res)
   if(action==='answer') return answerHandler(req,res)
   if(action==='resume') return resumeHandler(req,res)
   if(action==='progress') return progressHandler(req,res)
