@@ -5,12 +5,13 @@ export default async function handler(req,res) {
   if (req.body?.action === 'restore-legacy') {
     const fullName=String(req.body.full_name||'')
     const contact=String(req.body.contact||'')
-    const permittedNames=['michealla nana gyekyiwaa benyin','eliezer nkrumah']
+    const permittedNames=['michealla nana gyekyiwaa benyin','eliezer nkrumah','adebiyi precious abena adenike adom']
     if(new Date().toISOString().slice(0,10)!=='2026-10-18' || !permittedNames.includes(fullName.trim().toLowerCase()) || !contact.trim() || contact.length>254) return res.status(403).json({error:'Legacy registration could not be restored.'})
-    const rows=await supabaseRows('bece_sunday_trial_registrations?select=candidate_id,full_name,contact,school_name,location,region,class_level&full_name=eq.'+encodeURIComponent(fullName)+'&contact=eq.'+encodeURIComponent(contact)+'&candidate_id=not.is.null&order=created_at.desc&limit=1')
-    if(!rows.length) return res.status(403).json({error:'Registration details do not match. Please register again or contact Mezzo support.'})
+    const rows=await supabaseRows('bece_sunday_trial_registrations?select=candidate_id,full_name,contact,school_name,location,region,class_level&full_name=ilike.'+encodeURIComponent(fullName.trim().replace(/[*%_]/g,'')+'*')+'&candidate_id=not.is.null&order=created_at.desc&limit=10')
+    const match=rows.find(row=>row.full_name.trim().toLowerCase()===fullName.trim().toLowerCase() && row.contact.trim().toLowerCase()===contact.trim().toLowerCase())
+    if(!match) return res.status(403).json({error:'Registration details do not match. Please register again or contact Mezzo support.'})
     res.setHeader('Cache-Control','no-store')
-    return res.status(200).json({...rows[0],registration_status:'confirmed'})
+    return res.status(200).json({...match,registration_status:'confirmed'})
   }
   const id=String(req.body?.candidate_id||'').trim().toUpperCase()
   const ref=String(req.body?.student_reference||'').trim()
