@@ -10,6 +10,7 @@ let active = null
 let queued = false
 let previewReport = false
 let submitting = false
+let starting = false
 let restoringLegacy = false
 let lastWindowOpen = null
 
@@ -58,6 +59,7 @@ async function loadTrialQuestions() {
   const {data:auth} = candidate()?.school_managed ? await supabase.auth.getSession() : {data:{session:null}}
   if (labOpen() && !auth?.session?.access_token) throw new Error('School sign-in required for weekday lab examinations.')
   const response = await fetch('/api/bece-sunday-start', {
+    signal: AbortSignal.timeout(25000),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(auth?.session?.access_token ? {Authorization:'Bearer '+auth.session.access_token}:{}) },
     body: JSON.stringify({ week_start: weekStartIso(), candidate_id: candidate()?.candidate_id })
@@ -259,11 +261,14 @@ function renderClosedExamination() {
   shell('<section class="sunday-report light-card" role="alert"><h1>Sunday BECE examination closed</h1><p>The examination closed at 8:00 PM Ghana time. Answers can no longer be changed or submitted.</p><button type="button" class="btn btn-blue" data-bece-sunday-open>Back to Sunday Trial</button></section>')
 }
 async function startTrial() {
+  if (starting) return
   if(candidate() && !candidate().candidate_id) await restoreLegacyCandidate()
   if (!trialWindow().open && !(labOpen() && candidate()?.school_lab_authorized)) return renderSundayHome()
   if (!candidate() || candidate().registration_status !== 'confirmed') return renderSundayHome()
   if (currentAttempt()) return renderReport(currentAttempt())
   if (activeForCandidate()) { active = activeForCandidate(); return renderQuestion() }
+  starting = true
+  shell('<section class="sunday-report light-card" role="status"><h2>Opening your examination…</h2><p>Please wait while your questions load. Keep this page open.</p></section>')
   try {
     const secured = await loadTrialQuestions()
     if (!secured.questions.length || !secured.sessionToken) throw new Error('The secured question service returned no questions.')
@@ -273,7 +278,7 @@ async function startTrial() {
     renderQuestion()
   } catch (error) {
     shell(`<section class="sunday-report light-card"><h2>Trial temporarily unavailable</h2><p>${esc(error.message || 'Please check your connection and try again shortly.')}</p><button class="btn btn-blue" data-bece-sunday-open="true">Back to Sunday Trial</button></section>`)
-  }
+  } finally { starting = false }
 }
 async function startAdminPreview(setId) {
   try {
@@ -384,7 +389,7 @@ document.addEventListener('click', e => {
   if (sc) { e.preventDefault(); selectSundaySchoolStudent(sc.dataset.schoolCandidate); return }
   if (e.target.closest('[data-sunday-admin-summary]')) { e.preventDefault(); showSundayAdminSummary(); return }
   if (e.target.closest('[data-bece-sunday-open]')) { e.preventDefault(); e.stopImmediatePropagation(); renderSundayHome(); return }
-  if (e.target.closest('[data-bece-sunday-start]')) { e.preventDefault(); startTrial(); return }
+  if (e.target.closest('[data-bece-sunday-start]')) { e.preventDefault(); e.stopImmediatePropagation(); startTrial(); return }
   if (e.target.closest('[data-bece-sunday-change-profile]')) { e.preventDefault(); localStorage.removeItem(CANDIDATE_KEY); renderSundayHome(); return }
   if (e.target.closest('[data-bece-sunday-report]')) { e.preventDefault(); renderReport(); return }
   const ans = e.target.closest('[data-sunday-answer]')
