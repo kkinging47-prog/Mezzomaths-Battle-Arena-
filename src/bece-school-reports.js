@@ -5,7 +5,21 @@ const headEmails={}
 const latestSunday=()=>{const d=new Date();d.setUTCDate(d.getUTCDate()-d.getUTCDay());return d.toISOString().slice(0,10)}
 let selectedWeek=latestSunday(),selectedMode='sunday'
 const selected=()=>report?.schools.find(s=>s.school_key===chosenSchool)
-function shell(html){document.getElementById('root').innerHTML='<main class="app-shell"><section class="app-frame bece-school-reports"><nav class="screen-tabs"><div class="brand-chip"><strong>MEZZO · School Reports</strong></div><div class="tab-scroll"><button class="screen-tab" data-target="admin">Admin workspace</button><button class="screen-tab" data-target="home">Home</button></div></nav>'+html+'</section></main>'}
+const reportStyles=`<style>
+.bece-school-reports .light-card{background:#fff;color:#142d4e}
+.bece-school-reports .light-card :is(h2,h3,p,label,summary,li,small,strong){color:#142d4e}
+.bece-school-reports .light-card table{background:#fff;border-collapse:collapse}
+.bece-school-reports .light-card :is(th,td){color:#142d4e!important;padding:14px 12px;border-bottom:1px solid #dbe3ed;text-shadow:none}
+.bece-school-reports .light-card th{background:#eaf1fa;color:#173d70!important}
+.bece-school-reports .light-card td{background:#fff}
+.bece-school-reports .light-card tr:nth-child(even) td{background:#f5f8fc}
+.bece-school-reports :is(input,select,option){background:#fff;color:#142d4e;border-color:#8395ad;color-scheme:light}
+.bece-school-reports input::placeholder{color:#53657d;opacity:1}
+.bece-school-reports .light-card .btn-blue{background:#174ea6;color:#fff}
+.bece-school-reports .light-card .btn-gold{background:#ffd166;color:#142d4e}
+.bece-school-reports .light-card .btn-ghost{background:#edf2f9;color:#173d70;border-color:#8395ad}
+</style>`
+function shell(html){document.getElementById('root').innerHTML=reportStyles+'<main class="app-shell"><section class="app-frame bece-school-reports"><nav class="screen-tabs"><div class="brand-chip"><strong>MEZZO · School Reports</strong></div><div class="tab-scroll"><button class="screen-tab" data-target="admin">Admin workspace</button><button class="screen-tab" data-target="home">Home</button></div></nav>'+html+'</section></main>'}
 async function api(body){const {data,error}=await supabase.auth.getSession();if(error||!data?.session?.access_token)throw new Error('Sign in as an administrator to view school reports.');const r=await fetch('/api/bece-sunday-start?action=admin-results',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+data.session.access_token},signal:AbortSignal.timeout(30000),body:JSON.stringify(body)});const dataOut=await r.json().catch(()=>({}));if(!r.ok)throw new Error(dataOut.error||'School report service unavailable.');return dataOut}
 function render(){
  const school=selected(),schools=(report?.schools||[]).filter(s=>s.school_name.toLowerCase().includes(search.toLowerCase()))
