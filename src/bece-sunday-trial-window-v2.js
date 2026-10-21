@@ -205,7 +205,7 @@ function renderSundayHome() {
     if (!data?.user || !document.querySelector('.bece-sunday-page')) return
     supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle().then(({data:profile}) => {
       if (profile?.role === 'admin' && document.querySelector('.sunday-hero') && !document.querySelector('[data-sunday-admin-summary]'))
-        document.querySelector('.sunday-hero').insertAdjacentHTML('afterend', '<button class="btn btn-blue" type="button" data-sunday-admin-summary="true">Admin: Registration by School and Region</button>')
+        document.querySelector('.sunday-hero').insertAdjacentHTML('afterend', '<button class="btn btn-blue" type="button" data-sunday-admin-summary="true">Admin: Registration by School and Region</button><button class="btn btn-blue" type="button" data-bece-school-reports>Admin: BECE Results & School Reports</button>')
     })
   }).catch(() => {})
 }
