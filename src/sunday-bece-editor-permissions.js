@@ -1,3 +1,5 @@
+import * as XLSX from 'xlsx'
+import { validateSetImport, readSetImportWorkbook, setImportTemplate } from './sunday-set-import.js'
 import { restoreBeceDrafts, clearBeceDraft, rememberBeceDraft } from './bece-editor-drafts.js'
 import './sunday-bece-editor-permissions.css'
 import { supabase, isSupabaseConfigured } from './supabaseClient.js'
@@ -40,6 +42,8 @@ let queued = false
 let booting = false
 let mountedAdminScreen = null
 let saving = false
+let pendingSetImport = null
+let importingSet = false
 
 function esc(value = '') {
   return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
@@ -143,6 +147,7 @@ function setManagerHtml() {
     ${selected ? `<div class="sunday-set-detail"><div class="sunday-set-detail-head"><div><span>SELECTED SET</span><h3>Set ${selected.set_number}</h3><p>${setQuestions().length}/40 questions · ${esc(selected.status)}${selected.scheduled_sunday ? ' · Sunday '+esc(selected.scheduled_sunday) : ''}</p></div><div class="sunday-set-actions">${isAdmin ? `<button type="button" class="btn btn-blue btn-small" data-preview-sunday-set>Try this set</button><button type="button" class="btn btn-blue btn-small" data-analyse-sunday-set ${reviewingSet?'disabled':''}>${reviewingSet?'Analysing…':'AI review questions'}</button><button type="button" class="btn btn-blue btn-small" data-sunday-set-status="ready" ${setQuestions().length!==40?'disabled':''}>Mark ready</button><button type="button" class="btn btn-gold btn-small" data-sunday-set-status="solved" ${setQuestions().length!==40?'disabled':''}>Mark done / solved</button><button type="button" class="btn btn-ghost btn-small" data-sunday-set-status="draft">Return to draft</button>` : ''}</div></div>
       ${isAdmin ? `<p class="sunday-set-guidance">Try the full set before scheduling it. AI suggestions require editor review; a disagreement with the stored answer is flagged, never changed automatically.</p><div class="sunday-ai-review" data-sunday-ai-review>${setQuestions().filter(q=>aiReviews.has(q.id)).map(q=>{const r=aiReviews.get(q.id);return `<article><b>Question ${setQuestions().indexOf(q)+1} · ${esc(r.topic_area)} · ${esc(r.confidence)} confidence</b><p>AI answer ${esc(r.answer)} · Stored answer ${esc(q.correct_answer)} ${r.answer!==q.correct_answer?'⚠️ Check this answer before release':''}</p><p>${esc(r.explanation)}</p>${selected.status==='draft'?`<button type="button" class="btn btn-blue btn-small" data-apply-sunday-ai="${esc(q.id)}">Apply topic & explanation</button>`:'<small>Return this set to draft to edit.</small>'}</article>`}).join('')}</div>` : ''}
       ${isAdmin ? `<form class="sunday-set-schedule" data-sunday-set-schedule><label>Choose a Sunday<input type="date" name="scheduled_sunday" value="${esc(suggestedSunday(selected))}" required></label><button type="submit" class="btn btn-primary btn-small" ${setQuestions().length!==40?'disabled':''}>Schedule this set</button>${selected.scheduled_sunday ? '<button type="button" class="btn btn-ghost btn-small" data-unschedule-sunday-set>Remove date</button>' : ''}<small>Scheduling requires 40 complete published questions. Dates must be Sundays.</small></form>` : ''}
+      ${setUploadHtml(selected)}
       <div class="sunday-set-question-list">${setQuestions().map((q,i)=>`<article><b>${i+1}</b><div><strong>${esc(q.topic)}</strong><p>${esc(q.question_text).slice(0,160)}</p><small>${esc(q.status)} · Answer ${esc(q.correct_answer)}</small></div><button type="button" class="btn btn-blue btn-small" data-edit-sunday-question="${esc(q.id)}">Edit</button>${selected.status==='draft'&&isAdmin?`<button type="button" class="btn btn-ghost btn-small" data-remove-from-sunday-set="${esc(q.id)}">Remove</button>`:''}</article>`).join('') || '<p>Add questions to build this set.</p>'}</div>
       ${isAdmin && selected.status==='draft' && unassigned.length && setQuestions().length<40 ? `<details class="sunday-unassigned"><summary>Add from unassigned questions (${unassigned.length})</summary><button type="button" class="btn btn-gold btn-small" data-fill-sunday-set>Fill available places</button><div>${unassigned.slice(0,100).map(q=>`<article><span>${esc(q.question_text).slice(0,130)}</span><button type="button" class="btn btn-blue btn-small" data-add-to-sunday-set="${esc(q.id)}">Add to Set ${selected.set_number}</button></article>`).join('')}</div></details>` : ''}
     </div>` : '<p class="sunday-editor-lock">Select a set to view and edit its questions.</p>'}
@@ -294,9 +299,14 @@ async function revokeEditor(email) {
 }
 async function loadQuestions() {
   if (!canEdit || !supabase) return
-  const { data, error } = await supabase.from('bece_question_bank').select(QUESTIONS).order('created_at', { ascending: true }).limit(1000)
-  if (error) { toast(`Could not load Sunday BECE questions: ${error.message}`, 'error'); return }
-  questions = (data || []).map(normalise)
+  const loaded = []
+  for (let offset=0; ; offset+=1000) {
+    const { data, error } = await supabase.from('bece_question_bank').select(QUESTIONS).order('created_at', { ascending: true }).order('id').range(offset,offset+999)
+    if (error) { toast(`Could not load Sunday BECE questions: ${error.message}`, 'error'); return }
+    loaded.push(...(data || []))
+    if (!data || data.length<1000) break
+  }
+  questions = loaded.map(normalise)
   if (document.querySelector('[data-sunday-set-manager]')) renderAdminSections()
 }
 async function loadSets() {
@@ -539,6 +549,9 @@ document.addEventListener('click', async event => {
   const revoke = event.target.closest('[data-revoke-sunday-editor]')?.dataset?.revokeSundayEditor
   if (revoke) { event.preventDefault(); await revokeEditor(revoke); return }
   if (event.target.closest('[data-load-sunday-questions]')) { event.preventDefault(); await loadQuestions(); return }
+  if (event.target.closest('[data-download-sunday-set-template]')) { event.preventDefault(); XLSX.writeFile(setImportTemplate(XLSX), 'sunday-bece-set-upload-template.xlsx'); return }
+  if (event.target.closest('[data-confirm-sunday-set-import]')) { event.preventDefault(); await confirmSetImport(); return }
+  if (event.target.closest('[data-cancel-sunday-set-import]')) { event.preventDefault(); if (!importingSet) {pendingSetImport=null;renderAdminSections()} return }
   if (event.target.closest('[data-create-sunday-set]')) { event.preventDefault(); await createSet(); return }
   if (event.target.closest('[data-preview-sunday-set]')) { event.preventDefault(); if (isAdmin && selectedSetId) window.dispatchEvent(new CustomEvent('mezzoSundayPreview', { detail: { setId: selectedSetId } })); return }
   if (event.target.closest('[data-analyse-sunday-set]')) { event.preventDefault(); await analyseSelectedSet(); return }
@@ -574,3 +587,77 @@ window.addEventListener('load', () => setTimeout(boot, 1300))
 window.addEventListener('mezzoProfileUpdated', () => { checked = false; mountedAdminScreen = null; scheduleBoot() })
 new MutationObserver(scheduleBoot).observe(document.documentElement, { childList: true, subtree: true })
 setTimeout(boot, 1800)
+
+function setUploadHtml(set) {
+  if (!canEdit) return ''
+  const available=40-setQuestions(set.id).length
+  const unlocked=set.status==='draft'&&!set.scheduled_sunday&&available>0&&!importingSet
+  const pending=pendingSetImport?.setId===set.id ? pendingSetImport : null
+  return `<section class="sunday-set-upload glass-card" style="padding:18px;margin:16px 0;border-radius:16px" aria-label="Upload questions into selected set">
+    <h3>Upload questions into Set ${esc(set.set_number)}</h3>
+    <p>Excel (.xlsx/.xls), CSV or JSON · ${Math.max(0,available)} places available. Questions are added to this set.</p>
+    <div class="sunday-set-actions"><button type="button" class="btn btn-blue btn-small" data-download-sunday-set-template>Download Excel template</button><label class="btn btn-gold btn-small" aria-disabled="${!unlocked}"><span>${importingSet?'Importing…':'Upload questions'}</span><input type="file" data-sunday-set-upload accept=".xlsx,.xls,.csv,.json" ${unlocked?'':'disabled'} style="display:block;max-width:250px;margin-top:6px"></label></div>
+    ${!unlocked&&!importingSet?'<p>Uploads require an unscheduled draft set with fewer than 40 questions.</p>':''}
+    ${pending ? `<div role="status">${pending.importError?'<p role="alert">Import failed: '+esc(pending.importError)+'</p>':''}<p><strong>${esc(pending.fileName)}</strong> · ${pending.rows.length} questions · Target: Set ${esc(set.set_number)}</p>${pending.errors.length ? '<ul role="alert">'+pending.errors.slice(0,50).map(error=>'<li>'+esc(error)+'</li>').join('')+'</ul><p>Nothing has been imported. Correct the file and upload it again.</p>' : '<p>Validation passed. Review the questions below, then import.</p>'}
+    ${pending.rows.length?'<div style="overflow:auto;max-height:320px"><table style="width:100%;text-align:left"><thead><tr><th>#</th><th>Question</th><th>Answer</th><th>Topic</th></tr></thead><tbody>'+pending.rows.map((row,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(row.question_text)+'</td><td>'+esc(row.correct_answer)+'</td><td>'+esc(row.topic_area)+'</td></tr>').join('')+'</tbody></table></div>':''}
+    <div class="sunday-set-actions"><button type="button" class="btn btn-gold btn-small" data-confirm-sunday-set-import ${pending.errors.length||!unlocked?'disabled':''}>${importingSet?'Importing…':'Import '+pending.rows.length+' questions into Set '+esc(set.set_number)}</button><button type="button" class="btn btn-ghost btn-small" data-cancel-sunday-set-import ${importingSet?'disabled':''}>Cancel upload</button></div></div>` : ''}
+  </section>`
+}
+async function previewSetImport(file) {
+  const set=selectedSet()
+  if(!file||!canEdit||!set||importingSet) return
+  const setId=set.id
+  if(set.status!=='draft'||set.scheduled_sunday) return toast('Select an unscheduled draft set before uploading.','warn')
+  pendingSetImport={setId,fileName:file.name,rows:[],errors:[]}
+  try {
+    if(file.size>5*1024*1024) throw new Error('Choose a file smaller than 5 MB.')
+    let raw
+    if(/\.json$/i.test(file.name)) {const parsed=JSON.parse(await file.text());raw=Array.isArray(parsed)?parsed:parsed.questions;if(!Array.isArray(raw)) throw new Error('JSON must be an array of questions or an object with a questions array.')}
+    else if(/\.(xlsx|xls|csv)$/i.test(file.name)) raw=readSetImportWorkbook(XLSX,await file.arrayBuffer())
+    else throw new Error('Choose an Excel, CSV or JSON file.')
+    if(raw.length>1000) throw new Error('Too many rows. Upload only the questions needed for one 40-question set.')
+    const checked=validateSetImport(raw,{setId,capacity:40-setQuestions(setId).length,existing:questions})
+    pendingSetImport={setId,fileName:file.name,...checked,rows:checked.rows.map(row=>({...row,id:crypto.randomUUID()}))}
+  } catch(error) {pendingSetImport={setId,fileName:file.name,rows:[],errors:[error.message||'The file could not be read.']}}
+  renderAdminSections()
+}
+async function confirmSetImport() {
+  const pending=pendingSetImport
+  if(importingSet||!pending||pending.errors.length||!pending.rows.length||pending.setId!==selectedSetId) return
+  importingSet=true;renderAdminSections()
+  let complete=false
+  try {
+    await checkAccess(true)
+    if(!canEdit) throw new Error('Sign in with question editor access before importing.')
+    const [setResult,questionResult,userResult]=await Promise.all([
+      supabase.from('sunday_bece_sets').select('id,set_number,status,scheduled_sunday').eq('id',pending.setId).single(),
+      supabase.from('bece_question_bank').select(QUESTIONS).eq('sunday_set_id',pending.setId),
+      supabase.auth.getUser()
+    ])
+    if(setResult.error||questionResult.error||userResult.error) throw new Error(setResult.error?.message||questionResult.error?.message||userResult.error?.message)
+    const set=setResult.data,current=questionResult.data||[],user=userResult.data?.user
+    if(!user) throw new Error('Your session ended. Sign in again before importing.')
+    const alreadySaved=current.filter(row=>pending.rows.some(item=>item.id===row.id))
+    if(alreadySaved.length===pending.rows.length) complete=true
+    else {
+      if(alreadySaved.length) throw new Error('Some uploaded rows are already saved. Reload the set before continuing.')
+      if(set.status!=='draft'||set.scheduled_sunday) throw new Error('This set is no longer an unscheduled draft.')
+      const checked=validateSetImport(pending.rows,{setId:pending.setId,capacity:40-current.length,existing:[...questions,...current]})
+      if(checked.errors.length) throw new Error(checked.errors.join(' '))
+      const payload=checked.rows.map((row,i)=>({...row,id:pending.rows[i].id,created_by:user.id,updated_at:new Date().toISOString()}))
+      const result=await supabase.from('bece_question_bank').insert(payload).select(QUESTIONS)
+      if(result.error) throw result.error
+      if(result.data?.length!==payload.length) throw new Error('Import confirmation was incomplete. Reload the set to check saved questions before retrying.')
+      questions=[...questions.filter(row=>!payload.some(item=>item.id===row.id)),...result.data.map(normalise)]
+      complete=true
+    }
+    if(complete) {pendingSetImport=null;await loadQuestions();toast(pending.rows.length+' questions added to Set '+set.set_number+'. Review them before marking ready.','success')}
+  } catch(error) {
+    pendingSetImport={...pending,errors:[]}
+    toast('Import failed: '+(error.message||'Check your connection and retry.'),'error')
+    pendingSetImport.importError=error.message||'Check your connection and retry.'
+  } finally {importingSet=false;renderAdminSections()}
+}
+document.addEventListener('change',event=>{
+  if(event.target?.matches?.('[data-sunday-set-upload]')) previewSetImport(event.target.files?.[0])
+})
