@@ -1,3 +1,4 @@
+import './bece-school-reports.js'
 import * as XLSX from 'xlsx'
 import { validateSetImport, readSetImportWorkbook, setImportTemplate } from './sunday-set-import.js'
 import { restoreBeceDrafts, clearBeceDraft, rememberBeceDraft } from './bece-editor-drafts.js'
@@ -141,7 +142,7 @@ function setManagerHtml() {
   const selected = selectedSet(), assigned = questions.filter(q => q.sunday_set_id).length
   const complete = sets.filter(s => setQuestions(s.id).length === 40).length
   const unassigned = questions.filter(q => !q.sunday_set_id)
-  return `<section class="sunday-set-manager" data-sunday-set-manager>
+  return `<section class="sunday-set-manager" data-sunday-set-manager>${isAdmin ? '<p><button type="button" class="btn btn-blue" data-bece-school-reports>BECE Results & School Reports</button></p>' : ''}
     <header class="sunday-set-hero"><div><span>BECE QUESTION PROGRAMME</span><h2>Sunday question sets</h2><p>Forty unique questions per set. Choose the set and Sunday before the trial opens.</p></div>${isAdmin ? '<button type="button" class="btn btn-gold" data-create-sunday-set>Create next set</button>' : ''}</header>
     <div class="sunday-set-stats"><div><strong>${sets.length}</strong><span>Sets</span></div><div><strong>${complete}</strong><span>Complete</span></div><div><strong>${assigned}</strong><span>Assigned questions</span></div><div><strong>${unassigned.length}</strong><span>Unassigned</span></div></div>
     <div class="sunday-set-grid" aria-label="Sunday BECE sets">${sets.map(s => {const count=setQuestions(s.id).length;return `<button type="button" class="sunday-set-card ${s.id===selectedSetId?'selected':''}" data-select-sunday-set="${esc(s.id)}" aria-pressed="${s.id===selectedSetId}"><span>SET ${s.set_number}</span><strong>${count}/40 questions</strong><small>${s.scheduled_sunday ? '📅 '+esc(s.scheduled_sunday) : 'Not scheduled'} · ${esc(s.status)}</small><i style="width:${Math.min(count,40)*2.5}%"></i></button>`}).join('') || '<p>No sets yet.</p>'}</div>

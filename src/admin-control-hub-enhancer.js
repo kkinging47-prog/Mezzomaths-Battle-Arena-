@@ -4,6 +4,7 @@ let queued = false
 let activePanel = 'overview'
 
 const HUB_BUTTONS = [
+  { key: 'bece-results', icon: '📊', title: 'BECE Results & School Reports', desc: 'Results by school, reports and school-head email' },
   { key: 'settings', icon: '⚙️', title: 'Admin Settings', desc: 'Logo, branding and Mezzo Staff access controls' },
   { key: 'course-builder', icon: '🎓', title: 'Course Builder', desc: 'Create and manage self-taught courses' },
   { key: 'coupons-grants', icon: '🎟️', title: 'Coupons & Grants', desc: 'Create coupons and grant course access' },
@@ -73,6 +74,7 @@ function toast(message) {
 }
 function openAdminTarget(key) {
   activePanel = key
+  if (key === 'bece-results') { window.dispatchEvent(new CustomEvent('mezzoOpenBECEAdminResults')); return }
   if (key === 'teacher-dashboard') {
     document.querySelector('[data-teacher-tools-page]')?.click()
     toast('Opening Teacher Dashboard tools.')
