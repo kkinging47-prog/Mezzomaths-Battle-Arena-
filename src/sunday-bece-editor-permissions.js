@@ -44,6 +44,7 @@ let mountedAdminScreen = null
 let saving = false
 let pendingSetImport = null
 let importingSet = false
+let setImportReadId = 0
 
 function esc(value = '') {
   return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
@@ -549,9 +550,10 @@ document.addEventListener('click', async event => {
   const revoke = event.target.closest('[data-revoke-sunday-editor]')?.dataset?.revokeSundayEditor
   if (revoke) { event.preventDefault(); await revokeEditor(revoke); return }
   if (event.target.closest('[data-load-sunday-questions]')) { event.preventDefault(); await loadQuestions(); return }
+  if (event.target.closest('[data-choose-sunday-set-file]')) { event.preventDefault(); if(!importingSet) document.querySelector('[data-sunday-set-upload]')?.click(); return }
   if (event.target.closest('[data-download-sunday-set-template]')) { event.preventDefault(); XLSX.writeFile(setImportTemplate(XLSX), 'sunday-bece-set-upload-template.xlsx'); return }
   if (event.target.closest('[data-confirm-sunday-set-import]')) { event.preventDefault(); await confirmSetImport(); return }
-  if (event.target.closest('[data-cancel-sunday-set-import]')) { event.preventDefault(); if (!importingSet) {pendingSetImport=null;renderAdminSections()} return }
+  if (event.target.closest('[data-cancel-sunday-set-import]')) { event.preventDefault(); if (!importingSet) {setImportReadId++;pendingSetImport=null;renderAdminSections()} return }
   if (event.target.closest('[data-create-sunday-set]')) { event.preventDefault(); await createSet(); return }
   if (event.target.closest('[data-preview-sunday-set]')) { event.preventDefault(); if (isAdmin && selectedSetId) window.dispatchEvent(new CustomEvent('mezzoSundayPreview', { detail: { setId: selectedSetId } })); return }
   if (event.target.closest('[data-analyse-sunday-set]')) { event.preventDefault(); await analyseSelectedSet(); return }
@@ -596,19 +598,21 @@ function setUploadHtml(set) {
   return `<section class="sunday-set-upload glass-card" style="padding:18px;margin:16px 0;border-radius:16px" aria-label="Upload questions into selected set">
     <h3>Upload questions into Set ${esc(set.set_number)}</h3>
     <p>Excel (.xlsx/.xls), CSV or JSON · ${Math.max(0,available)} places available. Questions are added to this set.</p>
-    <div class="sunday-set-actions"><button type="button" class="btn btn-blue btn-small" data-download-sunday-set-template>Download Excel template</button><label class="btn btn-gold btn-small" aria-disabled="${!unlocked}"><span>${importingSet?'Importing…':'Upload questions'}</span><input type="file" data-sunday-set-upload accept=".xlsx,.xls,.csv,.json" ${unlocked?'':'disabled'} style="display:block;max-width:250px;margin-top:6px"></label></div>
+    <div class="sunday-set-actions"><button type="button" class="btn btn-blue btn-small" data-download-sunday-set-template>Download Excel template</button><button type="button" class="btn btn-blue btn-small" data-choose-sunday-set-file ${importingSet?'disabled':''}>Choose File</button><input type="file" data-sunday-set-upload accept=".xlsx,.xls,.csv,.json" hidden><button type="button" class="btn btn-gold btn-small" data-confirm-sunday-set-import ${!unlocked||!pending||pending.reading||pending.errors.length||!pending.rows.length?'disabled':''}>${importingSet?'Uploading…':'Upload to Set '+esc(set.set_number)}</button></div>
+    <p aria-live="polite" data-sunday-upload-file-name>${pending ? esc(pending.fileName)+(pending.reading?' · Reading file…':'') : 'No file chosen. Choose your file, review the preview, then click Upload to Set.'}</p>
     ${!unlocked&&!importingSet?'<p>Uploads require an unscheduled draft set with fewer than 40 questions.</p>':''}
-    ${pending ? `<div role="status">${pending.importError?'<p role="alert">Import failed: '+esc(pending.importError)+'</p>':''}<p><strong>${esc(pending.fileName)}</strong> · ${pending.rows.length} questions · Target: Set ${esc(set.set_number)}</p>${pending.errors.length ? '<ul role="alert">'+pending.errors.slice(0,50).map(error=>'<li>'+esc(error)+'</li>').join('')+'</ul><p>Nothing has been imported. Correct the file and upload it again.</p>' : '<p>Validation passed. Review the questions below, then import.</p>'}
+    ${pending && !pending.reading ? `<div role="status">${pending.importError?'<p role="alert">Import failed: '+esc(pending.importError)+'</p>':''}<p><strong>${esc(pending.fileName)}</strong> · ${pending.rows.length} questions · Target: Set ${esc(set.set_number)}</p>${pending.errors.length ? '<ul role="alert">'+pending.errors.slice(0,50).map(error=>'<li>'+esc(error)+'</li>').join('')+'</ul><p>Nothing has been imported. Correct the file and upload it again.</p>' : '<p>Validation passed. Review the questions below, then import.</p>'}
     ${pending.rows.length?'<div style="overflow:auto;max-height:320px"><table style="width:100%;text-align:left"><thead><tr><th>#</th><th>Question</th><th>Answer</th><th>Topic</th></tr></thead><tbody>'+pending.rows.map((row,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(row.question_text)+'</td><td>'+esc(row.correct_answer)+'</td><td>'+esc(row.topic_area)+'</td></tr>').join('')+'</tbody></table></div>':''}
-    <div class="sunday-set-actions"><button type="button" class="btn btn-gold btn-small" data-confirm-sunday-set-import ${pending.errors.length||!unlocked?'disabled':''}>${importingSet?'Importing…':'Import '+pending.rows.length+' questions into Set '+esc(set.set_number)}</button><button type="button" class="btn btn-ghost btn-small" data-cancel-sunday-set-import ${importingSet?'disabled':''}>Cancel upload</button></div></div>` : ''}
+    <div class="sunday-set-actions"><button type="button" class="btn btn-ghost btn-small" data-cancel-sunday-set-import ${importingSet?'disabled':''}>Cancel upload</button></div></div>` : ''}
   </section>`
 }
 async function previewSetImport(file) {
   const set=selectedSet()
   if(!file||!canEdit||!set||importingSet) return
   const setId=set.id
-  if(set.status!=='draft'||set.scheduled_sunday) return toast('Select an unscheduled draft set before uploading.','warn')
-  pendingSetImport={setId,fileName:file.name,rows:[],errors:[]}
+  const readId=++setImportReadId
+  pendingSetImport={setId,fileName:file.name,rows:[],errors:[],reading:true}
+  renderAdminSections()
   try {
     if(file.size>5*1024*1024) throw new Error('Choose a file smaller than 5 MB.')
     let raw
@@ -616,9 +620,10 @@ async function previewSetImport(file) {
     else if(/\.(xlsx|xls|csv)$/i.test(file.name)) raw=readSetImportWorkbook(XLSX,await file.arrayBuffer())
     else throw new Error('Choose an Excel, CSV or JSON file.')
     if(raw.length>1000) throw new Error('Too many rows. Upload only the questions needed for one 40-question set.')
+    if(readId!==setImportReadId) return
     const checked=validateSetImport(raw,{setId,capacity:40-setQuestions(setId).length,existing:questions})
     pendingSetImport={setId,fileName:file.name,...checked,rows:checked.rows.map(row=>({...row,id:crypto.randomUUID()}))}
-  } catch(error) {pendingSetImport={setId,fileName:file.name,rows:[],errors:[error.message||'The file could not be read.']}}
+  } catch(error) {if(readId!==setImportReadId) return;pendingSetImport={setId,fileName:file.name,rows:[],errors:[error.message||'The file could not be read.']}}
   renderAdminSections()
 }
 async function confirmSetImport() {
