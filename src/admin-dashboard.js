@@ -1,3 +1,4 @@
+import './bece-school-reports.js'
 import './admin-dashboard.css'
 import { supabase, isSupabaseConfigured } from './supabaseClient.js'
 
@@ -6,6 +7,7 @@ const areas = [
   ['users','Users & roles','Edit accounts and status'],
   ['editors','BECE editors','Assign question editors'],
   ['sunday','Sunday BECE sets','Plan, edit and schedule Sunday sets'],
+  ['bece-results','BECE Results & School Reports','View results by school, generate PDF/CSV reports and email school heads'],
   ['bece','BECE questions','Upload and edit questions'],
   ['control','Control centre','Settings and health'],
   ['questions','Question bank','Create and edit questions'],
@@ -169,7 +171,7 @@ async function trackNavigation(){
 document.addEventListener('click',e=>{
   if(e.target.closest('[data-admin-open-app]')){e.preventDefault();document.querySelector('.screen-tabs [data-target="home"]')?.click();return}
   if(e.target.closest('[data-admin-sign-in]')){e.preventDefault();document.querySelector('.screen-tabs [data-target="auth"]')?.click();return}
-  const go=e.target.closest('[data-admin-go]');if(go){e.preventDefault();current=go.dataset.adminGo;page=0;queue();return}
+  const go=e.target.closest('[data-admin-go]');if(go){e.preventDefault();if(go.dataset.adminGo==='bece-results'){window.dispatchEvent(new CustomEvent('mezzoOpenBECEAdminResults'));return}current=go.dataset.adminGo;page=0;queue();return}
   const role=e.target.closest('[data-admin-role-card]');if(role){e.preventDefault();filter=role.dataset.adminRoleCard;search='';page=0;queue();return}
   if(e.target.closest('[data-admin-reload]')){loaded=false;load();return}
   const p=e.target.closest('[data-admin-page]');if(p){page=Math.max(0,page+(p.dataset.adminPage==='next'?1:-1));queue();return}
