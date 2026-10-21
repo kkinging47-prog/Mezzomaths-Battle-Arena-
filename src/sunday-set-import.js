@@ -1,11 +1,12 @@
 export const SET_IMPORT_COLUMNS = ['question_text','option_a','option_b','option_c','option_d','correct_answer','explanation','topic','topic_area','difficulty','year','question_image_url','option_a_image_url','option_b_image_url','option_c_image_url','option_d_image_url','source_page','editor_notes']
 const text=value=>String(value??'').trim()
 const key=value=>text(value).toLowerCase().replace(/[\s-]+/g,'_')
-const fingerprint=row=>text(row.question_text).toLowerCase().replace(/\s+/g,' ')
+const fingerprint=row=>['question_text','option_a','option_b','option_c','option_d','question_image_url','option_a_image_url','option_b_image_url','option_c_image_url','option_d_image_url'].map(name=>text(row[name]).toLowerCase().replace(/\s+/g,' ')).join('|')
 export function validateSetImport(input,{setId,capacity,existing=[]}={}) {
  const errors=[],rows=[]
  if(!Array.isArray(input)) return {rows,errors:['The file must contain a table of questions.']}
- const seen=new Set(existing.map(fingerprint).filter(Boolean))
+ const seen=new Set()
+ const assigned=new Map(existing.filter(row=>row.sunday_set_id).map(row=>[fingerprint(row),row.sunday_set_id]))
  input.forEach((raw,index)=>{
   const source=Object.fromEntries(Object.entries(raw||{}).map(([name,value])=>[key(name),text(value)]))
   const row=Object.fromEntries(SET_IMPORT_COLUMNS.map(name=>[name,source[name]||'']))
@@ -20,7 +21,8 @@ export function validateSetImport(input,{setId,capacity,existing=[]}={}) {
    if(row[name]) {try {const url=new URL(row[name]);if(!['https:','http:'].includes(url.protocol)) throw Error()} catch {errors.push(`Row ${line}: ${name} must be an http or https image URL.`)}}
   }
   const fp=fingerprint(row)
-  if(fp&&seen.has(fp)) errors.push(`Row ${line}: this question already exists in the question bank or upload.`)
+  if(fp&&seen.has(fp)) errors.push(`Row ${line}: this question appears more than once in this upload.`)
+  else if(assigned.has(fp)) errors.push(`Row ${line}: this question is already assigned to ${assigned.get(fp)===setId?'the selected Sunday set':'another Sunday set'}. Choose a different question to avoid repeating Sunday papers.`)
   if(fp) seen.add(fp)
   rows.push({...row,year:row.year||'2027 Prep',topic:row.topic||'BECE Exam Practice',topic_area:row.topic_area||row.topic||'BECE Exam Practice',type:'pastStyle',status:'Published',source_name:'Sunday BECE Special',math_format:'unicode',sunday_set_id:setId})
  })
