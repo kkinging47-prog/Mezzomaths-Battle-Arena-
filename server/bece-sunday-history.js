@@ -1,3 +1,5 @@
+import {enrichTopicAnswers} from './question-topic-analysis.js'
+import {topicTotals} from '../src/question-topics.js'
 import crypto from 'node:crypto'
 import { verifyTrialSession, supabaseRows, safeQuestion, SUNDAY_QUESTION_COLUMNS } from '../api/_bece-sunday-security.js'
 const secret=()=>String(process.env.BECE_SUNDAY_SESSION_SECRET||process.env.SUPABASE_SERVICE_ROLE_KEY||'').trim()
@@ -49,6 +51,7 @@ export default async function handler(req,res) {
      week.reconstructed=true
     } catch { week.review_unavailable=true }
    }
+   if(requested&&week.answers.length){const result=await enrichTopicAnswers(week.answers,{actor:'candidate:'+candidateId,maxNew:40});week.answers=result.answers;week.topic_coverage=topicTotals(result.answers);week.topics=week.topic_coverage.topics;week.topic_analysis_notice=result.notice;week.topic_report_loaded=true}
    weeks.push(week)
   }
   res.setHeader('Cache-Control','no-store')
