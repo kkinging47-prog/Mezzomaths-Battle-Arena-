@@ -19,6 +19,20 @@
     <link rel="stylesheet" href="/src/mobile-quiz-feedback-fix.css" />
   </head>
   <body>
+    <script>
+      // Older Safari supports AbortController but not AbortSignal.timeout.
+      // Preserve the native implementation wherever it is available.
+      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout !== 'function' && typeof AbortController !== 'undefined') {
+        AbortSignal.timeout = function (milliseconds) {
+          if (!Number.isSafeInteger(milliseconds) || milliseconds < 0) throw new RangeError('Invalid timeout');
+          var controller = new AbortController();
+          setTimeout(function () {
+            controller.abort(new DOMException('The operation timed out.', 'TimeoutError'));
+          }, milliseconds);
+          return controller.signal;
+        };
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script type="module" src="/src/role-safe-signup-handler.js"></script>
