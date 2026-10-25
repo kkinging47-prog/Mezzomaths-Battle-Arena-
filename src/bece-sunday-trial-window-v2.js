@@ -1,3 +1,5 @@
+import {classifiedTopic,TOPICS} from './question-topics.js'
+import {analyseQuestionTopics,cachedQuestionTopic} from './question-topic-client.js'
 import './bece-sunday-trial-window.css'
 import { supabase, isSupabaseConfigured } from './supabaseClient.js'
 
@@ -13,7 +15,7 @@ let submitting = false
 let starting = false
 let historyCache = null
 let restoringLegacy = false
-let lastWindowOpen = null
+let lastWindowOpen = null,topicReportBusy=false,topicDisplayAttempt=null
 
 const esc = (v = '') => String(v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
 const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
@@ -83,7 +85,7 @@ async function loadTrialQuestions() {
 }
 function analyse(attempt) {
   const byTopic = {}
-  attempt.answers.forEach(a => { const t = a.topic || 'General'; byTopic[t] ||= { total: 0, wrong: 0 }; byTopic[t].total++; if (!a.correct) byTopic[t].wrong++ })
+  attempt.answers.forEach(a => { const t = classifiedTopic(a.topic_analysis);if(!t)return; byTopic[t] ||= { total: 0, wrong: 0 }; byTopic[t].total++; if (!a.correct) byTopic[t].wrong++ })
   const weak = Object.entries(byTopic).filter(([, v]) => v.wrong).sort((a,b) => b[1].wrong - a[1].wrong)
   const strong = Object.entries(byTopic).filter(([, v]) => !v.wrong).map(([t]) => t)
   const advice = weak.slice(0, 5).map(([topic, v]) => `Revise ${topic}: you missed ${v.wrong} out of ${v.total} question(s). Practise worked examples before next Sunday.`)
@@ -118,7 +120,7 @@ function shell(content) {
 async function schoolResults() {
   const {data,error}=await supabase.rpc('bece_sunday_school_results')
   if(error) return alert('School reports unavailable. Confirm database migration and school sign-in.')
-  const rows=(data||[]).map(x=>'<tr><td>'+esc(x.full_name)+'</td><td>'+esc(x.class_level)+'</td><td>'+esc(x.week_start)+'</td><td>'+esc(x.score)+'/'+esc(x.total)+'</td><td>'+esc(Object.entries(x.topics||{}).filter(([t,v])=>v.correct<v.total).map(([t,v])=>t+': '+(v.total-v.correct)+' missed').join('; ')||'None')+'</td></tr>').join('')
+  const rows=(data||[]).map(x=>'<tr><td>'+esc(x.full_name)+'</td><td>'+esc(x.class_level)+'</td><td>'+esc(x.week_start)+'</td><td>'+esc(x.score)+'/'+esc(x.total)+'</td><td>'+esc(Object.entries(x.topics||{}).filter(([t,v])=>TOPICS.includes(t)&&v.correct<v.total).map(([t,v])=>t+': '+(v.total-v.correct)+' missed').join('; ')||'No confirmed topic gap; AI analysis may be pending')+'</td></tr>').join('')
   shell('<section class="sunday-report light-card"><h2>School examination results</h2><p>Official Sunday and supervised laboratory results.</p><div style="overflow-x:auto"><table><thead><tr><th>Student</th><th>Class</th><th>Sunday paper</th><th>Score</th><th>Areas to improve</th></tr></thead><tbody>'+rows+'</tbody></table></div><button class="btn btn-blue" data-sunday-school-mode>Back to School Portal</button></section>')
 }
 async function schoolPortal() {
@@ -360,11 +362,14 @@ async function finishTrial() {
 function renderReport(attempt = currentAttempt()) {
   if (!attempt) return renderSundayHome()
   previewReport = Boolean(attempt.preview)
-  const a = attempt.ai_analysis || analyse(attempt)
-  const review = (attempt.answers || []).map((item, index) => `<article class="sunday-review-item ${item.correct ? 'correct' : 'incorrect'}"><h3>Question ${index + 1} · ${esc(item.topic_area || item.topic || 'General')} · ${item.correct ? 'Correct' : 'Needs review'}</h3><p>${esc(item.question_text || '')}</p>${item.question_image_url ? `<img src="${esc(item.question_image_url)}" alt="Question diagram">` : ''}${(item.options || []).map((option,i)=>'<p><b>'+String.fromCharCode(65+i)+'.</b> '+esc(option)+(item.option_image_urls?.[i] ? '<img src="'+esc(item.option_image_urls[i])+'" alt="Option '+String.fromCharCode(65+i)+'">' : '')+'</p>').join('')}<p>Your answer: <b>${esc(item.selected_answer || '—')}${item.options?.['ABCD'.indexOf(item.selected_answer)] ? ` · ${esc(item.options['ABCD'.indexOf(item.selected_answer)])}` : ''}</b> · Correct answer: <b>${esc(item.correct_answer || '—')}</b></p><p><strong>How to solve it:</strong> ${esc(item.explanation || 'A worked explanation is awaiting editor review.')}</p></article>`).join('')
-  shell(`<section class="sunday-report light-card"><div class="report-score"><span>${attempt.preview ? `Admin trial · Set ${esc(attempt.set_number)}` : '📊 Progress Report'}</span><h1>${attempt.score}/${attempt.total}</h1><p>${attempt.percent}% · Time: ${fmt(attempt.time_taken_seconds * 1000)}</p></div><div class="report-ai"><h2>Performance analysis</h2><p>${esc(a.speed)}</p>${a.strong?.length ? `<p><b>Strong areas:</b> ${a.strong.map(esc).join(', ')}</p>` : ''}${a.weak?.length ? `<p><b>Areas to improve:</b> ${a.weak.slice(0,5).map(([t,v]) => `${esc(t)} (${v.wrong} missed)`).join(', ')}</p>` : '<p><b>Excellent:</b> no weak area detected.</p>'}<ul>${(a.advice || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="sunday-actions"><button class="btn btn-blue" ${attempt.preview ? 'data-sunday-exit-preview' : 'data-bece-sunday-open'}>${attempt.preview ? 'Return to admin workspace' : 'Back to Sunday Trial'}</button>${!attempt.preview ? '<button class="btn btn-blue" data-sunday-history>My weekly scores and rank</button>' : ''}<button class="btn btn-gold" onclick="window.print()">Print / Save Report</button></div></section><section class="sunday-review light-card"><h2>Question by question feedback</h2>${attempt.reconstructed ? '<p>Earlier review uses saved selections and the current question bank. Your recorded score is unchanged.</p>' : ''}${review || '<p>Detailed review is unavailable for this earlier attempt.</p>'}</section>${attempt.preview ? '' : leaderboardHtml(localLeaders())}`)
+  topicDisplayAttempt=attempt
+  const a = analyse(attempt),classifiedCount=(attempt.answers||[]).filter(answer=>classifiedTopic(answer.topic_analysis)).length
+  const review = (attempt.answers || []).map((item, index) => `<article class="sunday-review-item ${item.correct ? 'correct' : 'incorrect'}"><h3>Question ${index + 1} · ${esc(classifiedTopic(item.topic_analysis)||'Topic analysis pending review')} · ${item.correct ? 'Correct' : 'Needs review'}</h3><p>${esc(item.question_text || '')}</p>${item.question_image_url ? `<img src="${esc(item.question_image_url)}" alt="Question diagram">` : ''}${(item.options || []).map((option,i)=>'<p><b>'+String.fromCharCode(65+i)+'.</b> '+esc(option)+(item.option_image_urls?.[i] ? '<img src="'+esc(item.option_image_urls[i])+'" alt="Option '+String.fromCharCode(65+i)+'">' : '')+'</p>').join('')}<p>Your answer: <b>${esc(item.selected_answer || '—')}${item.options?.['ABCD'.indexOf(item.selected_answer)] ? ` · ${esc(item.options['ABCD'.indexOf(item.selected_answer)])}` : ''}</b> · Correct answer: <b>${esc(item.correct_answer || '—')}</b></p><p><strong>How to solve it:</strong> ${esc(item.explanation || 'A worked explanation is awaiting editor review.')}</p></article>`).join('')
+  shell(`<section class="sunday-report light-card" data-sunday-topic-report="${esc(attempt.week_start)}"><div class="report-score"><span>${attempt.preview ? `Admin trial · Set ${esc(attempt.set_number)}` : '📊 Progress Report'}</span><h1>${attempt.score}/${attempt.total}</h1><p>${attempt.percent}% · Time: ${fmt(attempt.time_taken_seconds * 1000)}</p></div><div class="report-ai"><h2>Performance analysis</h2><p>${esc(a.speed)}</p><p>${classifiedCount}/${attempt.answers?.length||0} responses classified from question content. Unclassified questions are excluded from strengths and learning-gap recommendations.</p>${attempt.topic_analysis_notice?`<p role="status">${esc(attempt.topic_analysis_notice)}</p>`:''}<button type="button" class="btn btn-blue" data-sunday-topic-refresh ${topicReportBusy?'disabled':''}>${topicReportBusy?'Analysing mathematical topics…':'Refresh AI topic analysis'}</button>${a.strong?.length ? `<p><b>Strong areas:</b> ${a.strong.map(esc).join(', ')}</p>` : ''}${a.weak?.length ? `<p><b>Areas to improve:</b> ${a.weak.slice(0,5).map(([t,v]) => `${esc(t)} (${v.wrong} missed)`).join(', ')}</p>` : classifiedCount?'<p>No weak area detected among classified questions.</p>':'<p>Topic evidence is pending. Learning gaps cannot yet be identified.</p>'}<ul>${(a.advice || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="sunday-actions"><button class="btn btn-blue" ${attempt.preview ? 'data-sunday-exit-preview' : 'data-bece-sunday-open'}>${attempt.preview ? 'Return to admin workspace' : 'Back to Sunday Trial'}</button>${!attempt.preview ? '<button class="btn btn-blue" data-sunday-history>My weekly scores and rank</button>' : ''}<button class="btn btn-gold" onclick="window.print()">Print / Save Report</button></div></section><section class="sunday-review light-card"><h2>Question by question feedback</h2>${attempt.reconstructed ? '<p>Earlier review uses saved selections and the current question bank. Your recorded score is unchanged.</p>' : ''}${review || '<p>Detailed review is unavailable for this earlier attempt.</p>'}</section>${attempt.preview ? '' : leaderboardHtml(localLeaders())}`)
   if (!attempt.preview) refreshDbLeaders()
+  if(!attempt.topic_report_loaded)refreshSundayTopicReport(attempt)
 }
+async function refreshSundayTopicReport(attempt=topicDisplayAttempt){if(topicReportBusy||!attempt)return;topicReportBusy=true;const week=attempt.week_start;try{let next;if(attempt.preview){const result=await analyseQuestionTopics(attempt.answers||[]);next={...attempt,answers:(attempt.answers||[]).map(q=>({...q,topic_analysis:cachedQuestionTopic(q)})),topic_analysis_notice:result.notice}}else{const result=await resultsRequest(week);next=result.weeks?.[0];if(!next)throw new Error('The saved result is not available yet. Retry topic analysis.');next={...attempt,...next}}next.topic_report_loaded=true;if(document.querySelector('[data-sunday-topic-report]')?.dataset.sundayTopicReport===week){topicReportBusy=false;renderReport(next)}}catch(error){if(document.querySelector('[data-sunday-topic-report]')?.dataset.sundayTopicReport===week){topicReportBusy=false;renderReport({...attempt,topic_report_loaded:true,topic_analysis_notice:error.message})}}finally{topicReportBusy=false}}
 function updateCountdowns() {
   const w = trialWindow()
   document.querySelectorAll('[data-bece-sunday-countdown]').forEach(el => { el.textContent = fmt(w.ms) })
@@ -378,6 +383,7 @@ function updateCountdowns() {
 function sync() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; injectBanner(); updateCountdowns() }) }
 
 document.addEventListener('click', e => {
+  if(e.target.closest('[data-sunday-topic-refresh]')){e.preventDefault();refreshSundayTopicReport();return}
   if(e.target.closest('[data-sunday-history]')) { e.preventDefault(); e.stopImmediatePropagation(); showResultsHistory(); return }
   const reviewWeek=e.target.closest('[data-sunday-review-week]')?.dataset.sundayReviewWeek
   if(reviewWeek) { e.preventDefault(); showWeeklyReview(reviewWeek); return }
@@ -429,7 +435,7 @@ async function resultsRequest(weekStart='') {
     if(!restored.ok || !profile.history_token) throw new Error(profile.error || 'Restore your candidate profile to view results.')
     c={...c,...profile}; saveJson(CANDIDATE_KEY,c)
   }
-  const response=await fetch('/api/bece-sunday-start?action=history',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(25000),body:JSON.stringify({history_token:c.history_token,week_start:weekStart})})
+  const response=await fetch('/api/bece-sunday-start?action=history',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(60000),body:JSON.stringify({history_token:c.history_token,week_start:weekStart})})
   const data=await response.json()
   if(!response.ok) {
     if(response.status===403) {delete c.history_token;saveJson(CANDIDATE_KEY,c)}

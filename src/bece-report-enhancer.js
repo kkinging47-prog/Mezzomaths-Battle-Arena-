@@ -1,6 +1,8 @@
+import {analyseQuestionTopics,cachedQuestionTopic} from './question-topic-client.js'
+import {classifiedTopic} from './question-topics.js'
 import './bece-report.css'
 
-let syncQueued = false
+let syncQueued = false,topicBusy=false,topicNotice=''
 
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback }
@@ -9,7 +11,8 @@ function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value))
 function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) }
 function today() { return new Date().toLocaleDateString() }
 function profile() { return readJson('mezzo_profile', {}) || {} }
-function detailedAnswers() { return readJson('mezzo_bece_detailed_answers', []) }
+function rawAnswers(){return readJson('mezzo_bece_detailed_answers', [])}
+function detailedAnswers(){return rawAnswers().map(row=>{const analysis=cachedQuestionTopic(row);return {...row,source_topic:row.source_topic||row.topic,topic:classifiedTopic(analysis)||'Topic analysis pending review',topic_analysis:analysis}})}
 function history() { return readJson('mezzo_bece_history', []) }
 function pct(a, b) { return b ? Math.round((a / b) * 100) : 0 }
 function strengthLabel(score) {
@@ -22,7 +25,7 @@ function topicStats() {
   const rows = detailedAnswers()
   const map = {}
   rows.forEach(row => {
-    const topic = row.topic || 'General BECE Practice'
+    const topic = classifiedTopic(row.topic_analysis);if(!topic)return
     map[topic] ||= { topic, answered: 0, correct: 0, wrong: 0, questions: [] }
     map[topic].answered += 1
     if (row.correct) map[topic].correct += 1
@@ -43,9 +46,9 @@ function overallStats() {
 function aiAdvice(stats) {
   const weak = stats.weaknesses.slice(-4).map(t => t.topic)
   const strong = stats.strengths.slice(0, 4).map(t => t.topic)
-  const focus = weak.length ? weak.join(', ') : 'higher-order word problems and speed practice'
-  const praise = strong.length ? strong.join(', ') : 'basic problem solving and consistency'
-  const plan = stats.percent >= 80
+  const focus = weak.length ? weak.join(', ') : stats.topics.length?'consolidating the assessed topics':'completing question-topic analysis before choosing a targeted revision plan'
+  const praise = strong.length ? strong.join(', ') : 'no confirmed topic strength identified yet'
+  const plan = !stats.topics.length?'Analyse the question content first. Source names are excluded from topic recommendations.':stats.percent >= 80
     ? 'Move into timed mixed BECE sets and practise explaining your steps clearly.'
     : stats.percent >= 60
     ? 'Revise weak topics, then complete two mixed sets under time pressure.'
@@ -56,13 +59,13 @@ function reportHtml() {
   const p = profile()
   const stats = overallStats()
   const advice = aiAdvice(stats)
-  const topicRows = stats.topics.length ? stats.topics : [{ topic: 'No BECE practice yet', answered: 0, correct: 0, wrong: 0, percent: 0, label: 'Start practice' }]
+  const topicRows = stats.topics.length ? stats.topics : [{ topic: stats.answered?'Topic analysis pending':'No BECE practice yet', answered: 0, correct: 0, wrong: 0, percent: 0, label: stats.answered?'Analyse the question content':'Start practice' }]
   return `<main class="app-shell"><section class="app-frame bece-report-page">
     <nav class="screen-tabs bece-nav"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE AI Report</small></div></div><div class="tab-scroll"><button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Practice</button><button class="screen-tab active" data-bece-report-page="true"><span>📊</span>BECE Report</button><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button></div></nav>
     <section class="bece-report-hero glass-card"><div><span class="bece-report-kicker">🤖 AI BECE Performance Report</span><h1>Progress, Strengths & Weaknesses</h1><p>${escapeHtml(p.full_name || 'Student')}, this report analyses your BECE practice answers, topic performance, areas of strength, weak topics and what to improve next.</p></div><div class="report-score-orb"><strong>${stats.percent}%</strong><span>Overall</span></div></section>
     <section class="report-metrics"><div><span>✅</span><strong>${stats.correct}</strong><small>Correct answers</small></div><div><span>❌</span><strong>${stats.wrong}</strong><small>Wrong answers</small></div><div><span>📝</span><strong>${stats.answered}</strong><small>Questions answered</small></div><div><span>🏆</span><strong>${stats.best}%</strong><small>Best set score</small></div></section>
     <section class="ai-report-card glass-card"><div class="ai-report-head"><span>🤖</span><div><h2>Comprehensive AI Report</h2><p><b>Current level:</b> ${strengthLabel(stats.percent)}. Your strongest area is ${escapeHtml(advice.praise)}. Your immediate improvement focus should be ${escapeHtml(advice.focus)}.</p><p><b>Recommended plan:</b> ${escapeHtml(advice.plan)}</p></div></div><div class="report-actions"><button class="btn btn-gold" data-download-bece-report="full-pdf">Download Full PDF Report</button><button class="btn btn-primary" data-download-bece-report="answers-pdf">Download Answers PDF</button></div></section>
-    <section class="topic-report-grid">${topicRows.map(topic => `<article class="topic-report-card ${topic.percent >= 70 ? 'strong' : topic.percent < 60 ? 'weak' : 'medium'}"><div><h3>${escapeHtml(topic.topic)}</h3><span>${escapeHtml(topic.label)}</span></div><strong>${topic.percent}%</strong><p>${topic.correct}/${topic.answered} correct • ${topic.wrong} wrong</p><i style="width:${topic.percent}%"></i><small>${topic.percent >= 70 ? 'Keep practising to perfect speed and accuracy.' : topic.percent >= 60 ? 'Good foundation. Practise more word problems.' : 'Revise the method and practise direct questions first.'}</small></article>`).join('')}</section>
+    <section class="ai-report-card glass-card"><h2>Question-content topic analysis</h2><p>${detailedAnswers().filter(a=>classifiedTopic(a.topic_analysis)).length}/${stats.answered} answers have AI-classified mathematical topics. Unclassified or ambiguous questions are excluded from topic recommendations. Topics assessed by only a few questions provide limited evidence.</p><button class="btn btn-blue" type="button" data-analyse-practice-topics ${topicBusy?'disabled':''}>${topicBusy?'Analysing question content…':'Analyse remaining question topics'}</button>${topicNotice?`<p role="status">${escapeHtml(topicNotice)}</p>`:''}</section><section class="topic-report-grid">${topicRows.map(topic => `<article class="topic-report-card ${topic.percent >= 70 ? 'strong' : topic.percent < 60 ? 'weak' : 'medium'}"><div><h3>${escapeHtml(topic.topic)}</h3><span>${escapeHtml(topic.label)}</span></div><strong>${topic.percent}%</strong><p>${topic.correct}/${topic.answered} correct • ${topic.wrong} wrong</p><i style="width:${topic.percent}%"></i><small>${topic.percent >= 70 ? 'Keep practising to perfect speed and accuracy.' : topic.percent >= 60 ? 'Good foundation. Practise more word problems.' : 'Revise the method and practise direct questions first.'}</small></article>`).join('')}</section>
     <section class="mistake-review glass-card"><h2>Where You Need to Improve</h2>${detailedAnswers().filter(a => !a.correct).slice(0, 12).map(a => `<div class="mistake-row"><b>${escapeHtml(a.topic)}</b><span>${escapeHtml(a.question)}</span><small>Your answer: ${escapeHtml(a.selectedText || a.selected)} • Correct: ${escapeHtml(a.correctText || a.correctAnswer)}</small></div>`).join('') || '<p>No wrong answers recorded yet. Complete BECE practice to populate this section.</p>'}</section>
   </section></main>`
 }
@@ -80,7 +83,8 @@ function captureAnswer(button) {
     const correctText = correctButton?.querySelector('span')?.textContent?.trim() || ''
     const correct = button.classList.contains('bece-correct')
     const mode = document.querySelector('.bece-side div:nth-child(3) strong')?.textContent?.trim() || 'BECE Practice'
-    const item = { topic, question, selected, selectedText, correctAnswer, correctText, correct, mode, date: new Date().toISOString() }
+    const options=[...card.querySelectorAll('[data-bece-answer]')].map(b=>b.querySelector('span')?.textContent?.trim()||'');const question_image_url=[...card.querySelectorAll('img')].find(img=>!img.closest('[data-bece-answer]'))?.src||'';const option_image_urls=[...card.querySelectorAll('[data-bece-answer]')].map(b=>b.querySelector('img')?.src||'');
+    const item = { source_topic:topic,topic, question,options,question_image_url,option_image_urls, selected, selectedText, correctAnswer, correctText, correct, mode, date: new Date().toISOString() }
     const rows = detailedAnswers()
     const duplicate = rows.some(row => row.question === question && row.selected === selected && Math.abs(new Date(row.date) - new Date(item.date)) < 3000)
     if (!duplicate) saveJson('mezzo_bece_detailed_answers', [item, ...rows].slice(0, 1000))
@@ -182,9 +186,10 @@ function fullReportLines() {
     `Improve: ${advice.focus}`,
     `Plan: ${advice.plan}`,
     '',
+    `AI-classified answers: ${detailedAnswers().filter(a=>classifiedTopic(a.topic_analysis)).length}/${stats.answered}. Pending/ambiguous questions are excluded from topic recommendations.`,
     'TOPIC BREAKDOWN'
   ]
-  ;(stats.topics.length ? stats.topics : [{ topic: 'No BECE practice yet', answered: 0, correct: 0, wrong: 0, percent: 0, label: 'Start practice' }]).forEach(t => {
+  ;(stats.topics.length ? stats.topics : [{ topic: stats.answered?'Topic analysis pending':'No BECE practice yet', answered: 0, correct: 0, wrong: 0, percent: 0, label: stats.answered?'Analyse the question content':'Start practice' }]).forEach(t => {
     lines.push(`${t.topic}: ${t.percent}% | ${t.correct}/${t.answered} correct | ${t.wrong} wrong | ${t.label}`)
   })
   lines.push('', 'MISTAKE REVIEW')
@@ -224,13 +229,16 @@ function sync() {
   requestAnimationFrame(() => { syncQueued = false; installReportButtons() })
 }
 
-document.addEventListener('click', event => {
+async function analysePracticeTopics(){if(topicBusy)return;topicBusy=true;topicNotice='';if(document.querySelector('.bece-report-page'))document.getElementById('root').innerHTML=reportHtml();try{const result=await analyseQuestionTopics(rawAnswers(),{onProgress:()=>{if(document.querySelector('.bece-report-page'))document.getElementById('root').innerHTML=reportHtml()}});topicNotice=result.notice||(result.pending?`${result.pending} answer(s) await classification or review. Retry to analyse any remaining new questions.`:'Topics were identified from question content.')}catch(error){topicNotice=error.message}finally{topicBusy=false;if(document.querySelector('.bece-report-page'))document.getElementById('root').innerHTML=reportHtml()}}
+document.addEventListener('click', async event => {
   const answer = event.target.closest('[data-bece-answer]')
   if (answer) captureAnswer(answer)
-  if (event.target.closest('[data-bece-report-page]')) { event.preventDefault(); event.stopImmediatePropagation(); document.getElementById('root').innerHTML = reportHtml(); return }
+  if (event.target.closest('[data-bece-report-page]')) { event.preventDefault(); event.stopImmediatePropagation(); document.getElementById('root').innerHTML = reportHtml();analysePracticeTopics(); return }
+  if(event.target.closest('[data-analyse-practice-topics]')){event.preventDefault();await analysePracticeTopics();return}
   const download = event.target.closest('[data-download-bece-report]')
   if (download) {
     event.preventDefault()
+    if(topicBusy)return;await analysePracticeTopics();
     download.dataset.downloadBeceReport === 'answers-pdf' ? downloadAnswersPdfReport() : downloadFullPdfReport()
   }
 }, true)

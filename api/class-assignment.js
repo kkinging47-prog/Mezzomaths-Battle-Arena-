@@ -1,3 +1,4 @@
+import topicAnalysisHandler,{topicAIConfigured} from '../server/question-topic-analysis.js'
 import {randomUUID} from 'node:crypto'
 import {markAssignmentQuestion} from '../src/assignment-question-types.js'
 const WINDOW_MS=10*60*1000,MAX_REQUESTS=150,requests=new Map()
@@ -15,6 +16,8 @@ export default async function handler(req,res){
  res.setHeader?.('Cache-Control','no-store')
  const ip=clean(req.headers['x-forwarded-for']||req.socket?.remoteAddress||'unknown').split(',')[0];if(!allowed(ip))return res.status(429).json({error:'Too many requests. Please wait and try again.'})
  try{
+  if(req.method==='GET'&&req.query?.action==='topic-status')return res.status(200).json({configured:topicAIConfigured()})
+  if(req.method==='POST'&&req.body?.action==='analyse-topics')return topicAnalysisHandler(req,res)
   if(req.method==='POST'&&req.body?.action==='grade'){
    if(!uuid(req.body.attempt_id))return res.status(400).json({error:'Invalid attempt.'})
    const id=await actor(req),grades=req.body.grades
