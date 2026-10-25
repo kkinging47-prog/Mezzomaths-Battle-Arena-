@@ -1,4 +1,4 @@
-import topicAnalysisHandler,{topicAIConfigured} from '../server/question-topic-analysis.js'
+import topicAnalysisHandler,{topicAIConfigured,classifyTopics} from '../server/question-topic-analysis.js'
 import {randomUUID} from 'node:crypto'
 import {markAssignmentQuestion} from '../src/assignment-question-types.js'
 const WINDOW_MS=10*60*1000,MAX_REQUESTS=150,requests=new Map()
@@ -16,7 +16,7 @@ export default async function handler(req,res){
  res.setHeader?.('Cache-Control','no-store')
  const ip=clean(req.headers['x-forwarded-for']||req.socket?.remoteAddress||'unknown').split(',')[0];if(!allowed(ip))return res.status(429).json({error:'Too many requests. Please wait and try again.'})
  try{
-  if(req.method==='GET'&&req.query?.action==='topic-status')return res.status(200).json({configured:topicAIConfigured()})
+  if(req.method==='GET'&&req.query?.action==='topic-status'){if(req.query?.verify!=='1')return res.status(200).json({configured:topicAIConfigured()});const check=await classifyTopics([{question_text:'What is one half plus one quarter?'},{question_text:'Solve the equation 2x + 3 = 11.'}],{actor:'fixed-topic-health-check',limit:6,maxNew:2});return res.status(200).json({configured:topicAIConfigured(),ready:check.analyses.every(a=>a.status==='classified'),topics:check.analyses.map(a=>a.topic),notice:check.notice})}
   if(req.method==='POST'&&req.body?.action==='analyse-topics')return topicAnalysisHandler(req,res)
   if(req.method==='POST'&&req.body?.action==='grade'){
    if(!uuid(req.body.attempt_id))return res.status(400).json({error:'Invalid attempt.'})
