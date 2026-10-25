@@ -400,7 +400,7 @@ document.addEventListener('click', e => {
   const sc = e.target.closest('[data-school-candidate]')
   if (sc) { e.preventDefault(); selectSundaySchoolStudent(sc.dataset.schoolCandidate); return }
   if (e.target.closest('[data-sunday-admin-summary]')) { e.preventDefault(); showSundayAdminSummary(); return }
-  if (e.target.closest('[data-bece-sunday-open]')) { e.preventDefault(); e.stopImmediatePropagation(); renderSundayHome(); return }
+  if (e.target.closest('[data-bece-sunday-open]') && !e.target.closest('[data-sunday-entry-go]')) { e.preventDefault(); e.stopImmediatePropagation(); renderSundayHome(); return }
   if (e.target.closest('[data-bece-sunday-start]')) { e.preventDefault(); e.stopImmediatePropagation(); startTrial(); return }
   if (e.target.closest('[data-bece-sunday-change-profile]')) { e.preventDefault(); localStorage.removeItem(CANDIDATE_KEY); renderSundayHome(); return }
   if (e.target.closest('[data-bece-sunday-report]')) { e.preventDefault(); renderReport(); return }
