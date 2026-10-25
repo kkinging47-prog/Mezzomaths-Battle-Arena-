@@ -18,5 +18,6 @@ let r=await run({history_token:token});assert.equal(r.status,200);assert.equal(q
 r=await run({history_token:token,week_start:week});assert.equal(r.status,200);assert.equal(r.body.weeks[0].answers[0].correct,true);assert.equal(r.body.weeks[0].answers[0].explanation,'Add one and one.');assert.equal(r.body.weeks[0].reconstructed,true)
 snapshot=true;r=await run({history_token:token,week_start:week});assert.equal(r.body.weeks[0].answers[0].question_text,'Snapshot');assert.equal(questionRequests,1)
 assert.equal((await run({history_token:token+'x'})).status,403);assert.equal((await run({history_token:exam})).status,403);assert.equal((await run({candidate_id:id})).status,403)
+r=await run({session_token:exam,week_start:week});assert.equal(r.status,200);assert.equal(r.body.weeks[0].score,1);assert.equal((await run({session_token:exam,week_start:'2026-10-25'})).status,403);assert.equal((await run({session_token:exam+'x',week_start:week})).status,403);
 empty=true;r=await run({history_token:token});assert.equal(r.status,200);assert.deepEqual(r.body.weeks,[])
 console.log('PASS: signed ownership, expired exam rejection, metadata privacy, historical reconstruction, immutable snapshots, tampering and empty history.')
