@@ -1,3 +1,4 @@
+import {hydrateSundayEvidence} from './sunday-question-evidence.js'
 import {enrichTopicAnswers} from './question-topic-analysis.js'
 import {topicTotals} from '../src/question-topics.js'
 import crypto from 'node:crypto'
@@ -31,13 +32,14 @@ export default async function handler(req,res) {
   const cutoff=new Date(day);cutoff.setUTCDate(cutoff.getUTCDate()+(mode==='school_lab'?6:0));cutoff.setUTCHours(mode==='school_lab'?0:20)
   const [registrations,claims,settings]=await Promise.all([
    allRows('bece_sunday_trial_registrations?select=candidate_id,full_name,contact,school_name,class_level,region,created_at&candidate_id=not.is.null&created_at=lte.'+encodeURIComponent(cutoff.toISOString())+'&order=created_at.asc,id.asc'),
-   allRows('bece_sunday_weekly_claims?select='+encodeURIComponent('candidate_id,week_start,claimed_at,completed_at,score:result->>score,total:result->>total,time_taken_seconds:result->>time_taken_seconds,topics:result->topics,review:result->review')+'&week_start=eq.'+week+'&mode=eq.'+mode+'&order=claimed_at.asc,candidate_id.asc'),
+   allRows('bece_sunday_weekly_claims?select='+encodeURIComponent('candidate_id,week_start,claimed_at,completed_at,score:result->>score,total:result->>total,time_taken_seconds:result->>time_taken_seconds,topics:result->topics,review:result->review,session_token,session_data')+'&week_start=eq.'+week+'&mode=eq.'+mode+'&order=claimed_at.asc,candidate_id.asc'),
    supabaseRows('app_settings?select=value&key=eq.bece_report_school_aliases&limit=1')
   ])
+  await hydrateSundayEvidence(claims)
   const reviewRows=claims.flatMap(c=>Array.isArray(c.review)?c.review:[])
   const classified=await enrichTopicAnswers(reviewRows,{actor:adminUser.id,limit:10000,maxNew:40})
   let offset=0
-  for(const claim of claims){const count=Array.isArray(claim.review)?claim.review.length:0;const answers=classified.answers.slice(offset,offset+count);offset+=count;const coverage=topicTotals(answers);claim.topics=coverage.topics;claim.topic_coverage=count?coverage:{total:Number(claim.total)||0,classified:0,pending:Number(claim.total)||0};delete claim.review}
+  for(const claim of claims){const count=Array.isArray(claim.review)?claim.review.length:0;const answers=classified.answers.slice(offset,offset+count);offset+=count;const coverage=topicTotals(answers);claim.answers=answers;claim.topics=coverage.topics;claim.topic_coverage=count?coverage:{total:Number(claim.total)||0,classified:0,pending:Number(claim.total)||0};delete claim.review}
   const aliases=settings[0]?.value && typeof settings[0].value==='object' && !Array.isArray(settings[0].value) ? settings[0].value : {}
   const canonical=name=>{let result=String(name||'School not provided').trim();const seen=new Set();for(let i=0;i<30;i++){const key=schoolKey(result);if(seen.has(key)||!Object.hasOwn(aliases,key)||typeof aliases[key]!=='string')break;seen.add(key);result=aliases[key]}return result}
   const registrationIds=new Set(registrations.map(r=>r.candidate_id)),claimedIds=new Set(claims.map(c=>c.candidate_id))
@@ -45,7 +47,7 @@ export default async function handler(req,res) {
   const grouped=eligible.map(r=>({...r,school_name:canonical(r.school_name)}))
   const missing=claims.filter(c=>!registrationIds.has(c.candidate_id)).map(c=>({candidate_id:c.candidate_id,full_name:'Candidate '+c.candidate_id,school_name:'School not provided'}))
   const report=buildSchoolReports([...grouped,...missing].map(r=>({...r,identity_key:r.contact?identity(r):r.candidate_id})),claims,{week,mode})
-  report.topic_analysis_notice=classified.notice
+  report.topic_analysis_notice=classified.notice||(reviewRows.length?'':'Question evidence could not be restored for these results. Recorded scores are retained; question-level support cannot be inferred.')
   report.is_final=Date.now()>=cutoff.getTime()
   report.custom_school_groups=Object.keys(aliases).length>0
   if(operation==='group-schools'||operation==='reset-school-groups') {
