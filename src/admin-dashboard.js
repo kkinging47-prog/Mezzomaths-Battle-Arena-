@@ -31,6 +31,7 @@ const mappings = [
 const read = key => { try { return JSON.parse(localStorage.getItem(key) || 'null') } catch { return null } }
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 let current='overview', users=[], sessions=[], events=[], pageViews=[], pageViewCount=0, loaded=false, loading=false, error='', needsSignIn=false, search='', filter='all', page=0, queued=false
+let sundayRegistrations=null,sundayRegistrationError='',sundayRegistrationVersion=0
 let lastTracked='', lastGuestAt=0, tracking=false
 
 function shell() {
@@ -42,12 +43,17 @@ const warning = () => !isSupabaseConfigured ? '<p class="admin-note">The databas
 function overview() {
   return `${warning()}<div class="admin-stats">${stat(loaded?users.length:'—','Registered users')}${stat(loaded?users.filter(u=>u.role==='student').length:'—','Students')}${stat(loaded?users.filter(u=>['teacher','mezzo_staff'].includes(u.role)).length:'—','Teachers & tutors')}${stat(loaded?sessions.length:'—','Recent sessions','Latest 200')}</div><h2>Manage the platform</h2><div class="admin-links">${areas.slice(1,10).map(([key,label,desc])=>`<button type="button" data-admin-go="${key}"><strong>${esc(label)}</strong><span>${esc(desc)}</span><b>Open →</b></button>`).join('')}</div>`
 }
+function sundayRegistrationSummary(){
+ const rows=sundayRegistrations||[],ready=Array.isArray(sundayRegistrations),total=rows.reduce((n,r)=>n+(Number.isFinite(Number(r.registered))?Math.max(0,Number(r.registered)):0),0)
+ const distinct=key=>new Set(rows.map(r=>String(r[key]||'').trim().toLowerCase().replace(/\s+/g,' ')).filter(Boolean)).size
+ return `<section aria-label="Sunday BECE registration summary" style="margin:24px 0"><h2>Sunday BECE registrants</h2><p>All recorded Sunday BECE registrations.</p>${sundayRegistrationError?`<p class="admin-note" role="status">${esc(sundayRegistrationError)} Select Refresh data to retry.</p>`:''}<div class="admin-stats">${stat(ready?total:'—','Registered candidates',ready?'All registrations':sundayRegistrationError?'Unavailable':'Loading…')}${stat(ready?distinct('school_name'):'—','School names recorded')}${stat(ready?distinct('region'):'—','Regions represented')}</div>${ready?`<details><summary>View registration numbers by school and region</summary><div class="admin-report">${rows.length?rows.map(r=>`<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:12px"><span>${esc(r.school_name||'School not provided')}</span><span>${esc(r.region||'Region not provided')}</span><strong>${Number.isFinite(Number(r.registered))?Math.max(0,Number(r.registered)):0}</strong></div>`).join(''):'<p>No Sunday BECE registrations yet.</p>'}</div></details>`:''}</section>`
+}
 function people() {
   if (needsSignIn) return `${warning()}<h2>Users & roles</h2><p>Account records will appear after you sign in as an administrator.</p>`
   const match=users.filter(u=>(filter==='all'||u.role===filter)&&[u.full_name,u.email,u.school_name,u.location].some(v=>String(v||'').toLowerCase().includes(search.toLowerCase())))
   const rows=match.slice(page*20,(page+1)*20)
   const empty = !loaded ? 'Loading accounts…' : error && !users.length ? 'Accounts could not be loaded. Select Refresh data to try again.' : search ? `No ${filter==='all'?'users':roles.find(([v])=>v===filter)?.[1]||'users'} match “${esc(search)}”. Clear the search to see all accounts.` : filter==='all' ? 'No registered accounts are available.' : `No ${roles.find(([v])=>v===filter)?.[1]||'users'} accounts yet. You can assign this role to an existing user below after selecting All roles.`
-  return `${warning()}<h2>Users & roles</h2><p>Manage the four account roles and approval status. Select a role to see its users.</p><div class="admin-role-summary"><button type="button" data-admin-role-card="all" class="${filter==='all'?'active':''}"><strong>${loaded?users.length:'—'}</strong><span>All users</span></button>${roles.map(([value,label])=>`<button type="button" data-admin-role-card="${value}" class="${filter===value?'active':''}"><strong>${loaded?users.filter(u=>u.role===value).length:'—'}</strong><span>${label}</span></button>`).join('')}</div><div class="admin-filters"><label>Search<input data-admin-search type="search" placeholder="Name, email, school or location" value="${esc(search)}"></label><label>Role<select data-admin-filter><option value="all">All roles</option>${roles.map(([v,t])=>`<option value="${v}" ${filter===v?'selected':''}>${t}</option>`).join('')}</select></label></div><div class="admin-users">${rows.map(u=>`<form data-admin-user="${esc(u.id)}"><div class="admin-user-label"><strong>${esc(u.full_name||'Unnamed user')}</strong><small>${esc(u.email||'No email')} · ${u.created_at?new Date(u.created_at).toLocaleDateString():'—'}</small></div><div class="admin-user-fields"><label>Name<input name="full_name" required value="${esc(u.full_name)}"></label><label>School<input name="school_name" value="${esc(u.school_name)}"></label><label>Location<input name="location" value="${esc(u.location)}"></label><label>Role<select name="role">${roles.map(([v,t])=>`<option value="${v}" ${u.role===v?'selected':''}>${t}</option>`).join('')}</select></label><label>Status<select name="approval_status">${['approved','pending','rejected'].map(v=>`<option value="${v}" ${u.approval_status===v?'selected':''}>${v}</option>`).join('')}</select></label><button type="submit">Save changes</button></div></form>`).join('')||`<div class="admin-empty-role"><strong>${empty}</strong>${filter!=='all'&&loaded?'<button type="button" data-admin-role-card="all">View all users</button>':''}</div>`}</div>${match.length?`<div class="admin-pager"><span>${page*20+1}–${Math.min((page+1)*20,match.length)} of ${match.length}</span><button type="button" data-admin-page="prev" ${page===0?'disabled':''}>Previous</button><button type="button" data-admin-page="next" ${(page+1)*20>=match.length?'disabled':''}>Next</button></div>`:''}`
+  return `${warning()}<h2>Users & roles</h2><p>Manage the four account roles and approval status. Select a role to see its users.</p><div class="admin-role-summary"><button type="button" data-admin-role-card="all" class="${filter==='all'?'active':''}"><strong>${loaded?users.length:'—'}</strong><span>All users</span></button>${roles.map(([value,label])=>`<button type="button" data-admin-role-card="${value}" class="${filter===value?'active':''}"><strong>${loaded?users.filter(u=>u.role===value).length:'—'}</strong><span>${label}</span></button>`).join('')}</div>${sundayRegistrationSummary()}<div class="admin-filters"><label>Search<input data-admin-search type="search" placeholder="Name, email, school or location" value="${esc(search)}"></label><label>Role<select data-admin-filter><option value="all">All roles</option>${roles.map(([v,t])=>`<option value="${v}" ${filter===v?'selected':''}>${t}</option>`).join('')}</select></label></div><div class="admin-users">${rows.map(u=>`<form data-admin-user="${esc(u.id)}"><div class="admin-user-label"><strong>${esc(u.full_name||'Unnamed user')}</strong><small>${esc(u.email||'No email')} · ${u.created_at?new Date(u.created_at).toLocaleDateString():'—'}</small></div><div class="admin-user-fields"><label>Name<input name="full_name" required value="${esc(u.full_name)}"></label><label>School<input name="school_name" value="${esc(u.school_name)}"></label><label>Location<input name="location" value="${esc(u.location)}"></label><label>Role<select name="role">${roles.map(([v,t])=>`<option value="${v}" ${u.role===v?'selected':''}>${t}</option>`).join('')}</select></label><label>Status<select name="approval_status">${['approved','pending','rejected'].map(v=>`<option value="${v}" ${u.approval_status===v?'selected':''}>${v}</option>`).join('')}</select></label><button type="submit">Save changes</button></div></form>`).join('')||`<div class="admin-empty-role"><strong>${empty}</strong>${filter!=='all'&&loaded?'<button type="button" data-admin-role-card="all">View all users</button>':''}</div>`}</div>${match.length?`<div class="admin-pager"><span>${page*20+1}–${Math.min((page+1)*20,match.length)} of ${match.length}</span><button type="button" data-admin-page="prev" ${page===0?'disabled':''}>Previous</button><button type="button" data-admin-page="next" ${(page+1)*20>=match.length?'disabled':''}>Next</button></div>`:''}`
 }
 function audience() {
   const top=Object.entries(pageViews.reduce((a,v)=>{a[v.page_key]=(a[v.page_key]||0)+1;return a},{})).sort((a,b)=>b[1]-a[1]).slice(0,8)
@@ -77,7 +83,7 @@ function show(root) {
   const content=root.querySelector('[data-admin-content]')
   const slot=root.querySelector('[data-admin-parking]')
   const sundayMount=root.parentElement.querySelector('[data-sunday-permission-mount]')
-  const signature=[current,loaded,users.length,sessions.length,events.length,pageViewCount,search,filter,page,error,needsSignIn].join('|')
+  const signature=[current,loaded,users.length,sessions.length,events.length,pageViewCount,search,filter,page,error,needsSignIn,sundayRegistrationVersion].join('|')
   const changed=content.dataset.signature!==signature
   const screen=root.parentElement
   const newPanels=[...screen.children].some(child=>child!==root&&!child.classList.contains('dashboard-hero')&&!child.matches('[data-admin-control-hub]'))
@@ -116,23 +122,25 @@ function install(){
 }
 async function load(){
   if(loading||!supabase||!isSupabaseConfigured)return
-  loading=true;error='';needsSignIn=false
+  loading=true;error='';needsSignIn=false;sundayRegistrations=null;sundayRegistrationError='';sundayRegistrationVersion++;queue()
   try{
     const {data:sessionData}=await supabase.auth.getSession()
     if(!sessionData?.session){needsSignIn=true;throw new Error('Sign in on this phone to load administration data.')}
     const {data:auth,error:authError}=await supabase.auth.getUser()
     if(authError)throw authError
     if(!auth?.user){needsSignIn=true;throw new Error('Sign in on this phone to load administration data.')}
-    const [p,s,a,v]=await Promise.all([
+    const [p,s,a,v,b]=await Promise.all([
       (async()=>{const rows=[];for(let offset=0;;offset+=1000){const result=await supabase.from('profiles').select('id,full_name,email,school_name,location,region,role,approval_status,created_at').order('created_at',{ascending:false}).range(offset,offset+999);if(result.error)return result;rows.push(...(result.data||[]));if((result.data||[]).length<1000)break}return {data:rows}})(),
       supabase.from('practice_sessions').select('student_id,practice_type,score,question_count,completed_at,started_at').order('started_at',{ascending:false}).limit(200),
       supabase.from('auth_access_records').select('event_type,occurred_at').order('occurred_at',{ascending:false}).limit(1000),
-      supabase.from('app_page_views').select('page_key',{count:'exact'}).order('occurred_at',{ascending:false}).limit(1000)
+      supabase.from('app_page_views').select('page_key',{count:'exact'}).order('occurred_at',{ascending:false}).limit(1000),
+      (async()=>{try{return await supabase.rpc('bece_sunday_admin_registration_summary')}catch(e){return {error:e}}})()
     ])
+    sundayRegistrations=b.error?null:(Array.isArray(b.data)?b.data:[]);sundayRegistrationError=b.error?'Sunday BECE registration numbers could not be loaded.':'';sundayRegistrationVersion++;
     if(p.error)throw p.error
     users=p.data||[];sessions=s.error?[]:(s.data||[]);events=a.error?[]:(a.data||[]);pageViews=v.error?[]:(v.data||[]);pageViewCount=v.error?0:(v.count||0);loaded=true
     if(s.error||a.error||v.error)error=[s.error&&'Performance: '+s.error.message,a.error&&'Access records: '+a.error.message,v.error&&'Page views: '+v.error.message].filter(Boolean).join('; ')
-  }catch(e){error=e.message||'Could not load admin data.'}finally{loading=false;queue()}
+  }catch(e){error=e.message||'Could not load admin data.';if(sundayRegistrations===null)sundayRegistrationError='Sunday BECE registration numbers are unavailable.';sundayRegistrationVersion++}finally{loading=false;queue()}
 }
 async function saveUser(form){
   const id=form.dataset.adminUser,previous=users.find(u=>u.id===id)
