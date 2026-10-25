@@ -1,3 +1,4 @@
+import {hydrateSundayEvidence} from './sunday-question-evidence.js'
 import {enrichTopicAnswers} from './question-topic-analysis.js'
 import {topicTotals} from '../src/question-topics.js'
 import crypto from 'node:crypto'
@@ -21,36 +22,23 @@ export function verifyHistoryAccess(token) {
 export default async function handler(req,res) {
  if(req.method!=='POST') return res.status(405).json({error:'Method not allowed'})
  try {
-  const candidateId=verifyHistoryAccess(req.body?.history_token)
+  let candidateId,boundWeek=''
+  if(req.body?.history_token)candidateId=verifyHistoryAccess(req.body.history_token)
+  else {const proof=verifyTrialSession(req.body?.session_token,{allowExpired:true});if(proof.preview||!/^MSB-[0-9A-F]{18}$/.test(proof.candidateId)||Date.now()>Number(proof.expiresAt)+180*86400000)throw new Error('Restore your candidate profile to view results.');candidateId=proof.candidateId;boundWeek=proof.weekStart}
   const url=String(process.env.SUPABASE_URL||process.env.VITE_SUPABASE_URL||'').replace(/\/$/,'')
   const key=String(process.env.SUPABASE_SERVICE_ROLE_KEY||'')
   const response=await fetch(url+'/rest/v1/rpc/sunday_candidate_history',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({p_candidate_id:candidateId})})
   const history=await response.json()
   if(!response.ok) throw new Error('Results could not be loaded. Please retry.')
   const weeks=[]
-  const requested=String(req.body?.week_start||'')
+  const requested=String(req.body?.week_start||boundWeek||'');if(boundWeek&&requested!==boundWeek)throw new Error('This receipt only permits its own examination week.')
   if(requested && !/^\d{4}-\d{2}-\d{2}$/.test(requested)) throw new Error('Invalid week.')
   for(const row of history.weeks||[]) {
    if(requested && row.week_start!==requested) continue
    const {session_token,session_data,result,...week}=row
    week.answers=[]
    if(!requested) { weeks.push(week); continue }
-   if(Array.isArray(result?.review)) week.answers=result.review
-   else if(session_token) {
-    try {
-     const session=verifyTrialSession(session_token,{allowExpired:true})
-     if(session.candidateId!==row.candidate_id||session.weekStart!==row.week_start) throw new Error('Result identity mismatch')
-     const questions=await supabaseRows('bece_question_bank?select='+encodeURIComponent(SUNDAY_QUESTION_COLUMNS)+'&id=in.('+session.ids.map(encodeURIComponent).join(',')+')')
-     const byId=new Map(questions.map(q=>[String(q.id),q]))
-     week.answers=session.ids.map(id=>{
-      const q=byId.get(String(id));if(!q) return null
-      const selected=String(session_data?.selections?.[id]||'')
-      const correct=String(q.correct_answer||'').trim().toUpperCase().slice(0,1)
-      return {...safeQuestion(q),selected_answer:selected,correct_answer:correct,correct:selected===correct,explanation:q.explanation||'A worked explanation is awaiting editor review.'}
-     }).filter(Boolean)
-     week.reconstructed=true
-    } catch { week.review_unavailable=true }
-   }
+   const evidence={candidate_id:row.candidate_id,week_start:row.week_start,completed_at:row.completed_at||true,score:row.score,total:row.total,review:result?.review,session_token,session_data};await hydrateSundayEvidence([evidence]);week.answers=evidence.review;week.evidence_status=evidence.evidence_status;week.reconstructed=evidence.evidence_status==='reconstructed';week.review_unavailable=!week.answers.length
    if(requested&&week.answers.length){const result=await enrichTopicAnswers(week.answers,{actor:'candidate:'+candidateId,maxNew:40});week.answers=result.answers;week.topic_coverage=topicTotals(result.answers);week.topics=week.topic_coverage.topics;week.topic_analysis_notice=result.notice;week.topic_report_loaded=true}
    weeks.push(week)
   }
