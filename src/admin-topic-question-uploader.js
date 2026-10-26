@@ -1,4 +1,5 @@
 import './admin-topic-question-uploader.css'
+import * as XLSX from 'xlsx'
 import { supabase, isSupabaseConfigured } from './supabaseClient.js'
 
 const BANK_KEY = 'mezzo_question_bank'
@@ -21,6 +22,7 @@ const TOPICS = {
   'SHS 3': ['WASSCE Practice','Advanced Algebra','Calculus Foundations','Statistics','Vectors & Trigonometry']
 }
 let queued = false
+let uploading = false
 
 function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])) }
 function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
@@ -47,23 +49,23 @@ function parseCsv(text) {
   return rows.map(cols => Object.fromEntries(headers.map((h, i) => [h, (cols[i] || '').trim()])))
 }
 function normalizeQuestion(row, defaults) {
-  const answer = String(row.correct_answer || row.answer || 'A').trim().toUpperCase().slice(0, 1)
+  const answer = String(row.correct_answer || row.answer || '').trim().toUpperCase()
   const topic = row.topic || defaults.topic
   return {
     id: row.id || uid(),
-    class_level: row.class_level || row.class || defaults.class_level,
-    curriculum: row.curriculum || defaults.curriculum,
+    class_level: defaults.class_level,
+    curriculum: defaults.curriculum,
     topic,
     topic_area: row.topic_area || inferTopicArea(topic),
     topic_sublevel: row.topic_sublevel || row.subtopic || 'Uploaded by topic',
-    difficulty: Number(row.difficulty || 1),
+    difficulty: ({easy:1,medium:2,hard:3})[String(row.difficulty).toLowerCase()] || Number(row.difficulty || 1),
     question_text: row.question_text || row.question || row.q || '',
     numeric_answer: row.numeric_answer === '' || row.numeric_answer == null ? null : Number(row.numeric_answer),
     option_a: row.option_a || row.a || '',
     option_b: row.option_b || row.b || '',
     option_c: row.option_c || row.c || '',
     option_d: row.option_d || row.d || '',
-    correct_answer: ['A','B','C','D'].includes(answer) ? answer : 'A',
+    correct_answer: answer,
     explanation: row.explanation || row.solution || '',
     question_image_url: row.question_image_url || row.image_url || '',
     option_a_image_url: row.option_a_image_url || '',
@@ -80,8 +82,8 @@ function panelHtml() {
   const cls = localStorage.getItem('topic_upload_class') || 'Grade 9'
   const curriculum = localStorage.getItem('topic_upload_curriculum') || 'GES'
   const topic = localStorage.getItem('topic_upload_topic') || (TOPICS[cls] || [])[0] || 'BECE Exam Practice'
-  return `<section class="topic-question-uploader glass-card" data-topic-question-uploader="true">
-    <div class="topic-upload-head"><div><span>📥 Topic Question Upload</span><h2>Upload Questions Under Each Topic</h2><p>Select class, curriculum and exact Mezzo topic, then upload/paste questions. The app will save each question under that topic.</p></div><button class="btn btn-blue" type="button" data-refresh-topic-count="true">Refresh Count</button></div>
+  return `<section class="topic-question-uploader glass-card" data-topic-question-uploader="true" data-admin-topic-uploader="true">
+    <div class="topic-upload-head"><div><span>📥 Question Bank Upload</span><h2>Upload Questions to the Question Bank</h2><p>Choose the class and curriculum for every question in this upload. Topics in the file are preserved; the selected topic is used when a row has no topic.</p></div><button class="btn btn-blue" type="button" data-refresh-topic-count="true">Refresh Count</button></div>
     <div class="topic-upload-grid">
       <label><span>Class</span><select id="topicUploadClass">${optionHtml(LEVELS, cls)}</select></label>
       <label><span>Curriculum</span><select id="topicUploadCurriculum">${optionHtml(CURRICULA, curriculum)}</select></label>
@@ -89,8 +91,8 @@ function panelHtml() {
     </div>
     <div class="topic-count-grid" data-topic-count-box><article><strong>Database Total</strong><span data-db-total>Check needed</span></article><article><strong>This Topic in DB</strong><span data-db-topic>Check needed</span></article><article><strong>Local Visible Bank</strong><span data-local-total>${readJson(BANK_KEY, []).length}</span></article></div>
     <label class="topic-paste-box"><span>Paste CSV or JSON Questions</span><textarea id="topicUploadText" placeholder="CSV headers: question_text, option_a, option_b, option_c, option_d, correct_answer, explanation, numeric_answer, difficulty"></textarea></label>
-    <div class="topic-upload-actions"><input type="file" id="topicUploadFile" accept=".csv,.json,.txt"><button class="btn btn-gold" type="button" data-preview-topic-upload="true">Preview Questions</button><button class="btn btn-primary" type="button" data-save-topic-upload="true">Save to Selected Topic</button><button class="btn btn-danger" type="button" data-replace-topic-upload="true">Replace This Topic in Local Bank</button></div>
-    <div class="topic-upload-preview" id="topicUploadPreview"><p>No preview yet.</p></div>
+    <div class="topic-upload-actions"><label>Choose file<input type="file" id="topicUploadFile" accept=".xlsx,.xls,.csv,.json,.txt"></label><button class="btn btn-blue" type="button" data-bank-template>Download Excel Template</button><button class="btn btn-gold" type="button" data-preview-topic-upload="true">Preview Questions</button><button class="btn btn-primary" type="button" data-save-topic-upload="true">Upload to Question Bank</button></div>
+    <div class="topic-upload-preview" id="topicUploadPreview" role="status" aria-live="polite"><p>No preview yet.</p></div>
   </section>`
 }
 function installPanel() {
@@ -110,11 +112,45 @@ async function readFile() {
 }
 async function parseQuestions() {
   const defaults = selectedDefaults()
-  const text = (await readFile()) || readUploadText()
-  if (!text.trim()) return []
+  const file = document.getElementById('topicUploadFile')?.files?.[0]
+  if (file && file.size > 5 * 1024 * 1024) throw new Error('Choose a file smaller than 5 MB.')
   let rows = []
-  try { const parsed = JSON.parse(text); rows = Array.isArray(parsed) ? parsed : parsed.questions || [] } catch { rows = parseCsv(text) }
-  return rows.map(row => normalizeQuestion(row, defaults)).filter(q => q.question_text && q.option_a && q.option_b && q.option_c && q.option_d)
+  if (file && /\.(xlsx|xls|csv)$/i.test(file.name)) {
+    const workbook = XLSX.read(await file.arrayBuffer(), {type:'array'})
+    const sheet = workbook.Sheets[workbook.SheetNames.find(name => name.toLowerCase() === 'questions') || workbook.SheetNames[0]]
+    rows = XLSX.utils.sheet_to_json(sheet, {defval:'', raw:false})
+  } else {
+    if (file && !/\.(json|txt)$/i.test(file.name)) throw new Error('Choose an Excel, CSV or JSON file.')
+    const text = file ? await file.text() : readUploadText()
+    if (!text.trim()) return []
+    try { const parsed = JSON.parse(text); rows = Array.isArray(parsed) ? parsed : parsed.questions || [] } catch { rows = parseCsv(text) }
+  }
+  if (!Array.isArray(rows) || rows.length > 1000) throw new Error('Upload between 1 and 1,000 questions at a time.')
+  const errors = [], seen = new Set()
+  const list = rows.map((raw,index) => {
+    const row = Object.fromEntries(Object.entries(raw).map(([key,value]) => [key.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''),String(value??'').trim()]))
+    const q = normalizeQuestion(row, defaults), line = index + 2
+    for (const key of ['question_text','option_a','option_b','option_c','option_d']) if (!q[key]) errors.push(`Row ${line}: ${key} is required.`)
+    if (!/^[ABCD]$/.test(q.correct_answer)) errors.push(`Row ${line}: correct_answer must be A, B, C or D.`)
+    if (!Number.isInteger(q.difficulty) || q.difficulty < 1 || q.difficulty > 20) errors.push(`Row ${line}: difficulty must be an integer from 1 to 20.`)
+    if (q.numeric_answer !== null && !Number.isFinite(q.numeric_answer)) errors.push(`Row ${line}: numeric_answer must be a number.`)
+    for (const key of Object.keys(q).filter(key=>key.endsWith('_url'))) if(q[key]) { try { if(new URL(q[key]).protocol !== 'https:') throw Error() } catch {errors.push(`Row ${line}: ${key} must be an HTTPS image URL.`)} }
+    const signature = JSON.stringify([q.question_text,q.option_a,q.option_b,q.option_c,q.option_d,q.question_image_url])
+    if(seen.has(signature)) errors.push(`Row ${line}: duplicate question in this file.`)
+    seen.add(signature)
+    return q
+  })
+  if(errors.length) throw new Error(errors.slice(0,20).join('\n') + (errors.length>20?'\nMore errors exist. Correct the file and retry.':''))
+  return list
+}
+function showUploadError(error) {
+  const box=document.getElementById('topicUploadPreview')
+  if(box) {box.textContent=error.message;box.style.whiteSpace='pre-line'}
+}
+function downloadBankTemplate() {
+  const workbook=XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook,XLSX.utils.json_to_sheet([{question_text:'What is 12 × 8?',option_a:'86',option_b:'96',option_c:'108',option_d:'120',correct_answer:'B',explanation:'12 × 8 = 96.',topic:'Multiplication',topic_area:'Multiplication',difficulty:1,numeric_answer:96,question_image_url:'',option_a_image_url:'',option_b_image_url:'',option_c_image_url:'',option_d_image_url:''}]),'Questions')
+  XLSX.writeFile(workbook,'Mezzo_Question_Bank_Template.xlsx')
 }
 async function previewQuestions() {
   const list = await parseQuestions()
@@ -122,21 +158,29 @@ async function previewQuestions() {
   if (!box) return
   box.innerHTML = list.length ? `<strong>${list.length} question(s) ready.</strong>${list.slice(0, 5).map(q => `<div><b>${escapeHtml(q.class_level)} • ${escapeHtml(q.topic)}</b><span>${escapeHtml(q.question_text)}</span><small>Answer: ${escapeHtml(q.correct_answer)}</small></div>`).join('')}` : '<p>No valid questions found. Check your CSV/JSON columns.</p>'
 }
-async function saveUpload(replaceLocal = false) {
-  const defaults = selectedDefaults()
-  const list = await parseQuestions()
-  if (!list.length) { await previewQuestions(); return }
-  let bank = readJson(BANK_KEY, [])
-  if (replaceLocal) bank = bank.filter(q => !(q.class_level === defaults.class_level && q.curriculum === defaults.curriculum && q.topic === defaults.topic))
-  saveJson(BANK_KEY, [...list, ...bank])
-  let message = `${list.length} question(s) saved locally under ${defaults.topic}.`
-  if (supabase && isSupabaseConfigured) {
-    const payload = list.map(({ id, ...q }) => q)
-    const { error } = await supabase.from('question_bank').insert(payload)
-    message = error ? `${message} Database save failed: ${error.message}` : `${list.length} question(s) saved to Supabase question_bank.`
-  } else message = `${message} Supabase is not configured in this browser build.`
-  document.getElementById('topicUploadPreview').innerHTML = `<p>${escapeHtml(message)}</p>`
-  refreshCounts()
+async function saveUpload() {
+  if(uploading) return
+  uploading=true
+  const button=document.querySelector('[data-save-topic-upload]')
+  if(button) button.disabled=true
+  try {
+    const list=await parseQuestions()
+    const defaults=list[0] || selectedDefaults()
+    if(!list.length) throw new Error('Choose a file or paste questions first.')
+    if(!supabase || !isSupabaseConfigured) throw new Error('The database is unavailable. No questions were imported.')
+    const {data:{user},error:authError}=await supabase.auth.getUser()
+    if(authError || !user) throw new Error('Sign in as an administrator before uploading.')
+    const payload=list.map(({id,...q})=>({...q,created_by:user.id}))
+    const {data,error}=await supabase.from('question_bank').insert(payload).select('*')
+    if(error) throw new Error('Nothing was imported. '+error.message)
+    try { saveJson(BANK_KEY,[...data,...readJson(BANK_KEY,[])]) } catch {}
+    const message=`${data.length} questions uploaded successfully to ${defaults.class_level} · ${defaults.curriculum}.`
+    document.getElementById('topicUploadPreview').textContent=message
+    document.getElementById('topicUploadFile').value=''
+    document.getElementById('topicUploadText').value=''
+    window.alert(message)
+    await refreshCounts()
+  } catch(error) {showUploadError(error)} finally {uploading=false;if(button)button.disabled=false}
 }
 async function refreshCounts() {
   const defaults = selectedDefaults()
@@ -164,11 +208,12 @@ document.addEventListener('change', event => {
   if (event.target?.id === 'topicUploadClass') { updateTopicOptions(); refreshCounts() }
   if (event.target?.id === 'topicUploadCurriculum') { localStorage.setItem('topic_upload_curriculum', event.target.value); refreshCounts() }
   if (event.target?.id === 'topicUploadTopic') { localStorage.setItem('topic_upload_topic', event.target.value); refreshCounts() }
-  if (event.target?.id === 'topicUploadFile') previewQuestions()
+  if (event.target?.id === 'topicUploadFile') previewQuestions().catch(showUploadError)
 }, true)
 
 document.addEventListener('click', event => {
-  if (event.target.closest('[data-preview-topic-upload]')) { event.preventDefault(); previewQuestions(); return }
+  if (event.target.closest('[data-bank-template]')) { event.preventDefault(); downloadBankTemplate(); return }
+  if (event.target.closest('[data-preview-topic-upload]')) { event.preventDefault(); previewQuestions().catch(showUploadError); return }
   if (event.target.closest('[data-save-topic-upload]')) { event.preventDefault(); saveUpload(false); return }
   if (event.target.closest('[data-replace-topic-upload]')) { event.preventDefault(); saveUpload(true); return }
   if (event.target.closest('[data-refresh-topic-count]')) { event.preventDefault(); refreshCounts(); return }
