@@ -26,7 +26,7 @@ const mappings = [
   ['[data-course-admin-panel], .course-admin-panel','courses'],
   ['[data-donor-impact-dashboard]','impact'],
   ['[data-learner-intelligence-admin]','audience'],
-  ['[data-admin-topic-uploader], [data-exact-workbook-importer], [data-excel-question-upload], [data-workbook-question-selector], [data-workbook-seed-summary], .workbook-seed-summary, #adminQuestionForm, #aiGenerateForm, .question-manager','questions']
+  ['[data-topic-question-uploader], [data-admin-topic-uploader], [data-exact-workbook-importer], [data-excel-question-upload], [data-workbook-question-selector], [data-workbook-seed-summary], .workbook-seed-summary, #adminQuestionForm, #aiGenerateForm, .question-manager','questions']
 ]
 const read = key => { try { return JSON.parse(localStorage.getItem(key) || 'null') } catch { return null } }
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
