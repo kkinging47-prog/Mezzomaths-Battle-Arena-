@@ -104,7 +104,7 @@ function removeLegacyEditor() {
   })
 }
 function symbolsHtml() {
-  return `<div class="sunday-special-toolbar"><strong>Maths Symbols Toolbar</strong><div class="vector-insert-tools"><label>Top entry<input data-vector-top value="−1" aria-label="Vector top entry"></label><label>Bottom entry<input data-vector-bottom value="3" aria-label="Vector bottom entry"></label><button type="button" class="btn btn-blue btn-small" data-insert-column-vector>Insert column vector</button><small>Place the cursor in the question, an option or the solution first. The formatted version appears below each field.</small></div><div class="sunday-symbol-groups">${SYMBOL_GROUPS.map(([name, list]) => `<div class="sunday-symbol-group"><span>${esc(name)}</span><div>${list.map(s => `<button type="button" data-sunday-insert-symbol="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>`).join('')}</div><div class="sunday-special-actions"><button type="button" class="btn btn-blue btn-small" data-sunday-clean-math="true">Clean Maths Symbols</button><button type="button" class="btn btn-ghost btn-small" data-sunday-preview="true">Refresh Preview</button></div></div>`
+  return `<div class="sunday-special-toolbar"><strong>Maths Symbols Toolbar</strong><div class="vector-insert-tools"><div data-vector-template-preview aria-label="Column vector template">${renderVectorText(columnVector('−1','3'))}</div><label>Top entry<input data-vector-top value="−1" aria-label="Vector top entry"></label><label>Bottom entry<input data-vector-bottom value="3" aria-label="Vector bottom entry"></label><button type="button" class="btn btn-blue btn-small" data-insert-column-vector>Insert column vector</button><small>Place the cursor in the question, an option or the solution first. The formatted version appears below each field.</small></div><div class="sunday-symbol-groups">${SYMBOL_GROUPS.map(([name, list]) => `<div class="sunday-symbol-group"><span>${esc(name)}</span><div>${list.map(s => `<button type="button" data-sunday-insert-symbol="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>`).join('')}</div><div class="sunday-special-actions"><button type="button" class="btn btn-blue btn-small" data-sunday-clean-math="true">Clean Maths Symbols</button><button type="button" class="btn btn-ghost btn-small" data-sunday-preview="true">Refresh Preview</button></div></div>`
 }
 function assignmentHtml() {
   if (!isAdmin) return ''
@@ -235,6 +235,8 @@ function refreshPreview() {
   const form = document.getElementById('sundaySpecialQuestionForm')
   const box = document.querySelector('[data-sunday-live-preview]')
   if (!form || !box) return
+  const template=form.querySelector('[data-vector-template-preview]')
+  if(template) template.innerHTML=renderVectorText(columnVector(form.querySelector('[data-vector-top]').value,form.querySelector('[data-vector-bottom]').value))
   form.querySelectorAll('[data-vector-preview]').forEach(box => {const field=form.elements[box.dataset.vectorPreview];if(field)box.innerHTML=renderVectorText(field.value)})
   rememberBeceDraft(form)
   const f = Object.fromEntries(new FormData(form).entries())
