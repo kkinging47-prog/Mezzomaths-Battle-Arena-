@@ -232,7 +232,7 @@
   margin-top: 10px;
 }
 
-.sunday-special-preview-options span {
+.sunday-special-preview-options > span {
   padding: 10px;
   border-radius: 12px;
   background: #fff;
@@ -354,3 +354,12 @@
 .sunday-ai-review{display:grid;gap:10px;margin:16px 0;color:#17365f}
 .sunday-ai-review article{padding:15px;border:1px solid #cbd5e1;border-radius:13px;background:#fff;overflow-wrap:anywhere}
 .sunday-ai-review p{color:#324c6d}
+
+/* Keep the source readable; typeset vectors in a separate live view. */
+.sunday-special-form-grid textarea[data-sunday-math-field] { font-family: "DejaVu Sans Mono", "Courier New", monospace; line-height: 1.85; font-size: 17px; padding: 14px; }
+.sunday-special-form-grid textarea[name="question_text"] { min-height: 230px; }
+.vector-field-preview { display:block; padding:12px; margin-top:6px; background:#f1f5f9; color:#10233f; border:1px solid #cbd5e1; border-radius:8px; font-size:18px; line-height:1.6; overflow-wrap:anywhere; }
+.vector-field-preview:empty { display:none; }
+.vector-insert-tools { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin:12px 0; }
+.vector-insert-tools label { display:grid; gap:5px; max-width:150px; }
+.vector-insert-tools small { flex-basis:100%; }

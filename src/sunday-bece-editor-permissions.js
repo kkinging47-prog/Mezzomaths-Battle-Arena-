@@ -1,3 +1,4 @@
+import { renderVectorText, columnVector } from './vector-math.js'
 import './bece-school-reports.js'
 import * as XLSX from 'xlsx'
 import { validateSetImport, readSetImportWorkbook, setImportTemplate } from './sunday-set-import.js'
@@ -103,7 +104,7 @@ function removeLegacyEditor() {
   })
 }
 function symbolsHtml() {
-  return `<div class="sunday-special-toolbar"><strong>Maths Symbols Toolbar</strong><div class="sunday-symbol-groups">${SYMBOL_GROUPS.map(([name, list]) => `<div class="sunday-symbol-group"><span>${esc(name)}</span><div>${list.map(s => `<button type="button" data-sunday-insert-symbol="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>`).join('')}</div><div class="sunday-special-actions"><button type="button" class="btn btn-blue btn-small" data-sunday-clean-math="true">Clean Maths Symbols</button><button type="button" class="btn btn-ghost btn-small" data-sunday-preview="true">Refresh Preview</button></div></div>`
+  return `<div class="sunday-special-toolbar"><strong>Maths Symbols Toolbar</strong><div class="vector-insert-tools"><label>Top entry<input data-vector-top value="−1" aria-label="Vector top entry"></label><label>Bottom entry<input data-vector-bottom value="3" aria-label="Vector bottom entry"></label><button type="button" class="btn btn-blue btn-small" data-insert-column-vector>Insert column vector</button><small>Place the cursor in the question, an option or the solution first. The formatted version appears below each field.</small></div><div class="sunday-symbol-groups">${SYMBOL_GROUPS.map(([name, list]) => `<div class="sunday-symbol-group"><span>${esc(name)}</span><div>${list.map(s => `<button type="button" data-sunday-insert-symbol="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>`).join('')}</div><div class="sunday-special-actions"><button type="button" class="btn btn-blue btn-small" data-sunday-clean-math="true">Clean Maths Symbols</button><button type="button" class="btn btn-ghost btn-small" data-sunday-preview="true">Refresh Preview</button></div></div>`
 }
 function assignmentHtml() {
   if (!isAdmin) return ''
@@ -126,7 +127,7 @@ function imagePreview(q) {
   return `<div class="sunday-special-image-grid">${items.map(([label, url]) => `<div class="sunday-special-image-card"><img src="${esc(url)}" alt="${esc(label)} image"><b>${esc(label)}</b></div>`).join('')}</div>`
 }
 function previewHtml(q) {
-  return `<div class="sunday-special-preview-question">${esc(q.question_text || 'Question preview will appear here.')}</div>${q.question_image_url ? `<div class="sunday-special-image-card"><img src="${esc(q.question_image_url)}" alt="Question image"><b>Question Image</b></div>` : ''}<div class="sunday-special-preview-options"><span>A. ${esc(q.option_a || '')}</span><span>B. ${esc(q.option_b || '')}</span><span>C. ${esc(q.option_c || '')}</span><span>D. ${esc(q.option_d || '')}</span></div>`
+  return `<div class="sunday-special-preview-question">${renderVectorText(q.question_text || 'Question preview will appear here.')}</div>${q.question_image_url ? `<div class="sunday-special-image-card"><img src="${esc(q.question_image_url)}" alt="Question image"><b>Question Image</b></div>` : ''}<div class="sunday-special-preview-options"><span>A. ${renderVectorText(q.option_a || '')}</span><span>B. ${renderVectorText(q.option_b || '')}</span><span>C. ${renderVectorText(q.option_c || '')}</span><span>D. ${renderVectorText(q.option_d || '')}</span></div>`
 }
 function selectedSet() { return sets.find(s => s.id === selectedSetId) }
 function setQuestions(id = selectedSetId) { return questions.filter(q => q.sunday_set_id === id) }
@@ -170,14 +171,14 @@ function editorFormHtml() {
       <label><span>Difficulty</span><select name="difficulty">${optionHtml(DIFFICULTY, q.difficulty)}</select></label>
       <label><span>Status</span><select name="status">${optionHtml(STATUS, q.status)}</select></label>
       ${symbolsHtml()}
-      <label class="full"><span>Question Text</span><textarea name="question_text" data-sunday-math-field="true" required>${esc(q.question_text)}</textarea></label>
-      <label><span>Option A</span><textarea name="option_a" data-sunday-math-field="true">${esc(q.option_a)}</textarea></label>
-      <label><span>Option B</span><textarea name="option_b" data-sunday-math-field="true">${esc(q.option_b)}</textarea></label>
-      <label><span>Option C</span><textarea name="option_c" data-sunday-math-field="true">${esc(q.option_c)}</textarea></label>
-      <label><span>Option D</span><textarea name="option_d" data-sunday-math-field="true">${esc(q.option_d)}</textarea></label>
+      <label class="full"><span>Question Text</span><textarea name="question_text" data-sunday-math-field="true" required>${esc(q.question_text)}</textarea><div class="vector-field-preview" data-vector-preview="question_text">${renderVectorText(q.question_text)}</div></label>
+      <label><span>Option A</span><textarea name="option_a" data-sunday-math-field="true">${esc(q.option_a)}</textarea><div class="vector-field-preview" data-vector-preview="option_a">${renderVectorText(q.option_a)}</div></label>
+      <label><span>Option B</span><textarea name="option_b" data-sunday-math-field="true">${esc(q.option_b)}</textarea><div class="vector-field-preview" data-vector-preview="option_b">${renderVectorText(q.option_b)}</div></label>
+      <label><span>Option C</span><textarea name="option_c" data-sunday-math-field="true">${esc(q.option_c)}</textarea><div class="vector-field-preview" data-vector-preview="option_c">${renderVectorText(q.option_c)}</div></label>
+      <label><span>Option D</span><textarea name="option_d" data-sunday-math-field="true">${esc(q.option_d)}</textarea><div class="vector-field-preview" data-vector-preview="option_d">${renderVectorText(q.option_d)}</div></label>
       <label><span>Correct Answer</span><select name="correct_answer">${optionHtml(['A','B','C','D'], q.correct_answer)}</select></label>
       <label><span>Source Page / Paper</span><input name="source_page" value="${esc(q.source_page)}" placeholder="e.g. 2024 Paper 1 Q12"></label>
-      <label class="full"><span>Explanation / Solution</span><textarea name="explanation" data-sunday-math-field="true">${esc(q.explanation)}</textarea></label>
+      <label class="full"><span>Explanation / Solution</span><textarea name="explanation" data-sunday-math-field="true">${esc(q.explanation)}</textarea><div class="vector-field-preview" data-vector-preview="explanation">${renderVectorText(q.explanation)}</div></label>
       <label><span>Question Image URL</span><input name="question_image_url" value="${esc(q.question_image_url)}" placeholder="Paste image URL or upload below"></label>
       <label><span>Upload Question Image</span><input type="file" name="question_image_file" accept="image/*,.svg"></label>
       <label><span>Option A Image URL</span><input name="option_a_image_url" value="${esc(q.option_a_image_url)}"></label>
@@ -234,6 +235,7 @@ function refreshPreview() {
   const form = document.getElementById('sundaySpecialQuestionForm')
   const box = document.querySelector('[data-sunday-live-preview]')
   if (!form || !box) return
+  form.querySelectorAll('[data-vector-preview]').forEach(box => {const field=form.elements[box.dataset.vectorPreview];if(field)box.innerHTML=renderVectorText(field.value)})
   rememberBeceDraft(form)
   const f = Object.fromEntries(new FormData(form).entries())
   box.innerHTML = `<strong>Live Preview</strong>${previewHtml(normalise(f))}`
@@ -528,7 +530,7 @@ function scheduleBoot() {
 }
 
 document.addEventListener('focusin', event => {
-  if (event.target?.matches?.('[data-sunday-math-field], textarea, input[type="text"]')) activeInput = event.target
+  if (event.target?.matches?.('[data-sunday-math-field]')) activeInput = event.target
 })
 
 document.addEventListener('input', event => {
@@ -539,6 +541,13 @@ document.addEventListener('input', event => {
 })
 
 document.addEventListener('click', async event => {
+  if(event.target.closest('[data-insert-column-vector]')) {
+    event.preventDefault()
+    const top=document.querySelector('[data-vector-top]').value, bottom=document.querySelector('[data-vector-bottom]').value
+    if(!top.trim() || !bottom.trim()) {window.alert('Enter both vector entries.');return}
+    const target=activeInput?.matches?.('[data-sunday-math-field]') && activeInput.isConnected ? activeInput : document.querySelector('#sundaySpecialQuestionForm [name=question_text]')
+    insertAtCursor(target,columnVector(top,bottom));return
+  }
   const symbol = event.target.closest('[data-sunday-insert-symbol]')?.dataset?.sundayInsertSymbol
   if (symbol) { event.preventDefault(); insertAtCursor(activeInput || document.querySelector('[name="question_text"]'), symbol); return }
   if (event.target.closest('[data-sunday-clean-math]')) { event.preventDefault(); cleanMathFields(); return }
