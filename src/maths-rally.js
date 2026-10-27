@@ -61,7 +61,7 @@ function drawTrack(time){const canvas=overlay?.querySelector('[data-rally-canvas
 const bounds={minX:Math.min(...course.points.map(p=>p.x)),maxX:Math.max(...course.points.map(p=>p.x)),minY:Math.min(...course.points.map(p=>p.y)),maxY:Math.max(...course.points.map(p=>p.y))};
 const size=sprint?1000:Math.min(1000/(bounds.maxX-bounds.minX+.25),(h-120)/(bounds.maxY-bounds.minY+.25));
 const originX=550-(bounds.minX+bounds.maxX)*size/2,originY=h/2-(bounds.minY+bounds.maxY)*size/2;
-const spacing=sprint?.18:.033,map=p=>sprint?{x:100+(p.x-.12)/.76*900,y:h/2+(p.y-.5)*(h-100)}:{x:originX+p.x*size,y:originY+p.y*size},roadWidth=sprint?(h-100)*.76:size*.16;
+const spacing=sprint?.18:.033,map=p=>sprint?{x:160+(p.x-.12)/.76*840,y:h/2+(p.y-.5)*(h-100)}:{x:originX+p.x*size,y:originY+p.y*size},roadWidth=sprint?(h-100)*.76:size*.16;
 paintWorld(c,1100,h,race?.world||garage.world,paused?0:time);
 const trace=()=>{c.beginPath();course.points.forEach((p,i)=>{const point=map(p);if(i)c.lineTo(point.x,point.y);else c.moveTo(point.x,point.y)})};c.lineCap=sprint?'butt':'round';c.lineJoin='round';trace();c.strokeStyle='#0a182d88';c.lineWidth=roadWidth+18;c.stroke();trace();c.strokeStyle='#ec594f';c.lineWidth=roadWidth+12;c.stroke();trace();c.strokeStyle='#f6f2df';c.lineWidth=roadWidth+4;c.stroke();trace();const asphalt=c.createLinearGradient(0,h/2-roadWidth/2,0,h/2+roadWidth/2);asphalt.addColorStop(0,'#263448');asphalt.addColorStop(.5,'#3d4b5d');asphalt.addColorStop(1,'#243145');c.strokeStyle=asphalt;c.lineWidth=roadWidth;c.stroke();
 c.setLineDash([10,12]);c.strokeStyle='#a6b5c178';c.lineWidth=1.2;
