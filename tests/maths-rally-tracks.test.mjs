@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import {RALLY_TRACKS,getTrack,trackPoint,raceStars} from '../src/maths-rally-tracks.js'
-assert.equal(RALLY_TRACKS.length,10);assert.equal(new Set(RALLY_TRACKS.map(t=>t.id)).size,10)
+assert.equal(RALLY_TRACKS.length,11);assert.equal(new Set(RALLY_TRACKS.map(t=>t.id)).size,11)
 for(const raw of RALLY_TRACKS){const t=getTrack(raw.id);assert.ok(t.total>0);for(let i=0;i<=100;i++)for(let lane=0;lane<4;lane++){const p=trackPoint(t,i/100,lane);assert.ok(Number.isFinite(p.x)&&Number.isFinite(p.y)&&Number.isFinite(p.angle));assert.ok(p.x>.02&&p.x<.98&&p.y>.02&&p.y<.98)}const a=trackPoint(t,0,1.5),b=trackPoint(t,1,1.5);if(t.closed)assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<.00001);else assert.ok(Math.hypot(a.x-b.x,a.y-b.y)>.05);assert.deepEqual(trackPoint(t,-1),trackPoint(t,0));assert.deepEqual(trackPoint(t,2),trackPoint(t,1));assert.notDeepEqual(trackPoint(t,.5,0),trackPoint(t,.5,3))}
 assert.equal(raceStars({finished:false}),0);assert.equal(raceStars({finished:true,position:4,accuracy:20}),1);assert.equal(raceStars({finished:true,position:2,accuracy:70}),2);assert.equal(raceStars({finished:true,position:1,accuracy:90}),3)
-console.log('PASS 10 unique courses, finite geometry, boundaries, closed laps/open finishes, lane separation, clamped progress and star awards')
+console.log('PASS 11 unique courses, finite geometry, boundaries, closed laps/open finishes, lane separation, clamped progress and star awards')
+
+assert.equal(getTrack('monster').closed,true)
