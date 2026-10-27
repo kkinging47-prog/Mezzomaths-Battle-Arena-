@@ -201,6 +201,7 @@ function patchBank() {
 }
 function updateTopicAreaFields() {
   document.querySelectorAll('select[name="topic"], #adminTopic, #manualTopic, #soloTopic, #battleTopic, #smartTopic').forEach(select => {
+    if(select.closest('.rally-overlay')) return
     const area = areaForTopic(select.value)
     const form = select.closest('form, section, article')
     form?.querySelectorAll('input[name="topic_area"], input[name="topic_area_display"], input[readonly]').forEach(input => {
