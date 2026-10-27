@@ -21,7 +21,7 @@ let lastWindowOpen = null,topicReportBusy=false,topicDisplayAttempt=null
 
 const esc = (v = '') => String(v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
 const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) } catch { return fallback } }
-const saveJson = (key, value) => localStorage.setItem(key, JSON.stringify(value))
+const saveJson = (key, value) => { localStorage.setItem(key, JSON.stringify(value)); if (key === CANDIDATE_KEY) registeringAnotherCandidate = false }
 const shuffle = list => [...list].sort(() => Math.random() - 0.5)
 const optionHtml = (list, selected = '') => list.map(x => `<option value="${esc(x)}" ${x === selected ? 'selected' : ''}>${esc(x)}</option>`).join('')
 
