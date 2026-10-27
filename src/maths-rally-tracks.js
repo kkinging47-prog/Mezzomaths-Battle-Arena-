@@ -11,7 +11,8 @@ export const RALLY_TRACKS=[
  {id:'eight',name:'Figure-Eight Flyover',shape:'Figure eight',description:'Cross the centre and sweep through both loops.',color:'#586fa2',closed:true,points:curve(t=>({x:.5+.38*Math.sin(TAU*t),y:.5+.31*Math.sin(2*TAU*t)}))},
  {id:'snake',name:'Serpentine Run',shape:'S-curve',description:'Flow through a winding mountain road.',color:'#5d9254',closed:false,points:curve(t=>({x:.5+.32*Math.sin(TAU*1.5*t),y:.13+.74*t}))},
  {id:'diamond',name:'Diamond Dash',shape:'Diamond',description:'Four straight sectors and four corners.',color:'#9a667e',closed:true,points:polygon([[.5,.12],[.88,.5],[.5,.88],[.12,.5],[.5,.12]])},
- {id:'star',name:'Star Grand Prix',shape:'Star',description:'The final course: ten alternating corners.',color:'#aa8746',closed:true,points:polygon(Array.from({length:11},(_,i)=>{const a=i*TAU/10-Math.PI/2,r=i%2?.23:.4;return[.5+r*Math.cos(a),.5+r*Math.sin(a)]}))}
+ {id:'star',name:'Star Grand Prix',shape:'Star',description:'The final course: ten alternating corners.',color:'#aa8746',closed:true,points:polygon(Array.from({length:11},(_,i)=>{const a=i*TAU/10-Math.PI/2,r=i%2?.23:.4;return[.5+r*Math.cos(a),.5+r*Math.sin(a)]}))},
+ {id:'monster',name:'Monster Truck Mayhem',shape:'Dirt stadium',description:'Big wheels, dirt ramps and a stadium showdown.',color:'#c77b3d',closed:true,points:curve(t=>({x:.5+.37*Math.cos(TAU*t-Math.PI/2),y:.5+.30*Math.sin(TAU*t-Math.PI/2)}))}
 ]
 function prepare(track){let total=0;const cumulative=[0];for(let i=1;i<track.points.length;i++){total+=Math.hypot(track.points[i].x-track.points[i-1].x,track.points[i].y-track.points[i-1].y);cumulative.push(total)}return{...track,total,cumulative}}
 const tracks=RALLY_TRACKS.map(prepare)
