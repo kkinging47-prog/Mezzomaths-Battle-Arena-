@@ -9,6 +9,7 @@ const ATTEMPTS_KEY = 'mezzo_bece_sunday_attempts'
 const ACTIVE_KEY = 'mezzo_bece_sunday_active'
 const QUESTION_COUNT = 40
 const REGIONS = ['Greater Accra','Ashanti','Central','Eastern','Western','Western North','Volta','Oti','Northern','Savannah','North East','Upper East','Upper West','Bono','Bono East','Ahafo']
+let registeringAnotherCandidate = false
 let active = null
 let queued = false
 let previewReport = false
@@ -178,11 +179,11 @@ async function accessSchoolCandidate(form) {
  saveJson(CANDIDATE_KEY,result)
  renderSundayHome()
 }
-function registerHtml() {
-  return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>Register Free for Sunday Trial</h2><p><button type="button" class="btn btn-blue" data-sunday-legacy-access>Restore earlier registration</button></p><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p><button type="button" class="btn btn-blue" data-school-student-access>Already registered by your school? Access your profile</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button></form>`
+function registerHtml(another = false) {
+  return `<form class="sunday-register light-card" id="beceSundayRegisterForm"><h2>${another ? 'Register a New Candidate' : 'Register Free for Sunday Trial'}</h2>${another ? '<p>The current candidate registration is kept until this new registration succeeds. Enter the next student’s own full name and details.</p>' : ''}<p><button type="button" class="btn btn-blue" data-sunday-legacy-access>Restore earlier registration</button></p><p><button type="button" class="btn btn-blue" data-sunday-school-mode>Register / Access as a School</button></p><p><button type="button" class="btn btn-blue" data-school-student-access>Already registered by your school? Access your profile</button></p><p>For Year 9 / JHS 3 / Basic 9 candidates. Students can register with phone number or email.</p><div class="sunday-form-grid"><label><span>Full Name</span><input name="full_name" required></label><label><span>Phone Number or Email</span><input name="contact" required></label><label><span>Name of School</span><input name="school_name" required></label><label><span>Location / Town</span><input name="location" required></label><label><span>Region</span><select name="region">${optionHtml(REGIONS, 'Greater Accra')}</select></label><label><span>Class</span><select name="class_level"><option>Grade 9</option><option>JHS 3</option><option>Basic 9</option></select></label></div><button class="btn btn-gold" type="submit">Create Free Candidate Profile</button>${another ? '<button class="btn btn-blue" type="button" data-sunday-cancel-new-candidate>Cancel - return to current candidate</button>' : ''}</form>`
 }
 function registeredHtml(c, w, tried) {
-  return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions"><button type="button" class="btn btn-blue" data-sunday-history>My Results · Scores & Review</button>${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : (w.open || (labOpen() && c.school_lab_authorized)) ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}${c.school_lab_authorized ? '<button class="btn btn-blue" data-sunday-school-mode="true">Switch Student</button>' : '<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button>'}</div></section>`
+  return `<section class="sunday-registered light-card"><div><span>✅ Registered Candidate</span><h2>${esc(c.full_name)}</h2><p>${esc(c.school_name)} • ${esc(c.location)} • ${esc(c.region)}</p><p><strong>Candidate ID:</strong> ${esc(c.candidate_id || 'Legacy registration')}</p><p>${esc(c.registration_status === 'confirmed' ? 'Registration saved successfully.' : 'Registration is saved on this device. Online confirmation is pending; please reconnect and retry registration.')}</p></div><div class="sunday-actions"><button type="button" class="btn btn-gold" data-sunday-new-candidate>Register a New Candidate</button><button type="button" class="btn btn-blue" data-sunday-history>My Results · Scores & Review</button>${tried ? '<button class="btn btn-blue" data-bece-sunday-report="true">View This Week Report</button>' : (w.open || (labOpen() && c.school_lab_authorized)) ? '<button class="btn btn-gold" data-bece-sunday-start="true">Start 40 Objectives Trial</button>' : '<button class="btn btn-primary" disabled>Trial opens Sunday 6:00pm</button>'}${c.school_lab_authorized ? '<button class="btn btn-blue" data-sunday-school-mode="true">Switch Student</button>' : '<button class="btn btn-ghost" data-bece-sunday-change-profile="true">Change Details</button>'}</div></section>`
 }
 function leaderboardHtml(rows) {
   return `<section class="sunday-board glass-card" data-sunday-leaderboard><div class="sunday-board-head"><div><span>🏆 Weekly Leaderboard</span><h2>Score + Time Ranking</h2></div><small>Week of ${weekStartIso()}</small></div>${rows.length ? rows.map((r, i) => `<div class="sunday-rank"><b>${i + 1}</b><span><strong>${esc(r.full_name || r.candidate?.full_name || 'Candidate')}</strong><small>${esc(r.school_name || r.candidate?.school_name || '')} • ${esc(r.region || r.candidate?.region || '')}</small></span><em>${r.score}/${r.total || QUESTION_COUNT}</em><small>${fmt((r.time_taken_seconds || 0) * 1000)}</small></div>`).join('') : '<p>No results yet this week.</p>'}</section>`
@@ -201,9 +202,9 @@ async function showSundayAdminSummary() {
 }
 function renderSundayHome() {
   const c = candidate(), w = trialWindow(), tried = currentAttempt()
-  shell(`<section class="sunday-hero glass-card"><div><span>Free National Practice Window</span><h1>Sunday BECE Maths Trial</h1><p>Open every Sunday, 6:00pm – 8:00pm Ghana time.</p></div><div class="sunday-big-count"><small>${w.open ? 'Window closes in' : 'Next trial starts in'}</small><strong data-bece-sunday-countdown>${fmt(w.ms)}</strong><em>40 BECE objectives</em></div></section>${c ? registeredHtml(c, w, tried) : registerHtml()}${leaderboardHtml(localLeaders())}`)
+  shell(`<section class="sunday-hero glass-card"><div><span>Free National Practice Window</span><h1>Sunday BECE Maths Trial</h1><p>Open every Sunday, 6:00pm – 8:00pm Ghana time.</p></div><div class="sunday-big-count"><small>${w.open ? 'Window closes in' : 'Next trial starts in'}</small><strong data-bece-sunday-countdown>${fmt(w.ms)}</strong><em>40 BECE objectives</em></div></section>${registeringAnotherCandidate ? registerHtml(true) : c ? registeredHtml(c, w, tried) : registerHtml()}${leaderboardHtml(localLeaders())}`)
   refreshDbLeaders()
-  if (c && !c.candidate_id && !restoringLegacy) restoreLegacyCandidate()
+  if (!registeringAnotherCandidate && c && !c.candidate_id && !restoringLegacy) restoreLegacyCandidate()
   if (supabase) supabase.auth.getUser().then(({data}) => {
     if (!data?.user || !document.querySelector('.bece-sunday-page')) return
     supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle().then(({data:profile}) => {
@@ -231,6 +232,10 @@ async function register(form) {
     const confirmed = await response.json()
     if (!response.ok || !confirmed.candidate_id) throw new Error(confirmed.error || 'Registration unavailable.')
     saveJson(CANDIDATE_KEY, confirmed)
+    registeringAnotherCandidate = false
+    active = null
+    historyCache = null
+    topicDisplayAttempt = null
     renderSundayHome()
   } catch (error) {
     alert(error.message || 'We could not confirm your registration. Please retry when connected.')
@@ -384,6 +389,8 @@ function updateCountdowns() {
 function sync() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; injectBanner(); updateCountdowns() }) }
 
 document.addEventListener('click', e => {
+  if(e.target.closest('[data-sunday-new-candidate]')) { e.preventDefault(); e.stopImmediatePropagation(); registeringAnotherCandidate = true; renderSundayHome(); document.querySelector('#beceSundayRegisterForm input[name=full_name]')?.focus(); return }
+  if(e.target.closest('[data-sunday-cancel-new-candidate]')) { e.preventDefault(); e.stopImmediatePropagation(); registeringAnotherCandidate = false; renderSundayHome(); return }
   if(e.target.closest('[data-sunday-topic-refresh]')){e.preventDefault();refreshSundayTopicReport();return}
   if(e.target.closest('[data-sunday-history]')) { e.preventDefault(); e.stopImmediatePropagation(); showResultsHistory(); return }
   const reviewWeek=e.target.closest('[data-sunday-review-week]')?.dataset.sundayReviewWeek
