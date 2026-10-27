@@ -1,3 +1,4 @@
+import './homepage-overview.js'
 import { renderVectorText } from './vector-math.js'
 import { bankImageFields, uploadBankImages } from './question-bank-images.js'
 import './index.css'
@@ -122,17 +123,13 @@ function homeHtml() {
   return `<section class="screen home-screen game-landing">
     <section class="game-hero glass-card">
       <div class="hero-copy">
-        <div class="hero-kicker"><span>🚀 New student arena</span><span>Fresh maths challenges</span></div>
-        <h1 class="mega-title">Welcome to Mezzo Maths Battle Arena</h1>
-        <p class="hero-text">Choose a game mode, earn XP, collect coins, protect your streak, battle friends, challenge MathBot, and climb the champion boards while mastering Mezzo Maths topics.</p>
+        <div class="hero-kicker"><span>MEZZO MATHS</span><span>Learn • Play • Grow</span></div>
+        <h1 class="mega-title">Learn it. Play it. Master it.</h1>
+        <p class="hero-text">Your mathematics home for practice, real games, BECE preparation, courses and classroom tools. Start with a daily challenge, explore a topic or join a live battle. Every activity is organised below.</p>
         <div class="hero-actions"><button class="btn btn-gold" data-start-daily="true">⚡ Start Daily Challenge</button><button class="btn btn-primary" data-target="smartboard">📺 Smart Board 1v1</button><button class="btn btn-blue" data-target="leaderboard">🏆 View Champions</button></div>
         <div class="landing-stat-grid"><div class="landing-stat"><span>🔥</span><strong>7-Day</strong><small>Streak target</small></div><div class="landing-stat"><span>🪙</span><strong>Coins</strong><small>Earn by playing</small></div><div class="landing-stat"><span>🏆</span><strong>Trophies</strong><small>Win battles</small></div><div class="landing-stat"><span>📚</span><strong>Grade 1–SHS</strong><small>Topic coverage</small></div></div>
       </div>
-      <div class="arena-stage glass-card">
-        <div class="floating-badge badge-top">⭐ Champion quest</div><div class="floating-badge badge-side">+250 XP</div><div class="floating-fire">🔥</div><div class="floating-coin coin-one">🪙</div><div class="floating-coin coin-two">🪙</div>
-        <div class="battle-platform"><div class="player-token left-token">👦🏽<span>Player A</span></div><div class="gold-trophy">🏆</div><div class="player-token right-token">👧🏾<span>Player B</span></div></div>
-        <div class="mini-leader-board"><strong>Live Arena</strong><span>1. Smart Board Winner</span><span>2. Daily Challenge Hero</span><span>3. MathBot Slayer</span></div>
-      </div>
+      <aside class="arena-stage glass-card" aria-label="What you can do on Mezzo"><div class="overview-journey"><article><b>📚</b><strong>Learn</strong><p>Topics, courses and practice for your next breakthrough.</p></article><article><b>🏁</b><strong>Play</strong><p>Race, battle and turn answers into achievement.</p></article><article><b>📈</b><strong>Grow</strong><p>Review your work, build confidence and plan ahead.</p></article></div><div class="overview-hero-note">For students, teachers &amp; schools · GES, Cambridge &amp; Pearson Edexcel options</div></aside>
     </section>
     <section class="mode-section-head"><div><span>🎮 Select a game mode</span><h2>Every mode feels like a maths game</h2></div><p>Choose a challenge, earn rewards, and build your maths skills.</p></section>
     <section class="home-mode-grid battle-grid">${cards.map(([icon,title,desc,cta,target,cls,reward,tag]) => `<button class="home-mode-card game-mode-card ${cls}" ${buttonAttrs(target)}><i class="mode-shine"></i><div class="mode-top"><span class="mode-icon">${icon}</span><em>${tag}</em></div><h3>${title}</h3><p>${desc}</p><div class="reward-pill">${reward}</div><strong>${cta} →</strong></button>`).join('')}</section>
