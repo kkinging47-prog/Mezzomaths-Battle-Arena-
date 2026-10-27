@@ -114,7 +114,7 @@ function refreshCountdown() {
 function shouldShow() {
   if (sessionStorage.getItem(POPUP_KEY)) return false
   if (document.querySelector('[data-bece-sunday-entry-popup]')) return false
-  if (document.querySelector('.bece-sunday-page')) return false
+  if (document.querySelector('.bece-sunday-page, .rally-overlay')) return false
   return true
 }
 
