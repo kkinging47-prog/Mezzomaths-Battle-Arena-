@@ -19,7 +19,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P001\", \"previous_question_id\": \"0ecce32f-332d-4995-b27c-b2d9413917df\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P001\", \"previous_question_id\": \"0ecce32f-332d-4995-b27c-b2d9413917df\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -42,7 +42,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P002\", \"previous_question_id\": \"2082ae44-a13b-4934-aaf4-0ffd8f3043e9\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P002\", \"previous_question_id\": \"2082ae44-a13b-4934-aaf4-0ffd8f3043e9\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -65,7 +65,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P003\", \"previous_question_id\": \"2110d7a5-999c-4001-8c67-7647a2d8d142\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P003\", \"previous_question_id\": \"2110d7a5-999c-4001-8c67-7647a2d8d142\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -88,7 +88,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P004\", \"previous_question_id\": \"2430486c-13d9-40f6-acb6-eb852df9adee\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P004\", \"previous_question_id\": \"2430486c-13d9-40f6-acb6-eb852df9adee\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -111,7 +111,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 4.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P005\", \"previous_question_id\": \"3896f7c3-a877-4e91-b87c-1ec977383c8c\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"Create a different missing-digit addition with exactly one solution. Explain how you know it is unique.\", \"teaching_guidance\": \"Answers vary. Check column sums and show that only one digit 0–9 works.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P005\", \"previous_question_id\": \"3896f7c3-a877-4e91-b87c-1ec977383c8c\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"Create a different missing-digit addition with exactly one solution. Explain how you know it is unique.\", \"teaching_guidance\": \"Answers vary. Check column sums and show that only one digit 0–9 works.\"}",
     "question_image_url": null
   },
   {
@@ -134,7 +134,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 200.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P006\", \"previous_question_id\": \"60128637-826e-4863-bd8d-44f88b818dbf\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P006\", \"previous_question_id\": \"60128637-826e-4863-bd8d-44f88b818dbf\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -157,7 +157,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 1157.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P007\", \"previous_question_id\": \"7c403cd2-f5b8-4352-be1a-03ace25f184b\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P007\", \"previous_question_id\": \"7c403cd2-f5b8-4352-be1a-03ace25f184b\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -180,7 +180,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 1130.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P008\", \"previous_question_id\": \"8f969f0c-0826-4a23-a9a2-ae37aef82525\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P008\", \"previous_question_id\": \"8f969f0c-0826-4a23-a9a2-ae37aef82525\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P008.svg"
   },
   {
@@ -203,7 +203,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 1315.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P009\", \"previous_question_id\": \"a4674573-06ed-480c-8efe-3bd6d734aa61\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P009\", \"previous_question_id\": \"a4674573-06ed-480c-8efe-3bd6d734aa61\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -226,7 +226,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P010\", \"previous_question_id\": \"b40fcb05-e8d0-4663-9f00-5fa045a91919\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"Find 5,300 − 2,998 mentally in two ways. Explain why both work.\", \"teaching_guidance\": \"2,302. Compensation: 5,300 − 3,000 + 2. Alternatively subtract 2,000, then 900, then 98.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P010\", \"previous_question_id\": \"b40fcb05-e8d0-4663-9f00-5fa045a91919\", \"curriculum_reference\": \"Prerequisite consolidation; B4.2.2.2\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"Find 5,300 − 2,998 mentally in two ways. Explain why both work.\", \"teaching_guidance\": \"2,302. Compensation: 5,300 − 3,000 + 2. Alternatively subtract 2,000, then 900, then 98.\"}",
     "question_image_url": null
   },
   {
@@ -249,7 +249,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P011\", \"previous_question_id\": \"058134d7-5621-4c69-ad44-807d98bb39fe\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P011\", \"previous_question_id\": \"058134d7-5621-4c69-ad44-807d98bb39fe\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -272,7 +272,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 33.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P012\", \"previous_question_id\": \"13cd0c17-9c1e-4ede-a21f-45851f4cb178\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Fluency\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P012\", \"previous_question_id\": \"13cd0c17-9c1e-4ede-a21f-45851f4cb178\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Fluency\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -295,7 +295,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P013\", \"previous_question_id\": \"2c6d60c1-2ccb-48c6-9eb6-402652461e19\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P013\", \"previous_question_id\": \"2c6d60c1-2ccb-48c6-9eb6-402652461e19\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -318,7 +318,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 15.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P014\", \"previous_question_id\": \"578adc7e-9410-4eb9-bfeb-7b494ec7b9ed\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P014\", \"previous_question_id\": \"578adc7e-9410-4eb9-bfeb-7b494ec7b9ed\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P014.svg"
   },
   {
@@ -341,7 +341,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P015\", \"previous_question_id\": \"71cfe402-46d8-437e-b659-783e908d1878\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"Create a story for 45 − □ = 19 and explain what the unknown means.\", \"teaching_guidance\": \"Example: 45 mangoes, some sold, 19 remain. The unknown is 26 mangoes sold.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P015\", \"previous_question_id\": \"71cfe402-46d8-437e-b659-783e908d1878\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"Create a story for 45 − □ = 19 and explain what the unknown means.\", \"teaching_guidance\": \"Example: 45 mangoes, some sold, 19 remain. The unknown is 26 mangoes sold.\"}",
     "question_image_url": null
   },
   {
@@ -364,7 +364,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P016\", \"previous_question_id\": \"9b17bf33-bc6c-46e2-acf1-7d4e48e9fba0\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P016\", \"previous_question_id\": \"9b17bf33-bc6c-46e2-acf1-7d4e48e9fba0\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -387,7 +387,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 17.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P017\", \"previous_question_id\": \"abcaed71-db3a-491b-bb76-ed39444c6ecd\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P017\", \"previous_question_id\": \"abcaed71-db3a-491b-bb76-ed39444c6ecd\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -410,7 +410,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P018\", \"previous_question_id\": \"c91d758b-71db-4f05-89dc-38f04989f4df\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P018\", \"previous_question_id\": \"c91d758b-71db-4f05-89dc-38f04989f4df\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -433,7 +433,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 11.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P019\", \"previous_question_id\": \"dd1ab92b-ce69-4545-9cbc-ddfc87d2756c\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P019\", \"previous_question_id\": \"dd1ab92b-ce69-4545-9cbc-ddfc87d2756c\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -456,7 +456,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P020\", \"previous_question_id\": \"e3ad45b7-4db8-49b0-9deb-02903bfe9b06\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"Write a different equation with an unknown subtrahend of 24, then check it.\", \"teaching_guidance\": \"Example: 60 − □ = 36. Check 60 − 24 = 36.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P020\", \"previous_question_id\": \"e3ad45b7-4db8-49b0-9deb-02903bfe9b06\", \"curriculum_reference\": \"B4.2.2.1; B4.2.2.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"Write a different equation with an unknown subtrahend of 24, then check it.\", \"teaching_guidance\": \"Example: 60 − □ = 36. Check 60 − 24 = 36.\"}",
     "question_image_url": null
   },
   {
@@ -479,7 +479,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P021\", \"previous_question_id\": \"15c86bf1-df77-46a0-862a-c925d341d80d\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P021\", \"previous_question_id\": \"15c86bf1-df77-46a0-862a-c925d341d80d\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -502,7 +502,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P022\", \"previous_question_id\": \"521c731d-bb73-4078-abec-9d89bc3a12e7\", \"curriculum_reference\": \"B4.1.3.1; B4.1.3.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P022\", \"previous_question_id\": \"521c731d-bb73-4078-abec-9d89bc3a12e7\", \"curriculum_reference\": \"B4.1.3.1; B4.1.3.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P022.svg"
   },
   {
@@ -525,7 +525,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P023\", \"previous_question_id\": \"54d5d725-d62a-4e87-aae5-0d77cc34dec2\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P023\", \"previous_question_id\": \"54d5d725-d62a-4e87-aae5-0d77cc34dec2\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -548,7 +548,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P024\", \"previous_question_id\": \"82e7bd3c-d156-419d-9218-97d6230a8071\", \"curriculum_reference\": \"B4.1.3.1; B4.1.3.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P024\", \"previous_question_id\": \"82e7bd3c-d156-419d-9218-97d6230a8071\", \"curriculum_reference\": \"B4.1.3.1; B4.1.3.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P024.svg"
   },
   {
@@ -571,7 +571,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P025\", \"previous_question_id\": \"866db715-f30f-4c70-8e79-4fe54ae4cdc0\", \"curriculum_reference\": \"B4.1.5.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"Draw a hundred-square showing 25%. Show how you can regroup the shaded cells into one quarter of the whole.\", \"teaching_guidance\": \"Shade 25 of 100 equal cells, for example a 5 by 5 block. Four such blocks cover the whole.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P025\", \"previous_question_id\": \"866db715-f30f-4c70-8e79-4fe54ae4cdc0\", \"curriculum_reference\": \"B4.1.5.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"Draw a hundred-square showing 25%. Show how you can regroup the shaded cells into one quarter of the whole.\", \"teaching_guidance\": \"Shade 25 of 100 equal cells, for example a 5 by 5 block. Four such blocks cover the whole.\"}",
     "question_image_url": null
   },
   {
@@ -594,7 +594,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P026\", \"previous_question_id\": \"92490843-702c-49d9-b0da-60d762674ba5\", \"curriculum_reference\": \"B4.1.3.1; B4.1.3.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P026\", \"previous_question_id\": \"92490843-702c-49d9-b0da-60d762674ba5\", \"curriculum_reference\": \"B4.1.3.1; B4.1.3.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P026.svg"
   },
   {
@@ -617,7 +617,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P027\", \"previous_question_id\": \"cbf23773-c71c-4cc5-92db-004cec671bcc\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P027\", \"previous_question_id\": \"cbf23773-c71c-4cc5-92db-004cec671bcc\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -640,7 +640,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P028\", \"previous_question_id\": \"dc4964f2-b3cc-4e8a-a9ae-ed6083971fa0\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P028\", \"previous_question_id\": \"dc4964f2-b3cc-4e8a-a9ae-ed6083971fa0\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P028.svg"
   },
   {
@@ -663,7 +663,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 12.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P029\", \"previous_question_id\": \"dc7c0843-d016-46f9-9d95-a6702dc755b9\", \"curriculum_reference\": \"B4.1.3.1; B4.1.3.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P029\", \"previous_question_id\": \"dc7c0843-d016-46f9-9d95-a6702dc755b9\", \"curriculum_reference\": \"B4.1.3.1; B4.1.3.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -686,7 +686,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 50.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P030\", \"previous_question_id\": \"f6a04dbb-9851-412c-b5f3-f3c76ec6b49b\", \"curriculum_reference\": \"B4.1.3.1; B4.1.3.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"Draw the 2 m ribbon and show the part used and the part remaining. Label lengths in centimetres.\", \"teaching_guidance\": \"Four equal parts of 50 cm. Used 150 cm; remaining 50 cm.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P030\", \"previous_question_id\": \"f6a04dbb-9851-412c-b5f3-f3c76ec6b49b\", \"curriculum_reference\": \"B4.1.3.1; B4.1.3.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"Draw the 2 m ribbon and show the part used and the part remaining. Label lengths in centimetres.\", \"teaching_guidance\": \"Four equal parts of 50 cm. Used 150 cm; remaining 50 cm.\"}",
     "question_image_url": null
   },
   {
@@ -709,7 +709,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P031\", \"previous_question_id\": \"2c60a2fe-972d-4042-93f9-34aeece820d3\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P031\", \"previous_question_id\": \"2c60a2fe-972d-4042-93f9-34aeece820d3\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P031.svg"
   },
   {
@@ -732,7 +732,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P032\", \"previous_question_id\": \"3d95c34e-7eca-4e34-8b47-9195a2b2f95e\", \"curriculum_reference\": \"B4.3.2.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P032\", \"previous_question_id\": \"3d95c34e-7eca-4e34-8b47-9195a2b2f95e\", \"curriculum_reference\": \"B4.3.2.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -755,7 +755,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P033\", \"previous_question_id\": \"5887fe77-133b-4844-9889-b879a5e1e65e\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P033\", \"previous_question_id\": \"5887fe77-133b-4844-9889-b879a5e1e65e\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -778,7 +778,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P034\", \"previous_question_id\": \"62f5e3b3-f62e-4b1e-9897-b7cdaac7db20\", \"curriculum_reference\": \"B4.3.2.1\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P034\", \"previous_question_id\": \"62f5e3b3-f62e-4b1e-9897-b7cdaac7db20\", \"curriculum_reference\": \"B4.3.2.1\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -801,7 +801,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P035\", \"previous_question_id\": \"832ce7fc-9715-4410-b897-76990dd3ccb0\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"Draw a square and all its symmetry lines. Explain why each works.\", \"teaching_guidance\": \"Four lines: two midlines and two diagonals. Each fold makes the halves coincide.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P035\", \"previous_question_id\": \"832ce7fc-9715-4410-b897-76990dd3ccb0\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"Draw a square and all its symmetry lines. Explain why each works.\", \"teaching_guidance\": \"Four lines: two midlines and two diagonals. Each fold makes the halves coincide.\"}",
     "question_image_url": null
   },
   {
@@ -824,7 +824,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P036\", \"previous_question_id\": \"96558e61-f039-47af-b0e3-c4d13bbbbbde\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P036\", \"previous_question_id\": \"96558e61-f039-47af-b0e3-c4d13bbbbbde\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -847,7 +847,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P037\", \"previous_question_id\": \"cd51832a-3e1a-4ae9-8f16-8dd282c70535\", \"curriculum_reference\": \"B4.3.2.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P037\", \"previous_question_id\": \"cd51832a-3e1a-4ae9-8f16-8dd282c70535\", \"curriculum_reference\": \"B4.3.2.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -870,7 +870,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P038\", \"previous_question_id\": \"d9dae4ce-9b6b-492d-98fb-75808bd45b36\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P038\", \"previous_question_id\": \"d9dae4ce-9b6b-492d-98fb-75808bd45b36\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -893,7 +893,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P039\", \"previous_question_id\": \"f4dfd352-f32e-49c1-8c29-763acef1783a\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P039\", \"previous_question_id\": \"f4dfd352-f32e-49c1-8c29-763acef1783a\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -916,7 +916,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 2.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P040\", \"previous_question_id\": \"f55c9336-af36-491a-82ac-da25fea618f6\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Fluency\", \"teaching_prompt\": \"Draw a non-square rectangle. Test both midlines and a diagonal by folding. Record what happens.\", \"teaching_guidance\": \"Both midlines work; a diagonal does not. Explain using matching halves.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P040\", \"previous_question_id\": \"f55c9336-af36-491a-82ac-da25fea618f6\", \"curriculum_reference\": \"B4.3.1.1\", \"thinking_demand\": \"Fluency\", \"teaching_prompt\": \"Draw a non-square rectangle. Test both midlines and a diagonal by folding. Record what happens.\", \"teaching_guidance\": \"Both midlines work; a diagonal does not. Explain using matching halves.\"}",
     "question_image_url": null
   },
   {
@@ -939,7 +939,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 24.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P041\", \"previous_question_id\": \"0bf89c27-d393-4a47-9c21-4ff11cfbae08\", \"curriculum_reference\": \"B4.3.3.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P041\", \"previous_question_id\": \"0bf89c27-d393-4a47-9c21-4ff11cfbae08\", \"curriculum_reference\": \"B4.3.3.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P041.svg"
   },
   {
@@ -962,7 +962,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 40.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P042\", \"previous_question_id\": \"1edb193f-7c88-43b5-8883-e47b726780be\", \"curriculum_reference\": \"B4.3.3.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P042\", \"previous_question_id\": \"1edb193f-7c88-43b5-8883-e47b726780be\", \"curriculum_reference\": \"B4.3.3.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -985,7 +985,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P043\", \"previous_question_id\": \"37cd144c-729d-46fc-8a9d-79d47d1e2445\", \"curriculum_reference\": \"B4.3.3.1; B4.3.3.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P043\", \"previous_question_id\": \"37cd144c-729d-46fc-8a9d-79d47d1e2445\", \"curriculum_reference\": \"B4.3.3.1; B4.3.3.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1008,7 +1008,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 22.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P044\", \"previous_question_id\": \"4163c672-ab73-46df-9684-c16b5227f398\", \"curriculum_reference\": \"B4.3.3.1\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P044\", \"previous_question_id\": \"4163c672-ab73-46df-9684-c16b5227f398\", \"curriculum_reference\": \"B4.3.3.1\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1031,7 +1031,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P045\", \"previous_question_id\": \"6b68e4f5-08d2-4881-aacf-013a2393d18b\", \"curriculum_reference\": \"B4.3.3.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"Estimate your classroom floor area using a 1 m by 1 m square as a reference. Explain your estimate.\", \"teaching_guidance\": \"Answers vary. Use square metres and a plausible number of unit squares covering the floor.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P045\", \"previous_question_id\": \"6b68e4f5-08d2-4881-aacf-013a2393d18b\", \"curriculum_reference\": \"B4.3.3.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"Estimate your classroom floor area using a 1 m by 1 m square as a reference. Explain your estimate.\", \"teaching_guidance\": \"Answers vary. Use square metres and a plausible number of unit squares covering the floor.\"}",
     "question_image_url": null
   },
   {
@@ -1054,7 +1054,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P046\", \"previous_question_id\": \"83b1de92-4d0e-4539-a0ca-2e6662a02c5b\", \"curriculum_reference\": \"B4.3.3.1; B4.3.3.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P046\", \"previous_question_id\": \"83b1de92-4d0e-4539-a0ca-2e6662a02c5b\", \"curriculum_reference\": \"B4.3.3.1; B4.3.3.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1077,7 +1077,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 6.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P047\", \"previous_question_id\": \"8ab207c7-4628-40aa-af27-711d522157cd\", \"curriculum_reference\": \"B4.3.3.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P047\", \"previous_question_id\": \"8ab207c7-4628-40aa-af27-711d522157cd\", \"curriculum_reference\": \"B4.3.3.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1100,7 +1100,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 12.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P048\", \"previous_question_id\": \"a9b0a1a6-4d41-48ce-a3f7-68f3b3a1a7b8\", \"curriculum_reference\": \"B4.3.3.2\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P048\", \"previous_question_id\": \"a9b0a1a6-4d41-48ce-a3f7-68f3b3a1a7b8\", \"curriculum_reference\": \"B4.3.3.2\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1123,7 +1123,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P049\", \"previous_question_id\": \"bb9ab316-b5ee-4573-917f-6d780225316e\", \"curriculum_reference\": \"B4.3.3.1; B4.3.3.2\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P049\", \"previous_question_id\": \"bb9ab316-b5ee-4573-917f-6d780225316e\", \"curriculum_reference\": \"B4.3.3.1; B4.3.3.2\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1146,7 +1146,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 32.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P050\", \"previous_question_id\": \"bfef4084-9d5b-4111-88ce-62405a8d471d\", \"curriculum_reference\": \"B4.3.3.1\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"Design a different rectangle with perimeter 34 m. Compare its area with the 12 m by 5 m garden.\", \"teaching_guidance\": \"Example: 10 m by 7 m has perimeter 34 m and area 70 m², compared with 60 m².\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P050\", \"previous_question_id\": \"bfef4084-9d5b-4111-88ce-62405a8d471d\", \"curriculum_reference\": \"B4.3.3.1\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"Design a different rectangle with perimeter 34 m. Compare its area with the 12 m by 5 m garden.\", \"teaching_guidance\": \"Example: 10 m by 7 m has perimeter 34 m and area 70 m², compared with 60 m².\"}",
     "question_image_url": null
   },
   {
@@ -1169,7 +1169,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P051\", \"previous_question_id\": \"6797b65d-5860-42ab-a675-537765b6a988\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P051\", \"previous_question_id\": \"6797b65d-5860-42ab-a675-537765b6a988\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1192,7 +1192,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 4.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P052\", \"previous_question_id\": \"67c99de3-c6e5-45f4-861f-0d6230371682\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P052\", \"previous_question_id\": \"67c99de3-c6e5-45f4-861f-0d6230371682\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1215,7 +1215,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P053\", \"previous_question_id\": \"74972318-a2aa-4f79-9067-b566cb5267e2\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P053\", \"previous_question_id\": \"74972318-a2aa-4f79-9067-b566cb5267e2\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P053.svg"
   },
   {
@@ -1238,7 +1238,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 138.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P054\", \"previous_question_id\": \"7dd84c25-f1de-49a1-879a-1806dc5fc48e\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P054\", \"previous_question_id\": \"7dd84c25-f1de-49a1-879a-1806dc5fc48e\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1261,7 +1261,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 10.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P055\", \"previous_question_id\": \"890ccf87-585b-454f-a377-0da869e50096\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"Draw a number line showing the equal jumps. Explain why you count jumps rather than landing points.\", \"teaching_guidance\": \"Ten jumps of 7 from 0 to 70. There are eleven marked positions including 0.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P055\", \"previous_question_id\": \"890ccf87-585b-454f-a377-0da869e50096\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"Draw a number line showing the equal jumps. Explain why you count jumps rather than landing points.\", \"teaching_guidance\": \"Ten jumps of 7 from 0 to 70. There are eleven marked positions including 0.\"}",
     "question_image_url": null
   },
   {
@@ -1284,7 +1284,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P056\", \"previous_question_id\": \"9242a91d-d8bc-43dc-937c-a5d5a38e5058\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P056\", \"previous_question_id\": \"9242a91d-d8bc-43dc-937c-a5d5a38e5058\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1307,7 +1307,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P057\", \"previous_question_id\": \"94eeaf12-7b0b-4248-8b0d-dacddf915d63\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P057\", \"previous_question_id\": \"94eeaf12-7b0b-4248-8b0d-dacddf915d63\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1330,7 +1330,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 9.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P058\", \"previous_question_id\": \"bbf88ec0-51a0-49ec-bad8-1f5dce446f1a\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Fluency\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P058\", \"previous_question_id\": \"bbf88ec0-51a0-49ec-bad8-1f5dce446f1a\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Fluency\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1353,7 +1353,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 144.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P059\", \"previous_question_id\": \"d698a79b-fc25-40ef-8bc9-6ccf4a5d2919\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P059\", \"previous_question_id\": \"d698a79b-fc25-40ef-8bc9-6ccf4a5d2919\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1376,7 +1376,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 8.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P060\", \"previous_question_id\": \"fa23426a-3596-4343-b712-b5a6b0af66a1\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"Explain why rounding 59 ÷ 8 down gives the wrong number of minibuses. Give another example.\", \"teaching_guidance\": \"Seven buses leave 3 children. Example: 17 children in 8-seat buses need 3 buses.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P060\", \"previous_question_id\": \"fa23426a-3596-4343-b712-b5a6b0af66a1\", \"curriculum_reference\": \"B4.1.2.1–B4.1.2.4\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"Explain why rounding 59 ÷ 8 down gives the wrong number of minibuses. Give another example.\", \"teaching_guidance\": \"Seven buses leave 3 children. Example: 17 children in 8-seat buses need 3 buses.\"}",
     "question_image_url": null
   },
   {
@@ -1399,7 +1399,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 39.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P061\", \"previous_question_id\": \"00118b6f-d2aa-45e3-a7a2-49b19229641c\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P061\", \"previous_question_id\": \"00118b6f-d2aa-45e3-a7a2-49b19229641c\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1422,7 +1422,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P062\", \"previous_question_id\": \"06d086b0-d5b2-4d89-b9ae-1ea126c204c1\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P062\", \"previous_question_id\": \"06d086b0-d5b2-4d89-b9ae-1ea126c204c1\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1445,7 +1445,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 14.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P063\", \"previous_question_id\": \"0fbc8e59-02a5-4545-8db6-801f3fc72e31\", \"curriculum_reference\": \"B4.1.1.2\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P063\", \"previous_question_id\": \"0fbc8e59-02a5-4545-8db6-801f3fc72e31\", \"curriculum_reference\": \"B4.1.1.2\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1468,7 +1468,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P064\", \"previous_question_id\": \"1aae48ad-ee54-46ec-a339-b12682d627f8\", \"curriculum_reference\": \"B4.2.1.1\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P064\", \"previous_question_id\": \"1aae48ad-ee54-46ec-a339-b12682d627f8\", \"curriculum_reference\": \"B4.2.1.1\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1491,7 +1491,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P065\", \"previous_question_id\": \"64a0135f-f98e-4d42-9430-0c8e411ca4d0\", \"curriculum_reference\": \"B4.2.1.1\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"Represent two repeats of the lift pattern using arrows or a number line. Explain the net change.\", \"teaching_guidance\": \"2 → 9 → 6 → 13 → 10. Net change is +8 floors.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P065\", \"previous_question_id\": \"64a0135f-f98e-4d42-9430-0c8e411ca4d0\", \"curriculum_reference\": \"B4.2.1.1\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"Represent two repeats of the lift pattern using arrows or a number line. Explain the net change.\", \"teaching_guidance\": \"2 → 9 → 6 → 13 → 10. Net change is +8 floors.\"}",
     "question_image_url": null
   },
   {
@@ -1514,7 +1514,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 6.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P066\", \"previous_question_id\": \"735bfbda-af5a-4a64-8c46-8c63e8a3fdac\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P066\", \"previous_question_id\": \"735bfbda-af5a-4a64-8c46-8c63e8a3fdac\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1537,7 +1537,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 24.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P067\", \"previous_question_id\": \"c7957a97-b550-4780-a820-add624a28518\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P067\", \"previous_question_id\": \"c7957a97-b550-4780-a820-add624a28518\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1560,7 +1560,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P068\", \"previous_question_id\": \"cdc3b7cf-1ea0-4273-9389-81774b4f14a3\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P068\", \"previous_question_id\": \"cdc3b7cf-1ea0-4273-9389-81774b4f14a3\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1583,7 +1583,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 20.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P069\", \"previous_question_id\": \"d991b248-057a-4bc1-b9d1-3c4a5c85fa9f\", \"curriculum_reference\": \"B4.2.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P069\", \"previous_question_id\": \"d991b248-057a-4bc1-b9d1-3c4a5c85fa9f\", \"curriculum_reference\": \"B4.2.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1606,7 +1606,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P070\", \"previous_question_id\": \"eb9ce50c-f9b9-43b1-8d17-c4a0fb49feec\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"Place 6, 10, 15 and 7 in the two-circle diagram and explain each placement.\", \"teaching_guidance\": \"6: multiples of 3 only. 10: multiples of 5 only. 15: overlap. 7: neither.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P070\", \"previous_question_id\": \"eb9ce50c-f9b9-43b1-8d17-c4a0fb49feec\", \"curriculum_reference\": \"B4.1.1.3\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"Place 6, 10, 15 and 7 in the two-circle diagram and explain each placement.\", \"teaching_guidance\": \"6: multiples of 3 only. 10: multiples of 5 only. 15: overlap. 7: neither.\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P070.svg"
   },
   {
@@ -1629,7 +1629,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 3300.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P071\", \"previous_question_id\": \"1fbf077d-9643-4070-b04a-83127aee185b\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P071\", \"previous_question_id\": \"1fbf077d-9643-4070-b04a-83127aee185b\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P071.svg"
   },
   {
@@ -1652,7 +1652,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 5361.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P072\", \"previous_question_id\": \"23b7754a-f4fd-4ba5-ad01-996ba3f274b7\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P072\", \"previous_question_id\": \"23b7754a-f4fd-4ba5-ad01-996ba3f274b7\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1675,7 +1675,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P073\", \"previous_question_id\": \"258a07ee-b3cd-44de-aab4-a0836ca52bd5\", \"curriculum_reference\": \"B4.1.1.4\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P073\", \"previous_question_id\": \"258a07ee-b3cd-44de-aab4-a0836ca52bd5\", \"curriculum_reference\": \"B4.1.1.4\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1698,7 +1698,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 40000.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P074\", \"previous_question_id\": \"67e2b570-25ce-4fd6-a76c-10cb3a381f9e\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P074\", \"previous_question_id\": \"67e2b570-25ce-4fd6-a76c-10cb3a381f9e\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1721,7 +1721,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 4246.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P075\", \"previous_question_id\": \"69f04145-66cc-43d3-82c4-3c6226f8e106\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"Show a different regrouping of 4,246 using hundreds, tens and ones.\", \"teaching_guidance\": \"Example: 42 hundreds, 4 tens and 6 ones. Other equivalent regroupings accepted.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P075\", \"previous_question_id\": \"69f04145-66cc-43d3-82c4-3c6226f8e106\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"Show a different regrouping of 4,246 using hundreds, tens and ones.\", \"teaching_guidance\": \"Example: 42 hundreds, 4 tens and 6 ones. Other equivalent regroupings accepted.\"}",
     "question_image_url": null
   },
   {
@@ -1744,7 +1744,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P076\", \"previous_question_id\": \"80fbf08b-d875-4323-a3d0-29d43a01a558\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P076\", \"previous_question_id\": \"80fbf08b-d875-4323-a3d0-29d43a01a558\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1767,7 +1767,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 3649.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P077\", \"previous_question_id\": \"abd51459-5c55-4e86-9c86-97cb10b11c1b\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P077\", \"previous_question_id\": \"abd51459-5c55-4e86-9c86-97cb10b11c1b\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1790,7 +1790,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P078\", \"previous_question_id\": \"cc9b5dda-1ff5-45f0-a405-dd82628e3d93\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P078\", \"previous_question_id\": \"cc9b5dda-1ff5-45f0-a405-dd82628e3d93\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Error analysis\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1813,7 +1813,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P079\", \"previous_question_id\": \"dcd8e27f-3811-497b-99aa-927672c3fdda\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P079\", \"previous_question_id\": \"dcd8e27f-3811-497b-99aa-927672c3fdda\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1836,7 +1836,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 5.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P080\", \"previous_question_id\": \"dcee20d2-2539-468e-8741-826b74d3034c\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"Make a five-digit place-value chart for 70,509. Explain the role of each zero.\", \"teaching_guidance\": \"7 ten-thousands, 0 thousands, 5 hundreds, 0 tens, 9 ones. Zeros hold empty places.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P080\", \"previous_question_id\": \"dcee20d2-2539-468e-8741-826b74d3034c\", \"curriculum_reference\": \"B4.1.1.1\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"Make a five-digit place-value chart for 70,509. Explain the role of each zero.\", \"teaching_guidance\": \"7 ten-thousands, 0 thousands, 5 hundreds, 0 tens, 9 ones. Zeros hold empty places.\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P080.svg"
   },
   {
@@ -1859,7 +1859,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 6.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P081\", \"previous_question_id\": \"17e45bd5-bd10-4716-bac5-337a0ffc0111\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P081\", \"previous_question_id\": \"17e45bd5-bd10-4716-bac5-337a0ffc0111\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P081.svg"
   },
   {
@@ -1882,7 +1882,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P082\", \"previous_question_id\": \"2db93ffe-8983-4eef-ba50-6010d1e5e93b\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P082\", \"previous_question_id\": \"2db93ffe-8983-4eef-ba50-6010d1e5e93b\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1905,7 +1905,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 8.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P083\", \"previous_question_id\": \"4470efa9-77fd-47b3-aeb8-f50d6a3a2211\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P083\", \"previous_question_id\": \"4470efa9-77fd-47b3-aeb8-f50d6a3a2211\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P083.svg"
   },
   {
@@ -1928,7 +1928,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 4.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P084\", \"previous_question_id\": \"63f625a8-5367-4f64-8b15-785161d4b681\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P084\", \"previous_question_id\": \"63f625a8-5367-4f64-8b15-785161d4b681\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -1951,7 +1951,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 21.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P085\", \"previous_question_id\": \"9b189ac7-038f-4d0f-a838-5ef2c4019f45\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"Draw the two seedling rows and a key. Explain how your key determines the total.\", \"teaching_guidance\": \"Four mango symbols and three orange symbols; key 1 symbol = 3 seedlings. Total 21.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P085\", \"previous_question_id\": \"9b189ac7-038f-4d0f-a838-5ef2c4019f45\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"Draw the two seedling rows and a key. Explain how your key determines the total.\", \"teaching_guidance\": \"Four mango symbols and three orange symbols; key 1 symbol = 3 seedlings. Total 21.\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P085.svg"
   },
   {
@@ -1974,7 +1974,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P086\", \"previous_question_id\": \"9cba0edd-6d3a-4b17-82f4-8d7f63b228e0\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P086\", \"previous_question_id\": \"9cba0edd-6d3a-4b17-82f4-8d7f63b228e0\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Reasoning\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P086.svg"
   },
   {
@@ -1997,7 +1997,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 13.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P087\", \"previous_question_id\": \"cb9226a3-4fa9-4adc-86f8-b5663daf098a\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P087\", \"previous_question_id\": \"cb9226a3-4fa9-4adc-86f8-b5663daf098a\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -2020,7 +2020,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P088\", \"previous_question_id\": \"d26312ad-4cb1-4d31-b753-e4298a389002\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P088\", \"previous_question_id\": \"d26312ad-4cb1-4d31-b753-e4298a389002\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -2043,7 +2043,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 10.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P089\", \"previous_question_id\": \"e1ba5ae8-30c9-4f19-8cac-2cf10c5d4f46\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P089\", \"previous_question_id\": \"e1ba5ae8-30c9-4f19-8cac-2cf10c5d4f46\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P089.svg"
   },
   {
@@ -2066,7 +2066,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P090\", \"previous_question_id\": \"e9a257bf-bb39-4652-822f-0ec8ef658105\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"Draw a bar chart for the library data with a scale of 2 books per interval. Label axes and title.\", \"teaching_guidance\": \"Four bars of heights 10, 12, 8, 14. Accurate scale, zero baseline, labelled categories and books axis.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P090\", \"previous_question_id\": \"e9a257bf-bb39-4652-822f-0ec8ef658105\", \"curriculum_reference\": \"B4.4.1.1; B4.4.1.2\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"Draw a bar chart for the library data with a scale of 2 books per interval. Label axes and title.\", \"teaching_guidance\": \"Four bars of heights 10, 12, 8, 14. Accurate scale, zero baseline, labelled categories and books axis.\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P090.svg"
   },
   {
@@ -2089,7 +2089,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P091\", \"previous_question_id\": \"0c51196f-a22c-46fb-b2d0-56f63d968610\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P091\", \"previous_question_id\": \"0c51196f-a22c-46fb-b2d0-56f63d968610\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -2112,7 +2112,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P092\", \"previous_question_id\": \"10df6de9-9dcd-4d2a-8157-2131024063e7\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P092\", \"previous_question_id\": \"10df6de9-9dcd-4d2a-8157-2131024063e7\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -2135,7 +2135,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 0.6,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P093\", \"previous_question_id\": \"1ca18e27-5f9e-499d-ab33-571010aac1cb\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P093\", \"previous_question_id\": \"1ca18e27-5f9e-499d-ab33-571010aac1cb\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -2158,7 +2158,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P094\", \"previous_question_id\": \"539e32c9-b047-4819-94e4-ff6f1625e24c\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P094\", \"previous_question_id\": \"539e32c9-b047-4819-94e4-ff6f1625e24c\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Understanding\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -2181,7 +2181,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 45.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P095\", \"previous_question_id\": \"620fcf34-59f0-4178-98c9-196b8fea30ad\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"Show two ways to work out the time from 7:15 to 8:00.\", \"teaching_guidance\": \"45 minutes. Count 15 to 7:30 then 30 to 8:00, or subtract 15 from 60.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P095\", \"previous_question_id\": \"620fcf34-59f0-4178-98c9-196b8fea30ad\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"Show two ways to work out the time from 7:15 to 8:00.\", \"teaching_guidance\": \"45 minutes. Count 15 to 7:30 then 30 to 8:00, or subtract 15 from 60.\"}",
     "question_image_url": null
   },
   {
@@ -2204,7 +2204,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P096\", \"previous_question_id\": \"ae737dc8-e10e-4af6-8a07-88b20b8a0de1\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Replaced\", \"question_id\": \"GES4-P096\", \"previous_question_id\": \"ae737dc8-e10e-4af6-8a07-88b20b8a0de1\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -2227,7 +2227,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P097\", \"previous_question_id\": \"bfe2774a-c654-41f3-932f-46f415b6fe70\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Retained\", \"question_id\": \"GES4-P097\", \"previous_question_id\": \"bfe2774a-c654-41f3-932f-46f415b6fe70\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -2250,7 +2250,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": null,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P098\", \"previous_question_id\": \"cae9f13c-be4c-422b-a76f-36ebc06c945e\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P098\", \"previous_question_id\": \"cae9f13c-be4c-422b-a76f-36ebc06c945e\", \"curriculum_reference\": \"B4.3.3.3\", \"thinking_demand\": \"Interpretation\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": "https://play.mezzomaths.org/question-images/ges-grade4-v1/GES4-P098.svg"
   },
   {
@@ -2273,7 +2273,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 1.35,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P099\", \"previous_question_id\": \"d5b9d426-4cf8-4b79-b4cc-27236a096465\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P099\", \"previous_question_id\": \"d5b9d426-4cf8-4b79-b4cc-27236a096465\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Application\", \"teaching_prompt\": \"\", \"teaching_guidance\": \"\"}",
     "question_image_url": null
   },
   {
@@ -2296,7 +2296,7 @@
     "is_active": true,
     "ai_generated": true,
     "numeric_answer": 16.0,
-    "ai_prompt": "{\"review_version\": 1, \"question_id\": \"GES4-P100\", \"previous_question_id\": \"d9020100-f300-4bb3-a143-cffbe5379db6\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"Can a different combination of adult and child tickets also cost GH¢16? Investigate whole tickets at the given prices.\", \"teaching_guidance\": \"With GH¢7.50 adult and GH¢4.25 child prices, one adult and two children is the only combination of nonnegative whole tickets totalling GH¢16. List possibilities for 0, 1 or 2 adults.\"}",
+    "ai_prompt": "{\"review_version\": 1, \"review_decision\": \"Revised\", \"question_id\": \"GES4-P100\", \"previous_question_id\": \"d9020100-f300-4bb3-a143-cffbe5379db6\", \"curriculum_reference\": \"B4.1.4.1\", \"thinking_demand\": \"Problem solving\", \"teaching_prompt\": \"Can a different combination of adult and child tickets also cost GH¢16? Investigate whole tickets at the given prices.\", \"teaching_guidance\": \"With GH¢7.50 adult and GH¢4.25 child prices, one adult and two children is the only combination of nonnegative whole tickets totalling GH¢16. List possibilities for 0, 1 or 2 adults.\"}",
     "question_image_url": null
   }
 ]
