@@ -1,3 +1,4 @@
+import { grade4Area, isGrade4Reviewed } from './grade4-reviewed-bank.js'
 import './mezzo-topic-area-mapper.css'
 
 const TOPIC_AREA_VERSION = 'mezzo-topic-area-map-v2'
@@ -164,6 +165,7 @@ const TOPIC_AREA_MAP = {
 function normalize(value = '') { return String(value).toLowerCase().replace(/[’']/g, '').replace(/[–—-]/g, '-').replace(/\s+/g, ' ').trim() }
 const NORMALIZED = Object.fromEntries(Object.entries(TOPIC_AREA_MAP).map(([topic, area]) => [normalize(topic), area]))
 function areaForTopic(topic = '') {
+  const reviewedArea=grade4Area(topic);if(reviewedArea)return reviewedArea
   const exact = NORMALIZED[normalize(topic)]
   if (exact) return exact
   const t = normalize(topic)
@@ -188,7 +190,7 @@ function patchBank() {
   if (!Array.isArray(bank) || !bank.length) return
   let changed = false
   const updated = bank.map(q => {
-    if (!q?.topic) return q
+    if (!q?.topic || isGrade4Reviewed(q)) return q
     const area = areaForTopic(q.topic)
     if (q.topic_area === area) return q
     changed = true
