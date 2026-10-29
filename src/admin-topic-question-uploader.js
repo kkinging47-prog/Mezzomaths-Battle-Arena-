@@ -1,3 +1,4 @@
+import { GRADE4_REVIEWED_TOPICS, grade4Area } from './grade4-reviewed-bank.js'
 import './admin-topic-question-uploader.css'
 import * as XLSX from 'xlsx'
 import { supabase, isSupabaseConfigured } from './supabaseClient.js'
@@ -21,6 +22,7 @@ const TOPICS = {
   'SHS 2': ['Functions & Graphs','Trigonometry','Sequences & Series','Probability','Vectors & Mensuration'],
   'SHS 3': ['WASSCE Practice','Advanced Algebra','Calculus Foundations','Statistics','Vectors & Trigonometry']
 }
+TOPICS['Grade 4'] = [...new Set([...GRADE4_REVIEWED_TOPICS,...TOPICS['Grade 4']])]
 let queued = false
 let uploading = false
 
@@ -30,7 +32,7 @@ function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value))
 function profile() { return readJson('mezzo_profile', {}) || {} }
 function isAdmin() { return ['admin','teacher'].includes(profile().role) }
 function optionHtml(list, selected) { return list.map(item => `<option value="${escapeHtml(item)}" ${item === selected ? 'selected' : ''}>${escapeHtml(item)}</option>`).join('') }
-function inferTopicArea(topic = '') { const t = topic.toLowerCase(); if (t.includes('algebra')) return 'Algebra'; if (t.includes('geometry')) return 'Geometry'; if (t.includes('stat')) return 'Statistics'; if (t.includes('fraction')) return 'Fractions'; if (t.includes('percent')) return 'Percentages'; if (t.includes('division') || t.includes('sharing')) return 'Division'; if (t.includes('subtraction') || t.includes('subtract')) return 'Subtraction'; if (t.includes('add')) return 'Addition'; if (t.includes('squar')) return 'Squaring'; if (t.includes('divisibility')) return 'Divisibility'; if (t.includes('mental') || t.includes('aptitude')) return 'Aptitude & Mental Reasoning'; if (t.includes('multip') || t.includes('mult') || t.includes('mezzoscopic') || t.includes('lattice')) return 'Multiplication'; return 'General Practice' }
+function inferTopicArea(topic = '') { const area=grade4Area(topic);if(area)return area;const t = topic.toLowerCase(); if (t.includes('algebra')) return 'Algebra'; if (t.includes('geometry')) return 'Geometry'; if (t.includes('stat')) return 'Statistics'; if (t.includes('fraction')) return 'Fractions'; if (t.includes('percent')) return 'Percentages'; if (t.includes('division') || t.includes('sharing')) return 'Division'; if (t.includes('subtraction') || t.includes('subtract')) return 'Subtraction'; if (t.includes('add')) return 'Addition'; if (t.includes('squar')) return 'Squaring'; if (t.includes('divisibility')) return 'Divisibility'; if (t.includes('mental') || t.includes('aptitude')) return 'Aptitude & Mental Reasoning'; if (t.includes('multip') || t.includes('mult') || t.includes('mezzoscopic') || t.includes('lattice')) return 'Multiplication'; return 'General Practice' }
 function uid() { return `local_${Date.now()}_${Math.random().toString(16).slice(2)}` }
 function parseCsv(text) {
   const rows = []
