@@ -3,12 +3,13 @@ import handler from '../api/class-assignment.js'
 process.env.SUPABASE_URL='https://assignment.test';process.env.SUPABASE_SERVICE_ROLE_KEY='server-test-only'
 const id='11111111-1111-4111-8111-111111111111',key='22222222-2222-4222-8222-222222222222',attempt='33333333-3333-4333-8333-333333333333'
 const a={id,code:'TESTABCD',title:'Test',status:'published',opens_at:new Date(Date.now()-60000).toISOString(),closes_at:new Date(Date.now()+60000).toISOString(),duration_minutes:30,max_attempts:1,pass_mark:50,feedback_mode:'after_submit',shuffle_questions:false}
-const questions=[{position:1,question_text:'Half?',question_type:'number',correct_answer:'.5',acceptable_answers:[],marking:'auto',marks:2},{position:2,question_text:'Explain',question_type:'reasoning',correct_answer:'Model',marking:'teacher_review',marks:3}]
+const questions=[{position:1,source_metadata:{time_limit_seconds:20,correct_answer:'secret answer'},question_text:'Half?',question_type:'number',correct_answer:'.5',acceptable_answers:[],marking:'auto',marks:2},{position:2,question_text:'Explain',question_type:'reasoning',correct_answer:'Model',marking:'teacher_review',marks:3}]
 let saved=null,recordCalls=0,lastResponses
 const json=data=>({ok:true,json:async()=>data})
 globalThis.fetch=async(url,options={})=>{
  if(url.endsWith('/auth/v1/user'))return json({id})
  if(url.includes('/rpc/record_mixed_assignment')){recordCalls++;const body=JSON.parse(options.body);lastResponses=body.p_responses;assert.equal(lastResponses[0].awarded_marks,2);assert.equal(lastResponses[1].awarded_marks,null);assert.equal(lastResponses[1].selected_answer,'This is my written working.');saved={id:attempt,score:2,total:5,percent:40,grading_status:'pending',pending_marks:3,time_seconds:20};return json(saved)}
+ if(url.includes('/rpc/edit_teacher_assignment')){const body=JSON.parse(options.body);assert.equal(body.p_actor,id);assert.equal(body.p_questions[0].seconds,20);return json(id)}
  if(url.includes('/rpc/grade_mixed_assignment'))return json({...saved,grading_status:'graded',score:4,pending_marks:0})
  if(url.includes('teacher_assignments?'))return json([a])
  if(url.includes('teacher_assignment_attempts?'))return json(saved?[saved]:[])
@@ -26,3 +27,10 @@ const noAuth=await call('POST',{action:'grade',attempt_id:attempt,grades:[{respo
 const badGrade=await call('POST',{action:'grade',attempt_id:attempt,grades:[{response_id:key,marks:NaN}]},{},{authorization:'Bearer test'});assert.equal(badGrade.status,400)
 const grade=await call('POST',{action:'grade',attempt_id:attempt,grades:[{response_id:key,marks:2,feedback:'Good working'}]},{},{authorization:'Bearer test'});assert.equal(grade.status,200)
 console.log('PASS API question secrecy, numeric/written submission, provisional marks, retry idempotency, result receipt, teacher authentication and grade validation. Database permissions tested separately.')
+
+assert.equal(get.data.questions[0].time_limit_seconds,20);assert(!JSON.stringify(get.data.questions).includes('secret answer'));assert(!JSON.stringify(get.data.questions).includes('source_metadata'))
+const edit={action:'edit',assignment_id:id,version:new Date().toISOString(),settings:{title:'Edited',duration_minutes:10,max_attempts:1,pass_mark:50,feedback_mode:'after_submit'},questions:[{id:key,seconds:20,question_text:'Test',option_a:'1',option_b:'2',option_c:'3',option_d:'4',correct_answer:'A',explanation:'Test'}]}
+assert.equal((await call('POST',edit)).status,403)
+assert.equal((await call('POST',edit,{},{authorization:'Bearer test'})).status,200)
+edit.questions[0].seconds=-1;assert.equal((await call('POST',edit,{},{authorization:'Bearer test'})).status,400)
+console.log('PASS edit authentication, valid save, invalid seconds and safe timer projection.')

@@ -1,3 +1,4 @@
+import {questionSeconds} from '../src/assignment-timing.js'
 import topicAnalysisHandler,{topicAIConfigured,classifyTopics} from '../server/question-topic-analysis.js'
 import {randomUUID} from 'node:crypto'
 import {markAssignmentQuestion} from '../src/assignment-question-types.js'
@@ -10,7 +11,7 @@ async function db(path,options={}){const {url,key}=config();if(!url||!key)throw 
 const postRpc=(name,body)=>db('rpc/'+name,{method:'POST',body:JSON.stringify(body)})
 async function assignmentByCode(code){const rows=await db(`teacher_assignments?code=eq.${encodeURIComponent(code)}&select=id,code,title,instructions,class_level,curriculum,topic,question_count,duration_minutes,opens_at,closes_at,status,show_leaderboard,assignment_type,target_group,max_attempts,pass_mark,feedback_mode,shuffle_questions&limit=1`);return rows?.[0]||null}
 function availability(a){const now=Date.now();if(a.status!=='published')return 'This assignment is not available.';if(now<new Date(a.opens_at).getTime())return 'This assignment has not opened yet.';if(now>new Date(a.closes_at).getTime())return 'This assignment has closed.';return ''}
-async function actor(req){const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!token)throw new Error('Sign in as a teacher to mark work.');const {url,key}=config();const r=await fetch(url+'/auth/v1/user',{signal:AbortSignal.timeout(15000),headers:{apikey:key,Authorization:'Bearer '+token}});const u=await r.json();if(!r.ok||!uuid(u.id))throw new Error('Please sign in again.');return u.id}
+async function actor(req){const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!token)throw new Error('Sign in as a teacher to manage assignments.');const {url,key}=config();const r=await fetch(url+'/auth/v1/user',{signal:AbortSignal.timeout(15000),headers:{apikey:key,Authorization:'Bearer '+token}});const u=await r.json();if(!r.ok||!uuid(u.id))throw new Error('Please sign in again.');return u.id}
 async function resultFor(a,key){const rows=await db(`teacher_assignment_attempts?assignment_id=eq.${a.id}&submission_key=eq.${key}&select=id,score,total,percent,time_seconds,grading_status,pending_marks&limit=1`);const t=rows?.[0];if(!t)return null;const show=['immediate','after_submit'].includes(a.feedback_mode)||(a.feedback_mode==='after_close'&&Date.now()>new Date(a.closes_at).getTime());const corrections=show?await db(`teacher_assignment_responses?attempt_id=eq.${t.id}&select=question_position,selected_answer,correct_answer,is_correct,awarded_marks,max_marks,grading_status,teacher_feedback&order=question_position.asc`):[];return {attempt_id:t.id,score:t.score,total:t.total,percent:t.percent,time_seconds:t.time_seconds,grading_status:t.grading_status,pending_marks:t.pending_marks,passed:t.grading_status==='graded'?Number(t.percent)>=Number(a.pass_mark??50):null,corrections}}
 export default async function handler(req,res){
  res.setHeader?.('Cache-Control','no-store')
@@ -18,6 +19,12 @@ export default async function handler(req,res){
  try{
   if(req.method==='GET'&&req.query?.action==='topic-status'){if(req.query?.verify!=='1')return res.status(200).json({configured:topicAIConfigured()});const check=await classifyTopics([{question_text:'What is one half plus one quarter?'},{question_text:'Solve the equation 2x + 3 = 11.'}],{actor:'fixed-topic-health-check',limit:6,maxNew:2});return res.status(200).json({configured:topicAIConfigured(),ready:check.analyses.every(a=>a.status==='classified'),topics:check.analyses.map(a=>a.topic),notice:check.notice})}
   if(req.method==='POST'&&req.body?.action==='analyse-topics')return topicAnalysisHandler(req,res)
+  if(req.method==='POST'&&req.body?.action==='edit'){
+   const id=await actor(req),body=req.body,s=body.settings,qs=body.questions
+   if(!uuid(body.assignment_id)||!Number.isFinite(Date.parse(body.version))||!s||!Array.isArray(qs)||!qs.length||qs.length>100||qs.some(q=>!uuid(q.id)||!Number.isInteger(q.seconds)||q.seconds<0||q.seconds>3600||['question_text','option_a','option_b','option_c','option_d','correct_answer','explanation'].some(k=>typeof q[k]!=='string'||q[k].length>20000))||!Number.isInteger(s.duration_minutes)||s.duration_minutes<1||s.duration_minutes>180||!Number.isInteger(s.max_attempts)||s.max_attempts<1||s.max_attempts>10||!Number.isInteger(s.pass_mark)||s.pass_mark<0||s.pass_mark>100||!['immediate','after_submit','after_close','score_only'].includes(s.feedback_mode))return res.status(400).json({error:'Check the assignment settings, questions and seconds (0–3600).'})
+   const result=await postRpc('edit_teacher_assignment',{p_actor:id,p_id:body.assignment_id,p_version:body.version,p_settings:s,p_questions:qs})
+   return res.status(200).json({id:result})
+  }
   if(req.method==='POST'&&req.body?.action==='grade'){
    if(!uuid(req.body.attempt_id))return res.status(400).json({error:'Invalid attempt.'})
    const id=await actor(req),grades=req.body.grades
@@ -34,8 +41,9 @@ export default async function handler(req,res){
   }
   if(req.method==='GET'){
    const unavailable=availability(a);if(unavailable)return res.status(403).json({error:unavailable})
-   let rows=await db(`teacher_assignment_questions?assignment_id=eq.${a.id}&select=id,position,question_text,option_a,option_b,option_c,option_d,question_type,marks,question_image_url,hint&order=position.asc`)
+   let rows=await db(`teacher_assignment_questions?assignment_id=eq.${a.id}&select=id,position,question_text,option_a,option_b,option_c,option_d,question_type,marks,question_image_url,hint,source_metadata&order=position.asc`)
    if(!rows?.length)return res.status(409).json({error:'This assignment has no questions.'})
+   rows=(rows||[]).map(({source_metadata,...q})=>({...q,time_limit_seconds:questionSeconds({source_metadata})}))
    if(a.shuffle_questions)for(let i=rows.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rows[i],rows[j]]=[rows[j],rows[i]]}
    return res.status(200).json({assignment:a,questions:rows})
   }
@@ -53,5 +61,5 @@ export default async function handler(req,res){
   const elapsed=Number(req.body.time_seconds??0);if(!Number.isFinite(elapsed)||elapsed<0)return res.status(400).json({error:'Invalid completion time.'})
   await postRpc('record_mixed_assignment',{p_assignment_id:a.id,p_name:name,p_class:classLevel,p_school:school,p_key:key,p_elapsed:Math.min(Math.round(elapsed),Number(a.duration_minutes)*60),p_responses:corrections})
   return res.status(201).json(await resultFor(a,key))
- }catch(error){const message=String(error.message||'Assignment service failed.');const code=/not authorised|Sign in|sign in/i.test(message)?403:/maximum attempts|not open/i.test(message)?409:/Award between|Incomplete response|Duplicate responses|Response format|Provide marks/i.test(message)?400:500;return res.status(code).json({error:message})}
+ }catch(error){const message=String(error.message||'Assignment service failed.');const code=/not authorised|Sign in|sign in/i.test(message)?403:/maximum attempts|not open|locked|Assignment changed/i.test(message)?409:/Award between|Incomplete response|Duplicate responses|Response format|Provide marks/i.test(message)?400:500;return res.status(code).json({error:message})}
 }
