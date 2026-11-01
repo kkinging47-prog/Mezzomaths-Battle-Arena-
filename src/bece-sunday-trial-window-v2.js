@@ -1,3 +1,4 @@
+import {schoolNameIndex} from './school-names.js'
 import { renderVectorText } from './vector-math.js'
 import {classifiedTopic,TOPICS} from './question-topics.js'
 import {analyseQuestionTopics,cachedQuestionTopic} from './question-topic-client.js'
@@ -115,8 +116,30 @@ function injectBanner() {
   const anchor = home.querySelector('.hero-actions')?.closest('section') || home.firstElementChild
   anchor?.insertAdjacentHTML('afterend', bannerHtml())
 }
+let schoolSuggestionNames=null,schoolSuggestionsRequest=null
+async function attachSchoolSuggestions() {
+ const input=document.querySelector('#beceSundayRegisterForm input[name="school_name"], #sundaySchoolForm input[name="school_name"]')
+ if(!input)return
+ input.setAttribute('list','sunday-registered-schools')
+ input.setAttribute('autocomplete','off')
+ input.insertAdjacentHTML('afterend','<datalist id="sunday-registered-schools"></datalist><small role="status" data-school-suggestion-status>Loading registered schools…</small>')
+ const list=document.getElementById('sunday-registered-schools'),status=input.parentElement.querySelector('[data-school-suggestion-status]')
+ const load=async()=>{
+  try {
+   if(!schoolSuggestionNames) {
+    schoolSuggestionsRequest ||= fetch('/api/bece-sunday-candidate-access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'school-suggestions'}),signal:AbortSignal.timeout(10000)}).then(async response=>{const data=await response.json();if(!response.ok||!Array.isArray(data.schools))throw Error('Schools unavailable');return data.schools}).finally(()=>{schoolSuggestionsRequest=null})
+    schoolSuggestionNames=await schoolSuggestionsRequest
+   }
+   list.innerHTML=schoolSuggestionNames.map(name=>'<option value="'+esc(name)+'"></option>').join('')
+   status.textContent='Start typing and select your school. If it is missing, enter its full name.'
+  } catch {status.textContent='Suggestions unavailable. Enter your school’s full name, or focus this field to retry.'}
+ }
+ input.addEventListener('focus',()=>{if(!schoolSuggestionNames)void load()})
+ void load()
+}
 function shell(content) {
   document.getElementById('root').innerHTML = `<main class="app-shell"><section class="app-frame bece-sunday-page"><nav class="screen-tabs"><div class="brand-chip"><span class="brand-crown">♛</span><div><strong>MEZZO</strong><small>BECE Sunday Trial</small></div></div><div class="tab-scroll"><button class="screen-tab" data-target="home"><span>🏟️</span>Home</button>${active?.preview || previewReport ? '<button class="screen-tab" data-target="admin"><span>🛠️</span>Admin workspace</button>' : '<button class="screen-tab" data-bece-page="true"><span>📘</span>BECE Practice</button><button class="screen-tab active" data-bece-sunday-open="true"><span>⏰</span>Sunday Trial</button><button class="screen-tab" data-sunday-history>📊 My Results</button>'}</div></nav>${content}</section></main>`
+  void attachSchoolSuggestions()
 }
 
 async function schoolResults() {
@@ -193,7 +216,14 @@ async function showSundayAdminSummary() {
   if (!supabase) return alert('Database connection unavailable.')
   const { data, error } = await supabase.rpc('bece_sunday_admin_registration_summary')
   if (error) return alert('Admin registration report unavailable. Please sign in as an administrator and confirm the latest database migration has been applied.')
-  const rows = data || []
+  const schoolNames=schoolNameIndex((data||[]).map(r=>r.school_name))
+  const groupedSchools=new Map()
+  for(const row of data||[]) {
+    const school_name=schoolNames.canonical(row.school_name),key=school_name+'|'+String(row.region||'').trim().toLowerCase()
+    if(!groupedSchools.has(key))groupedSchools.set(key,{...row,school_name,registered:0})
+    groupedSchools.get(key).registered+=Number(row.registered)||0
+  }
+  const rows=[...groupedSchools.values()]
   const audit = await supabase.rpc('sunday_duplicate_registration_report',{p_week_start:weekStartIso()})
   const duplicates = Array.isArray(audit.data) ? audit.data : []
   const duplicateHtml = '<h3>Duplicate identity review</h3>' + (audit.error ? '<p>Duplicate report unavailable. Retry when connected.</p>' : duplicates.length ? duplicates.map(r=>'<p>'+esc(r.full_name)+' — '+Number(r.candidate_ids)+' candidate IDs; '+Number(r.started_sessions)+' sessions started; '+Number(r.submissions)+' submitted. Review historical entries; results are unchanged.</p>').join('') : '<p>No duplicate candidate identities found.</p>')
