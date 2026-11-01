@@ -1,3 +1,4 @@
+import {schoolNameIndex} from './school-names.js'
 import {classifiedTopic} from './question-topics.js'
 export const reportEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 export const schoolKey=name=>String(name||'School not provided').trim().toLowerCase().replace(/\s+/g,' ')
@@ -16,6 +17,7 @@ export function buildSchoolReports(registrations,claims,{week,mode='sunday'}={})
   identities.get(identity).registrations.push(r)
  }
  for(const c of claims) {const r=byId.get(c.candidate_id);if(r) identities.get(r.identity_key||r.candidate_id).claims.push(c)}
+ const schoolNames=schoolNameIndex(registrations.map(r=>r.school_name))
  const groups=new Map()
  for(const entry of identities.values()) {
   const done=entry.claims.filter(c=>c.completed_at&&number(c.total)>0).sort((a,b)=>String(a.completed_at).localeCompare(String(b.completed_at)))
@@ -26,8 +28,9 @@ export function buildSchoolReports(registrations,claims,{week,mode='sunday'}={})
   row.reviewed_questions=Array.isArray(chosen?.answers)?chosen.answers.length:0
   row.learning_gaps=(chosen?.answers||[]).filter(a=>a.correct===false).map((a,i)=>({question_number:a.question_number||i+1,question_id:a.question_id||a.id||'',question_text:String(a.question_text||a.question||''),question_image_url:a.question_image_url||'',options:Array.isArray(a.options)?a.options:[],selected_answer:a.selected_answer||'',correct_answer:a.correct_answer||'',explanation:a.explanation||'',topic:classifiedTopic(a.topic_analysis)||'Topic awaiting AI review',skill:classifiedTopic(a.topic_analysis)?a.topic_analysis.skill||'':''}))
   row.priority_topics=Object.entries(row.topics).filter(([,v])=>Number(v.correct)<Number(v.total)).map(([topic,v])=>({topic,missed:Number(v.total)-Number(v.correct),total:Number(v.total),question_numbers:row.learning_gaps.filter(q=>q.topic===topic).map(q=>q.question_number)})).sort((a,b)=>b.missed-a.missed||a.topic.localeCompare(b.topic))
-  const key=schoolKey(row.school_name)
-  if(!groups.has(key)) groups.set(key,{school_key:key,school_name:row.school_name,students:[]})
+  const canonical=schoolNames.canonical(row.school_name)
+  const key=schoolKey(canonical)
+  if(!groups.has(key)) groups.set(key,{school_key:key,school_name:canonical,students:[]})
   groups.get(key).students.push(row)
  }
  const schools=[...groups.values()].sort((a,b)=>a.school_name.localeCompare(b.school_name))
