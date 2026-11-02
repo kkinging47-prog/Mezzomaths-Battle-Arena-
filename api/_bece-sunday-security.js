@@ -32,8 +32,8 @@ export function verifyTrialSession(token, { allowExpired = false } = {}) {
 export function trialDeadline(session) {
   const expiry = Number(session.expiresAt || 0)
   if (session.preview || session.mode === 'school_lab') return expiry
-  const cutoff = Date.parse(`${session.weekStart}T20:00:00Z`)
-  return Number.isFinite(cutoff) ? Math.min(expiry, cutoff) : 0
+  const startedAt=Number(session.startedAt)
+  return Number.isFinite(startedAt)&&startedAt>0&&Number.isFinite(expiry) ? Math.min(expiry,startedAt+60*60*1000) : 0
 }
 
 export function sundayWindowOpen(now = new Date()) {
