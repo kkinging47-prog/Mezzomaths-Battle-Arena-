@@ -7,7 +7,7 @@ async function persistOfficialResult(session, score, total, results) {
   const url = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/,'')
   const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '')
   if (!url || !key) throw new Error('Results database is not configured.')
-  if (Date.now() >= trialDeadline(session)) throw new Error('The examination closed at 8 PM. Submission is no longer available.')
+  if (Date.now() >= trialDeadline(session)) throw new Error('Your examination time has expired. Submission is no longer available.')
   const elapsedSeconds = Math.max(0, Math.floor((Date.now() - Number(session.startedAt)) / 1000))
   const endpoint = url+'/rest/v1/bece_sunday_weekly_claims?candidate_id=eq.'+encodeURIComponent(session.candidateId)+'&week_start=eq.'+encodeURIComponent(session.weekStart)+'&completed_at=is.null&session_expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&session_token=eq.'+encodeURIComponent(session.rawToken)
   const response = await fetch(endpoint,{method:'PATCH',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({completed_at:new Date().toISOString(),result:{score,total,review:results,time_taken_seconds:elapsedSeconds,topics:results.reduce((acc,item)=>{const t=classifiedTopic(item.topic_analysis);if(!t)return acc;acc[t] ||= {total:0,correct:0};acc[t].total++;if(item.correct)acc[t].correct++;return acc},{})},mode:session.mode||'sunday',school_id:session.schoolId||null})})

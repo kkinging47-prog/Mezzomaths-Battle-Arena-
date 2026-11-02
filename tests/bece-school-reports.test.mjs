@@ -26,3 +26,9 @@ r=await run(send);assert.equal(r.status,200);assert.equal(r.body.accepted,true);
 r=await run({operation:'group-schools',week_start:'2026-10-18',from_school:'school beta',to_school:'school alpha'});assert.equal(r.status,200);r=await run({week_start:'2026-10-18'});assert.equal(r.body.schools.length,1);assert.equal(r.body.schools[0].summary.registered,3);assert.equal(r.body.schools[0].summary.submitted,2);await run({operation:'reset-school-groups',week_start:'2026-10-18'});assert.deepEqual(aliases,{});
 delete process.env.RESEND_API_KEY;assert.equal((await run(send)).status,503);assert.equal((await run({week_start:'2026-10-19'})).status,400)
 console.log('PASS school grouping, deduplicated results, ranks/topics, private contacts excluded, safe CSV/HTML, admin-only access, reviewed recipient, school isolation, idempotency and missing sender. Mocked emails only.')
+
+const realNow=Date.now
+Date.now=()=>Date.parse('2026-10-18T20:30:00Z');assert.equal((await run({week_start:'2026-10-18'})).body.is_final,false)
+Date.now=()=>Date.parse('2026-10-18T21:00:00Z');assert.equal((await run({week_start:'2026-10-18'})).body.is_final,true)
+Date.now=realNow
+console.log('PASS Sunday report remains provisional through 8–9 PM and becomes final at 9 PM')

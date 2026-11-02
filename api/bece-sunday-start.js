@@ -69,7 +69,8 @@ export default async function handler(req, res) {
 
     const selected = usable
     const now = Date.now()
-    const expiresAt = lab ? now + 7200000 : Math.min(now + 7200000, Date.parse(sunday + 'T20:00:00Z'))
+    if(!lab && !sundayWindowOpen(new Date(now))) return res.status(403).json({error:'New Sunday test starts close at 8 PM Ghana time.'})
+    const expiresAt = now + (lab ? 7200000 : 3600000)
     const token = signTrialSession({
       ids: selected.map(row => row.id),
       candidateId,
@@ -88,6 +89,7 @@ export default async function handler(req, res) {
       set_number: scheduled[0].set_number,
       week_start: sunday,
       mode: lab?'school_lab':'sunday',
+      started_at: now,
       session_expires_at: new Date(expiresAt).toISOString(),
       session_token: token
     })

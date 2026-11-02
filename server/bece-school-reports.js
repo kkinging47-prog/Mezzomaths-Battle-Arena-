@@ -48,7 +48,9 @@ export default async function handler(req,res) {
   const missing=claims.filter(c=>!registrationIds.has(c.candidate_id)).map(c=>({candidate_id:c.candidate_id,full_name:'Candidate '+c.candidate_id,school_name:'School not provided'}))
   const report=buildSchoolReports([...grouped,...missing].map(r=>({...r,identity_key:r.contact?identity(r):r.candidate_id})),claims,{week,mode})
   report.topic_analysis_notice=classified.notice||(reviewRows.length?'':'Question evidence could not be restored for these results. Recorded scores are retained; question-level support cannot be inferred.')
-  report.is_final=Date.now()>=cutoff.getTime()
+  const finalCutoff=new Date(cutoff)
+  if(mode==='sunday')finalCutoff.setUTCHours(21)
+  report.is_final=Date.now()>=finalCutoff.getTime()
   report.custom_school_groups=Object.keys(aliases).length>0
   if(operation==='group-schools'||operation==='reset-school-groups') {
    let value={}

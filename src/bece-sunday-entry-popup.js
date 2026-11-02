@@ -45,7 +45,7 @@ function formatDuration(ms) {
 function countdownText() {
   const windowInfo = trialWindow()
   return {
-    label: windowInfo.open ? 'Window closes in' : 'Next test opens in',
+    label: windowInfo.open ? 'New starts close in' : 'Next test opens in',
     time: formatDuration(windowInfo.ms),
     open: windowInfo.open
   }
@@ -78,7 +78,7 @@ function html() {
           <span class="sunday-entry-kicker">Free national practice window</span>
           <h2>Sunday BECE Special Test</h2>
           <p>Grade 9, JHS 3 and Basic 9 candidates can take <b>40 BECE objective questions</b> every Sunday evening, compare scores on the weekly leaderboard, and receive a progress report with AI-style performance analysis.</p>
-          <div class="sunday-entry-time"><span>Every Sunday</span><strong>6:00 PM – 8:00 PM</strong><em>Ghana time</em></div>
+          <div class="sunday-entry-time"><span>Start every Sunday</span><strong>6:00 PM – 8:00 PM</strong><em>Ghana time · 60 minutes from your start</em></div>
         </div>
         <div class="sunday-entry-panel">
           <small data-sunday-entry-count-label>${escapeHtml(count.label)}</small>
