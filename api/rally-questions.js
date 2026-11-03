@@ -12,8 +12,9 @@ export default async function handler(req,res){
   let response
   if(!class_level&&!curriculum&&!topic){response=await fetch(url+'/rest/v1/rpc/question_topic_coverage',{method:'POST',headers,body:'{}',signal:AbortSignal.timeout(20000)})}
   else{
-   if(!classes.includes(class_level)||!curricula.includes(curriculum)||typeof topic!=='string'||!topic.trim()||topic.length>200)return res.status(400).json({error:'Select a valid class, curriculum and topic.'})
-   const params=new URLSearchParams({select:'id,question_text,option_a,option_b,option_c,option_d,correct_answer,explanation,topic,difficulty,source_name,question_image_url,option_a_image_url,option_b_image_url,option_c_image_url,option_d_image_url',is_active:'eq.true',class_level:'eq.'+class_level,curriculum:'eq.'+curriculum,topic:'eq.'+topic,order:'created_at.desc,id.asc',limit:'1000'})
+   if(!classes.includes(class_level)||!curricula.includes(curriculum)||(topic!==undefined&&(typeof topic!=='string'||topic.length>200)))return res.status(400).json({error:'Select a valid class, curriculum and topic.'})
+   const params=new URLSearchParams({select:'id,question_text,option_a,option_b,option_c,option_d,correct_answer,explanation,topic,difficulty,source_name,question_image_url,option_a_image_url,option_b_image_url,option_c_image_url,option_d_image_url',is_active:'eq.true',class_level:'eq.'+class_level,curriculum:'eq.'+curriculum,order:'created_at.desc,id.asc',limit:'1000'})
+   if(topic?.trim())params.set('topic','eq.'+topic)
    response=await fetch(url+'/rest/v1/question_bank?'+params,{headers,signal:AbortSignal.timeout(20000)})
   }
   if(!response.ok)return res.status([401,403].includes(response.status)?401:502).json({error:[401,403].includes(response.status)?'Your sign-in expired. Sign in again to load the question bank.':'The question bank could not be loaded. Please retry.'})
