@@ -26,3 +26,13 @@ export function assignmentAnswerReviews(attempts,questions,responses){
  if(!attempts.length)return ''
  return `<section class="ta-answer-reviews"><h2>Student answer review</h2><p>Open a student's submission to see every question, their answer and the correct or model answer. Work awaiting teacher marking is shown separately.</p>${attempts.map(a=>studentAnswerReview(a,questions,responses)).join('')}</section>`
 }
+
+export function assignmentAnswersCsv(attempts,questions,responses){
+ const rows=[['Student','Class','School','Submitted','Question number','Question','Student answer','Correct answer','Outcome','Marks','Available marks','Explanation']]
+ const lookup=new Map(responses.map(r=>[`${r.attempt_id}:${r.question_position}`,r]))
+ for(const a of attempts)for(const q of [...questions].sort((a,b)=>a.position-b.position)){
+  const r=lookup.get(`${a.id}:${q.position}`)
+  rows.push([a.participant_name,a.participant_class,a.participant_school,a.submitted_at,q.position,q.question_text,r?displayAnswer(q,r.selected_answer):'Not recorded',displayAnswer(q,r?.correct_answer??q.correct_answer),responseOutcome(r).label,r?.awarded_marks??'',r?.max_marks??q.marks??1,q.explanation])
+ }
+ return '\uFEFF'+rows.map(row=>row.map(value=>{let cell=String(value??'');if(/^[\s]*[=+@-]/.test(cell))cell="'"+cell;return '"'+cell.replaceAll('"','""')+'"'}).join(',')).join('\r\n')
+}

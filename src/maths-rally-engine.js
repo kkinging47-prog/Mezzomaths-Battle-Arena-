@@ -24,7 +24,7 @@ export function tickRace(race,dt,allAnswered=false){
  race.boost=Math.max(0,race.boost-dt*3);race.turboSeconds=Math.max(0,race.turboSeconds-dt)
  for(const bot of race.bots){if(bot.finishTime!==null)continue;const d=bot.distance;bot.distance=Math.min(FINISH_DISTANCE,d+bot.speed*dt/Math.max(1,race.requiredQuestions/5));if(bot.distance>=FINISH_DISTANCE)bot.finishTime=before+(FINISH_DISTANCE-d)/(bot.speed/Math.max(1,race.requiredQuestions/5))}
  if(ready&&race.distance>=FINISH_DISTANCE){race.finishTime=before+(FINISH_DISTANCE-old)/race.speed;race.finished=true}
- if(race.elapsed>=Math.max(180,race.requiredQuestions*45))race.finished=true
+ if(race.elapsed>=(race.maxSeconds??Math.max(180,race.requiredQuestions*45)))race.finished=true
 }
 export function racePosition(race){return 1+race.bots.filter(bot=>race.finishTime!==null?bot.finishTime!==null&&bot.finishTime<race.finishTime:bot.distance>race.distance).length}
 export function summariseRace(race,questions){const gaps=race.answers.filter(a=>!a.correct),unanswered=questions.filter(q=>!race.answers.some(a=>a.id===q.id));return {position:racePosition(race),finished:race.finishTime!==null,correct:race.correct,answered:race.answers.length,total:questions.length,accuracy:race.answers.length?Math.round(100*race.correct/race.answers.length):0,bestStreak:race.bestStreak,seconds:race.elapsed,gaps,unanswered}}
