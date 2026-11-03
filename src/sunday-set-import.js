@@ -1,7 +1,7 @@
 export const SET_IMPORT_COLUMNS = ['question_text','option_a','option_b','option_c','option_d','correct_answer','explanation','topic','topic_area','difficulty','year','question_image_url','option_a_image_url','option_b_image_url','option_c_image_url','option_d_image_url','source_page','editor_notes']
 const text=value=>String(value??'').trim()
 const key=value=>text(value).toLowerCase().replace(/[\s-]+/g,'_')
-const fingerprint=row=>['question_text','option_a','option_b','option_c','option_d','question_image_url','option_a_image_url','option_b_image_url','option_c_image_url','option_d_image_url'].map(name=>text(row[name]).toLowerCase().replace(/\s+/g,' ')).join('|')
+const fingerprint=row=>JSON.stringify(['question_text','option_a','option_b','option_c','option_d','question_image_url','option_a_image_url','option_b_image_url','option_c_image_url','option_d_image_url'].map(name=>text(row[name]).toLowerCase().replace(/\s+/g,' ')))
 export function validateSetImport(input,{setId,capacity,existing=[]}={}) {
  const errors=[],rows=[]
  if(!Array.isArray(input)) return {rows,errors:['The file must contain a table of questions.']}
@@ -46,8 +46,14 @@ export function setImportTemplate(XLSX) {
  const sheet=XLSX.utils.aoa_to_sheet([SET_IMPORT_COLUMNS,...Array.from({length:40},()=>SET_IMPORT_COLUMNS.map(()=>''))])
  sheet['!cols']=SET_IMPORT_COLUMNS.map(name=>({wch:name==='question_text'||name==='explanation'?65:name.endsWith('_url')?38:22}))
  XLSX.utils.book_append_sheet(book,sheet,'Questions')
- const notes=[['Sunday BECE set upload instructions'],['Fill one question per row in the Questions sheet. Blank rows are ignored.'],['Required: question_text, option_a, option_b, option_c, option_d, correct_answer.'],['correct_answer must be A, B, C or D. Use text formatting for fractions, leading zeros and mathematical expressions.'],['Optional: explanation, topic, topic_area, difficulty (Easy/Medium/Hard), year, image URLs, source_page and editor_notes.'],['Image columns accept public http/https URLs, not local file paths. Add images through the individual editor if needed.'],['Set assignment comes from the selected set in the app; do not add a set ID.'],['Imports append to draft sets and cannot exceed 40 total questions. Duplicate question text is rejected.'],['Imported questions are Published within the draft set. Review them before marking the set ready.'],['Preview the file, fix all reported errors, then click Import into set.'],['Example question_text','option_a','option_b','option_c','option_d','correct_answer','explanation'],['What is 3 × 4?','7','12','16','34','B','Three groups of four equal twelve.']]
+ const notes=[['Sunday BECE set upload instructions'],['Fill one question per row in the Questions sheet. Blank rows are ignored.'],['Required: question_text, option_a, option_b, option_c, option_d, correct_answer.'],['correct_answer must be A, B, C or D. Use text formatting for fractions, leading zeros and mathematical expressions.'],['Optional: explanation, topic, topic_area, difficulty (Easy/Medium/Hard), year, image URLs, source_page and editor_notes.'],['Image columns accept public http/https URLs, not local file paths. Add images through the individual editor if needed.'],['Set assignment comes from the selected set in the app; do not add a set ID.'],['Imports append to draft sets and cannot exceed 40 total questions. Duplicates with the same question, choices and images are rejected. Questions with different choices or diagrams are treated separately.'],['Imported questions are Published within the draft set. Review them before marking the set ready.'],['Preview the file, fix all reported errors, then click Import into set.'],['Example question_text','option_a','option_b','option_c','option_d','correct_answer','explanation'],['What is 3 × 4?','7','12','16','34','B','Three groups of four equal twelve.']]
  const instructions=XLSX.utils.aoa_to_sheet(notes);instructions['!cols']=[{wch:110},...Array.from({length:6},()=>({wch:24}))]
  XLSX.utils.book_append_sheet(book,instructions,'Instructions')
  return book
+}
+
+export function setImportErrorMessage(error){
+ const message=String(error?.message||'Check your connection and retry.')
+ if(message.includes('bece_assigned_question_text_unique_idx'))return 'A question with the same wording, answer choices and images is already assigned to a Sunday set, or appears twice in this upload. Reload the questions and choose the file again to identify the duplicate row. No questions from this failed import were added.'
+ return message
 }
