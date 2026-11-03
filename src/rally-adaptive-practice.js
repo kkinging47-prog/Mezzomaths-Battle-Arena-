@@ -17,6 +17,8 @@ export function nextAdaptiveQuestion(state,random=Math.random){
  const distance=q=>{const n=level(q);return n===null?Infinity:Math.abs(state.levels.indexOf(n)-state.target)}
  const nearest=Math.min(...remaining.map(distance))
  let choices=target===undefined?remaining:remaining.filter(q=>distance(q)===nearest)
+ // If levels on either side are equally close, prefer the easier one.
+ if(target!==undefined&&Number.isFinite(nearest)){const rank=Math.min(...choices.map(q=>state.levels.indexOf(level(q))));choices=choices.filter(q=>state.levels.indexOf(level(q))===rank)}
  // Stay on the nearest authored level; within that level revisit a missed topic.
  const focused=state.focusTopic?choices.filter(q=>topic(q)===state.focusTopic):[]
  if(focused.length)choices=focused

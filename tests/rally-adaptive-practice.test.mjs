@@ -21,6 +21,8 @@ recordAdaptiveAnswer(focused,q('start',2),false);assert.equal(nextAdaptiveQuesti
 const sparse=createAdaptivePractice([q('a',4),q('b',16)])
 const low=nextAdaptiveQuestion(sparse,()=>0);recordAdaptiveAnswer(sparse,low,false)
 const high=nextAdaptiveQuestion(sparse,()=>0);assert.equal(high.difficulty,16);assert.match(adaptiveQuestionLabel(sparse,high),/nearest available/)
+const tie=createAdaptivePractice([q('low',4),q('middle',10),q('upper',16)])
+nextAdaptiveQuestion(tie,()=>0);assert.equal(nextAdaptiveQuestion(tie,()=>0).difficulty,4,'prefer support when equally near levels remain')
 const single=createAdaptivePractice([q('a',null),q('b',null)])
 assert(nextAdaptiveQuestion(single));assert.match(adaptiveQuestionLabel(single,q('x',null)),/One difficulty level/)
 const repeated=createAdaptivePractice([q('same',1),q('same',2)]);assert.equal(repeated.pool.length,1)
