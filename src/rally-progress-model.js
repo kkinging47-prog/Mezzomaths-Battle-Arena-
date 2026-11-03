@@ -14,7 +14,7 @@ export function mergeRallyProgress(base={},patch={}){
  const history=new Map()
  for(const r of [...(Array.isArray(base.history)?base.history:[]),...(Array.isArray(patch.history)?patch.history:[])]){
   if(!r||typeof r.id!=='string'||!r.id||!Number.isFinite(Date.parse(r.completedAt)))continue
-  const record={};for(const key of ['id','completedAt','date','trackId','world','car','topic','classLevel','curriculum'])record[key]=String(r[key]??'').slice(0,key==='id'?100:200)
+  const record={};for(const key of ['id','completedAt','date','mode','trackId','world','car','topic','classLevel','curriculum'])record[key]=String(r[key]??'').slice(0,key==='id'?100:200)
   for(const key of ['position','correct','answered','total','accuracy','bestStreak','seconds','stars'])record[key]=Math.max(0,Math.min(100000,Number(r[key])||0))
   record.finished=Boolean(r.finished);record.demo=Boolean(r.demo);history.set(record.id,record)
  }

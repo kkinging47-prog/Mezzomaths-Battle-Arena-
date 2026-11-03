@@ -1,3 +1,7 @@
+import {randomUUID} from 'node:crypto'
+import {RALLY_CARS,garagePrefs} from '../src/maths-rally-adventure.js'
+import {raceStars} from '../src/maths-rally-tracks.js'
+import {RALLY_MODES,quickRace,racePlan} from '../src/rally-race-modes.js'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import vm from 'node:vm'
@@ -7,15 +11,15 @@ import {createRace,answerRace,tickRace,summariseRace} from '../src/maths-rally-e
 
 // Exercise the real class-race controller with inert rendering and storage.
 // No DOM package, network, learner records or personal-progress writes are used.
-let now=Date.now(),personalWrites=0,finished=null,answered=[],activated=[]
+let now=Date.now(),personalWrites=0,patches=[],finished=null,answered=[],activated=[]
 const widget=()=>({innerHTML:'',textContent:'',style:{},dataset:{},classList:{toggle(){}},focus(){},querySelector(){return widget()},querySelectorAll(){return[]},setAttribute(){},remove(){}})
 const body={style:{overflow:''},append(){}}
 const document={body,activeElement:{focus(){}},createElement:widget,addEventListener(){},querySelector(){return widget()},querySelectorAll(){return[]}}
 class Clock extends Date {static now(){return now}}
 const context=vm.createContext({document,window:{addEventListener(){},confirm(){return true}},localStorage:{getItem(){return null}},Date:Clock,console,Math,JSON,Object,Number,String,Boolean,Map,Set,
  MutationObserver:class{observe(){}},requestAnimationFrame(){return 1},cancelAnimationFrame(){},
- supabase:{auth:{onAuthStateChange(){}}},createRallyProgressStore:()=>({getState:()=>({cup:{},history:[],garage:{},progress:{}}),getOwner:()=>null,update(){personalWrites++}}),
- RALLY_TRACKS,getTrack,validateRallyQuestions,createRace,answerRace,tickRace,summariseRace,renderVectorText:x=>x,worldFor:()=>({name:'Test world'}),colourFor:()=>({hex:'#fff'}),FINISH_DISTANCE:1200})
+ supabase:{auth:{onAuthStateChange(){}}},createRallyProgressStore:()=>({getState:()=>({cup:{},history:[],garage:{},progress:{}}),getOwner:()=>null,getStatus:()=>'saved',update(patch){personalWrites++;patches.push(patch)}}),
+ crypto:{randomUUID},RALLY_CARS,garagePrefs,raceStars,selectVariedQuestions:(pool,n)=>pool.slice(0,n),RALLY_MODES,quickRace,racePlan,RALLY_TRACKS,getTrack,validateRallyQuestions,createRace,answerRace,tickRace,summariseRace,renderVectorText:x=>x,worldFor:()=>({name:'Test world'}),colourFor:()=>({hex:'#fff'}),FINISH_DISTANCE:1200})
 let source=fs.readFileSync(new URL('../src/maths-rally.js',import.meta.url),'utf8').replace(/^import .*$/gm,'').replace('export async function','async function')
 vm.runInContext(source,context)
 vm.runInContext('drawTrack=()=>{};updateHud=()=>{}',context)
@@ -41,3 +45,20 @@ assert.equal(vm.runInContext('race.answers.length',context),2)
 assert.equal(answered.length,0)
 context.finishAssignedRace();assert.equal(finished.correct,1);assert.equal(personalWrites,0)
 console.log('PASS real game controller: assigned snapshots/count/course, answer callbacks, deadline during pause, no personal writes, restored personal selection, and resumed expired positions.')
+
+context.quickPool=Array.from({length:10},(_,i)=>q('quick'+i,i+1))
+vm.runInContext('overlay=document.createElement("section");questionPool=quickPool',context)
+assert.equal(context.canPlayStage('monster',{race_mode:'quick5'}),true)
+assert.equal(context.canPlayStage('monster',{race_mode:'cup'}),false)
+await context.startRace(false,{race_mode:'quick5',rally_course:'monster',class_level:'Grade 4',curriculum:'Cambridge',topic:'__all_topics__',difficulty:'club',race_view:'2d'})
+assert.equal(vm.runInContext('race.requiredQuestions',context),5)
+assert.equal(vm.runInContext('race.finishDistance',context),600)
+vm.runInContext('questions.forEach(q=>answerRace(race,q,"A",1));race.finished=true;race.finishTime=10',context)
+context.showResults()
+assert.equal(patches.length,1)
+assert.deepEqual(Object.keys(patches[0]),['history'])
+assert.equal(patches[0].history[0].mode,'quick5')
+assert.equal(patches[0].history[0].stars,0)
+assert.equal(patches[0].history[0].correct,5)
+assert.equal(patches[0].history[0].total,5)
+console.log('PASS quick races can use later courses, use five questions and 600 metres, save labelled history, and never grant Cup stars or unlocks.')
