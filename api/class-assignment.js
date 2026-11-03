@@ -1,3 +1,4 @@
+import {rallySettings,validateRallyQuestions} from '../src/rally-assignment.js'
 import {questionSeconds} from '../src/assignment-timing.js'
 import topicAnalysisHandler,{topicAIConfigured,classifyTopics} from '../server/question-topic-analysis.js'
 import {randomUUID} from 'node:crypto'
@@ -41,11 +42,17 @@ export default async function handler(req,res){
   }
   if(req.method==='GET'){
    const unavailable=availability(a);if(unavailable)return res.status(403).json({error:unavailable})
-   let rows=await db(`teacher_assignment_questions?assignment_id=eq.${a.id}&select=id,position,question_text,option_a,option_b,option_c,option_d,question_type,marks,question_image_url,hint,source_metadata&order=position.asc`)
+   let rows=await db(`teacher_assignment_questions?assignment_id=eq.${a.id}&select=id,position,question_text,option_a,option_b,option_c,option_d,question_type,marking,marks,question_image_url,hint,source_metadata&order=position.asc`)
    if(!rows?.length)return res.status(409).json({error:'This assignment has no questions.'})
+   const rally=rallySettings(rows)
+   if(req.query?.play==='rally'){
+    if(!rally)return res.status(400).json({error:'This assignment is not a Rally race.'})
+    rows=await db(`teacher_assignment_questions?assignment_id=eq.${a.id}&select=id,position,question_text,option_a,option_b,option_c,option_d,correct_answer,explanation,question_type,marking,marks,question_image_url,source_metadata&order=position.asc`)
+    validateRallyQuestions(rows)
+   }
    rows=(rows||[]).map(({source_metadata,...q})=>({...q,time_limit_seconds:questionSeconds({source_metadata})}))
    if(a.shuffle_questions)for(let i=rows.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rows[i],rows[j]]=[rows[j],rows[i]]}
-   return res.status(200).json({assignment:a,questions:rows})
+   return res.status(200).json({assignment:{...a,...(rally?{rally}:{} )},questions:rows})
   }
   const name=clean(req.body?.participant_name),classLevel=clean(req.body?.participant_class,80),school=clean(req.body?.participant_school)
   if(!name||!classLevel)return res.status(400).json({error:'Name and class are required.'})
