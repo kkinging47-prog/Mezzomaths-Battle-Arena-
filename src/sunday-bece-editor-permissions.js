@@ -1,7 +1,7 @@
 import { renderVectorText, columnVector } from './vector-math.js'
 import './bece-school-reports.js'
 import * as XLSX from 'xlsx'
-import { validateSetImport, readSetImportWorkbook, setImportTemplate } from './sunday-set-import.js'
+import { validateSetImport, readSetImportWorkbook, setImportTemplate, setImportErrorMessage } from './sunday-set-import.js'
 import { restoreBeceDrafts, clearBeceDraft, rememberBeceDraft } from './bece-editor-drafts.js'
 import './sunday-bece-editor-permissions.css'
 import { supabase, isSupabaseConfigured } from './supabaseClient.js'
@@ -671,8 +671,8 @@ async function confirmSetImport() {
     if(complete) {pendingSetImport=null;await loadQuestions();toast(pending.rows.length+' questions added to Set '+set.set_number+'. Review them before marking ready.','success')}
   } catch(error) {
     pendingSetImport={...pending,errors:[]}
-    toast('Import failed: '+(error.message||'Check your connection and retry.'),'error')
-    pendingSetImport.importError=error.message||'Check your connection and retry.'
+    toast('Import failed: '+setImportErrorMessage(error),'error')
+    pendingSetImport.importError=setImportErrorMessage(error)
   } finally {importingSet=false;renderAdminSections()}
 }
 document.addEventListener('change',event=>{

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import * as XLSX from 'xlsx'
-import {SET_IMPORT_COLUMNS,validateSetImport,readSetImportWorkbook,setImportTemplate} from '../src/sunday-set-import.js'
+import {SET_IMPORT_COLUMNS,validateSetImport,readSetImportWorkbook,setImportTemplate,setImportErrorMessage} from '../src/sunday-set-import.js'
 const question={question_text:'What is 3 × 4?',option_a:'7',option_b:'12',option_c:'16',option_d:'34',correct_answer:'b',explanation:'Three groups of four.',question_image_url:'https://example.org/diagram.png'}
 const options={setId:'selected-set',capacity:40,existing:[]}
 let checked=validateSetImport([question],options);assert.deepEqual(checked.errors,[]);assert.equal(checked.rows[0].correct_answer,'B');assert.equal(checked.rows[0].sunday_set_id,'selected-set');assert.equal(checked.rows[0].status,'Published')
@@ -21,3 +21,11 @@ const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.js
 const csv=XLSX.utils.sheet_to_csv(book.Sheets.Questions);assert.equal(readSetImportWorkbook(XLSX,new TextEncoder().encode(csv))[0].explanation,question.explanation)
 const wrong=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wrong,XLSX.utils.aoa_to_sheet([['Question','Answer'],['Hello','A']]),'Sheet1');assert.throws(()=>readSetImportWorkbook(XLSX,XLSX.write(wrong,{type:'array',bookType:'xlsx'})),/Missing columns/)
 console.log('PASS template round-trip, Excel/CSV parsing, required fields, answers, duplicates, capacity, safe image URLs and selected-set assignment.')
+
+assert.deepEqual(validateSetImport([question,{...question,question_image_url:'https://example.org/another.png'}],options).errors,[])
+assert.deepEqual(validateSetImport([question],{...options,existing:[{...question,question_image_url:'https://example.org/another.png',sunday_set_id:'other-set'}]}).errors,[])
+assert.match(validateSetImport([question,{...question,question_text:' WHAT is 3 × 4?  '}],options).errors.join(),/more than once/)
+assert.deepEqual(validateSetImport([question,{...question,option_a_image_url:'https://example.org/choice.png'}],options).errors,[])
+assert.match(setImportErrorMessage({message:'duplicate key value violates unique constraint "bece_assigned_question_text_unique_idx"'}),/same wording, answer choices and images/)
+assert.equal(setImportErrorMessage({message:'Connection failed'}),'Connection failed')
+console.log('PASS distinct diagram/choice identities, normalized duplicates and friendly database conflict messages.')
