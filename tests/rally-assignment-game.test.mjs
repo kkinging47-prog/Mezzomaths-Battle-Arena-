@@ -1,3 +1,4 @@
+import {createAdaptivePractice,nextAdaptiveQuestion,recordAdaptiveAnswer,placeAdaptiveQuestion,adaptiveQuestionLabel} from '../src/rally-adaptive-practice.js'
 import {randomUUID} from 'node:crypto'
 import {RALLY_CARS,garagePrefs} from '../src/maths-rally-adventure.js'
 import {raceStars} from '../src/maths-rally-tracks.js'
@@ -19,7 +20,7 @@ class Clock extends Date {static now(){return now}}
 const context=vm.createContext({document,window:{addEventListener(){},confirm(){return true}},localStorage:{getItem(){return null}},Date:Clock,console,Math,JSON,Object,Number,String,Boolean,Map,Set,
  MutationObserver:class{observe(){}},requestAnimationFrame(){return 1},cancelAnimationFrame(){},
  supabase:{auth:{onAuthStateChange(){}}},createRallyProgressStore:()=>({getState:()=>({cup:{},history:[],garage:{},progress:{}}),getOwner:()=>null,getStatus:()=>'saved',update(patch){personalWrites++;patches.push(patch)}}),
- crypto:{randomUUID},RALLY_CARS,garagePrefs,raceStars,selectVariedQuestions:(pool,n)=>pool.slice(0,n),RALLY_MODES,quickRace,racePlan,RALLY_TRACKS,getTrack,validateRallyQuestions,createRace,answerRace,tickRace,summariseRace,renderVectorText:x=>x,worldFor:()=>({name:'Test world'}),colourFor:()=>({hex:'#fff'}),FINISH_DISTANCE:1200})
+ createAdaptivePractice,nextAdaptiveQuestion,recordAdaptiveAnswer,placeAdaptiveQuestion,adaptiveQuestionLabel,crypto:{randomUUID},RALLY_CARS,garagePrefs,raceStars,selectVariedQuestions:(pool,n)=>pool.slice(0,n),RALLY_MODES,quickRace,racePlan,RALLY_TRACKS,getTrack,validateRallyQuestions,createRace,answerRace,tickRace,summariseRace,renderVectorText:x=>x,worldFor:()=>({name:'Test world'}),colourFor:()=>({hex:'#fff'}),FINISH_DISTANCE:1200})
 let source=fs.readFileSync(new URL('../src/maths-rally.js',import.meta.url),'utf8').replace(/^import .*$/gm,'').replace('export async function','async function')
 vm.runInContext(source,context)
 vm.runInContext('drawTrack=()=>{};updateHud=()=>{}',context)
@@ -62,3 +63,24 @@ assert.equal(patches[0].history[0].stars,0)
 assert.equal(patches[0].history[0].correct,5)
 assert.equal(patches[0].history[0].total,5)
 console.log('PASS quick races can use later courses, use five questions and 600 metres, save labelled history, and never grant Cup stars or unlocks.')
+
+context.adaptivePool=Array.from({length:24},(_,i)=>({...q('adaptive'+i,i+1),question_text:`Adaptive question ${i}`,difficulty:[4,10,16][Math.floor(i/8)],topic:'Fractions'}))
+vm.runInContext('questionPool=adaptivePool',context)
+await context.startRace(false,{race_mode:'quick5',question_mode:'adaptive',rally_course:'monster',class_level:'Grade 4',curriculum:'Cambridge',topic:'Fractions',difficulty:'club',race_view:'2d'})
+assert.equal(vm.runInContext('questions[0].difficulty',context),10)
+context.frame(1000);context.frame(4100);context.chooseAnswer('A');context.frame(5300);context.chooseAnswer('A')
+assert.equal(vm.runInContext('questions[2].difficulty',context),16)
+context.frame(6500);context.chooseAnswer('B')
+assert.equal(vm.runInContext('questions[3].difficulty',context),10)
+assert.equal(vm.runInContext('questions.length',context),5)
+assert.equal(vm.runInContext('new Set(questions.map(q=>q.question_text)).size',context),5)
+assert.equal(vm.runInContext('race.answers[2].question_text',context),vm.runInContext('questions[2].question_text',context))
+vm.runInContext('race.finished=true;race.finishTime=10',context)
+context.showResults()
+assert.equal(patches[1].history[0].questionMode,'adaptive')
+assert.deepEqual(Object.keys(patches[1]),['history'])
+console.log('PASS real adaptive controller raises/lowers the next authored question, keeps five unique snapshots, preserves answered evidence and saves an adaptive history label.')
+await context.startRace(false,{race_mode:'cup',question_mode:'adaptive',rally_course:'sprint',class_level:'Grade 4',curriculum:'Cambridge',topic:'Fractions',difficulty:'club',race_view:'2d'})
+assert.equal(vm.runInContext('adaptivePractice',context),null)
+assert.equal(vm.runInContext('race.requiredQuestions',context),5)
+console.log('PASS Circuit Cup ignores adaptive selection and retains its prescribed question count.')
