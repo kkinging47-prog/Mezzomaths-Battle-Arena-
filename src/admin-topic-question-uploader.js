@@ -1,3 +1,4 @@
+import { uploadMetadata, coverageRows } from './question-upload-metadata.js'
 import { GRADE4_REVIEWED_TOPICS, grade4Area } from './grade4-reviewed-bank.js'
 import './admin-topic-question-uploader.css'
 import * as XLSX from 'xlsx'
@@ -55,8 +56,7 @@ function normalizeQuestion(row, defaults) {
   const topic = row.topic || defaults.topic
   return {
     id: row.id || uid(),
-    class_level: defaults.class_level,
-    curriculum: defaults.curriculum,
+    ...uploadMetadata(row,defaults),
     topic,
     topic_area: row.topic_area || inferTopicArea(topic),
     topic_sublevel: row.topic_sublevel || row.subtopic || 'Uploaded by topic',
@@ -77,7 +77,6 @@ function normalizeQuestion(row, defaults) {
     source_type: row.source_type || 'topic_upload',
     source_name: row.source_name || 'Admin Topic Upload',
     source_page: row.source_page || '',
-    is_active: true
   }
 }
 function panelHtml() {
@@ -85,13 +84,14 @@ function panelHtml() {
   const curriculum = localStorage.getItem('topic_upload_curriculum') || 'GES'
   const topic = localStorage.getItem('topic_upload_topic') || (TOPICS[cls] || [])[0] || 'BECE Exam Practice'
   return `<section class="topic-question-uploader glass-card" data-topic-question-uploader="true" data-admin-topic-uploader="true">
-    <div class="topic-upload-head"><div><span>📥 Question Bank Upload</span><h2>Upload Questions to the Question Bank</h2><p>Choose the class and curriculum for every question in this upload. Topics in the file are preserved; the selected topic is used when a row has no topic.</p></div><button class="btn btn-blue" type="button" data-refresh-topic-count="true">Refresh Count</button></div>
+    <div class="topic-upload-head"><div><span>📥 Question Bank Upload</span><h2>Upload Questions to the Question Bank</h2><p>Class, curriculum, topics and inactive settings in your file are preserved. The selections below fill missing values only.</p></div><button class="btn btn-blue" type="button" data-refresh-topic-count="true">Refresh Count</button></div>
     <div class="topic-upload-grid">
-      <label><span>Class</span><select id="topicUploadClass">${optionHtml(LEVELS, cls)}</select></label>
-      <label><span>Curriculum</span><select id="topicUploadCurriculum">${optionHtml(CURRICULA, curriculum)}</select></label>
+      <label><span>Class (if missing in file)</span><select id="topicUploadClass">${optionHtml(LEVELS, cls)}</select></label>
+      <label><span>Curriculum (if missing in file)</span><select id="topicUploadCurriculum">${optionHtml(CURRICULA, curriculum)}</select></label>
       <label class="wide"><span>Topic</span><select id="topicUploadTopic">${optionHtml(TOPICS[cls] || [], topic)}</select></label>
     </div>
     <div class="topic-count-grid" data-topic-count-box><article><strong>Database Total</strong><span data-db-total>Check needed</span></article><article><strong>This Topic in DB</strong><span data-db-topic>Check needed</span></article><article><strong>Local Visible Bank</strong><span data-local-total>${readJson(BANK_KEY, []).length}</span></article></div>
+    <details><summary>Curriculum question coverage</summary><p>Published question counts by class for the selected curriculum. Counts show content volume, not a complete curriculum review. Rally checks usable questions before starting. The longest course needs 55 questions; use All topics to combine smaller topics.</p><div data-bank-coverage role="status" aria-live="polite">Loading coverage…</div></details>
     <label class="topic-paste-box"><span>Paste CSV or JSON Questions</span><textarea id="topicUploadText" placeholder="CSV headers: question_text, option_a, option_b, option_c, option_d, correct_answer, explanation, numeric_answer, difficulty"></textarea></label>
     <div class="topic-upload-actions"><label>Choose file<input type="file" id="topicUploadFile" accept=".xlsx,.xls,.csv,.json,.txt"></label><button class="btn btn-blue" type="button" data-bank-template>Download Excel Template</button><button class="btn btn-gold" type="button" data-preview-topic-upload="true">Preview Questions</button><button class="btn btn-primary" type="button" data-save-topic-upload="true">Upload to Question Bank</button></div>
     <div class="topic-upload-preview" id="topicUploadPreview" role="status" aria-live="polite"><p>No preview yet.</p></div>
@@ -158,7 +158,7 @@ async function previewQuestions() {
   const list = await parseQuestions()
   const box = document.getElementById('topicUploadPreview')
   if (!box) return
-  box.innerHTML = list.length ? `<strong>${list.length} question(s) ready.</strong>${list.slice(0, 5).map(q => `<div><b>${escapeHtml(q.class_level)} • ${escapeHtml(q.topic)}</b><span>${escapeHtml(q.question_text)}</span><small>Answer: ${escapeHtml(q.correct_answer)}</small></div>`).join('')}` : '<p>No valid questions found. Check your CSV/JSON columns.</p>'
+  box.innerHTML = list.length ? `<strong>${list.length} question(s) ready.</strong>${list.slice(0, 5).map(q => `<div><b>${escapeHtml(q.class_level)} • ${escapeHtml(q.curriculum)} • ${escapeHtml(q.topic)}${q.is_active?'':' • Inactive'}</b><span>${escapeHtml(q.question_text)}</span><small>Answer: ${escapeHtml(q.correct_answer)}</small></div>`).join('')}` : '<p>No valid questions found. Check your CSV/JSON columns.</p>'
 }
 async function saveUpload() {
   if(uploading) return
@@ -167,7 +167,6 @@ async function saveUpload() {
   if(button) button.disabled=true
   try {
     const list=await parseQuestions()
-    const defaults=list[0] || selectedDefaults()
     if(!list.length) throw new Error('Choose a file or paste questions first.')
     if(!supabase || !isSupabaseConfigured) throw new Error('The database is unavailable. No questions were imported.')
     const {data:{user},error:authError}=await supabase.auth.getUser()
@@ -176,13 +175,21 @@ async function saveUpload() {
     const {data,error}=await supabase.from('question_bank').insert(payload).select('*')
     if(error) throw new Error('Nothing was imported. '+error.message)
     try { saveJson(BANK_KEY,[...data,...readJson(BANK_KEY,[])]) } catch {}
-    const message=`${data.length} questions uploaded successfully to ${defaults.class_level} · ${defaults.curriculum}.`
+    const message=`${data.length} questions uploaded successfully (${data.filter(q=>q.is_active).length} active, ${data.filter(q=>!q.is_active).length} inactive). Class and curriculum were preserved from the file where provided.`
     document.getElementById('topicUploadPreview').textContent=message
     document.getElementById('topicUploadFile').value=''
     document.getElementById('topicUploadText').value=''
     window.alert(message)
     await refreshCounts()
   } catch(error) {showUploadError(error)} finally {uploading=false;if(button)button.disabled=false}
+}
+let coverageVersion=0
+async function refreshCoverage(curriculum){
+  const version=++coverageVersion,box=document.querySelector('[data-bank-coverage]');if(!box)return
+  box.textContent='Loading coverage…'
+  try{const {data,error}=await supabase.rpc('question_topic_coverage');if(error)throw error;if(version!==coverageVersion||!box.isConnected)return
+    box.innerHTML=`<div style="overflow-x:auto"><table><caption>${escapeHtml(curriculum)} · active question bank</caption><thead><tr><th>Class</th><th>Questions</th><th>Named topics</th><th>Topics below 55 questions</th><th>Coverage action</th></tr></thead><tbody>${coverageRows(data||[],curriculum).map(r=>`<tr><th scope="row">${escapeHtml(r.class_level)}</th><td>${r.questions}</td><td>${r.topics}</td><td>${r.smallTopics}</td><td>${r.questions===0?'Upload questions':r.questions<55?'Expand question pool':'Review topic coverage'}</td></tr>`).join('')}</tbody></table></div>`
+  }catch(error){if(version===coverageVersion&&box.isConnected)box.textContent='Could not load coverage. Use Refresh Count to retry. '+error.message}
 }
 async function refreshCounts() {
   const defaults = selectedDefaults()
@@ -193,6 +200,7 @@ async function refreshCounts() {
     document.querySelector('[data-db-topic]') && (document.querySelector('[data-db-topic]').textContent = 'Supabase not configured')
     return
   }
+  refreshCoverage(defaults.curriculum)
   const total = await supabase.from('question_bank').select('id', { count: 'exact', head: true }).eq('is_active', true)
   const topic = await supabase.from('question_bank').select('id', { count: 'exact', head: true }).eq('class_level', defaults.class_level).eq('curriculum', defaults.curriculum).eq('topic', defaults.topic).eq('is_active', true)
   document.querySelector('[data-db-total]') && (document.querySelector('[data-db-total]').textContent = total.error ? total.error.message : String(total.count || 0))
