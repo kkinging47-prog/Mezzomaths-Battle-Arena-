@@ -1,4 +1,5 @@
 export const FINISH_DISTANCE=1200
+export function raceFinishDistance(race){const distance=Number(race?.finishDistance);return Number.isFinite(distance)&&distance>=100&&distance<=1200?distance:FINISH_DISTANCE}
 export function createRace(difficulty='club',requiredQuestions=0) {
  const speeds={rookie:[8,9,10],club:[12,14,16],expert:[17,19,21]}[difficulty]||[12,14,16]
  return {requiredQuestions:Math.max(0,Math.floor(Number(requiredQuestions)||0)),elapsed:0,distance:0,speed:2,boost:0,turbo:0,turboSeconds:0,streak:0,bestStreak:0,correct:0,answers:[],finished:false,finishTime:null,bots:speeds.map((speed,i)=>({name:['Kofi','Ama','Kojo'][i],speed,distance:0,finishTime:null}))}
@@ -14,16 +15,16 @@ export function answerRace(race,question,selected,seconds) {
 export function useTurbo(race){if(race.finished||race.turbo<100||race.turboSeconds>0)return false;race.turbo=0;race.turboSeconds=4;return true}
 export function tickRace(race,dt,allAnswered=false){
  if(race.finished)return
- dt=Math.max(0,Math.min(dt,.1));const before=race.elapsed;race.elapsed+=dt
+ const finish=raceFinishDistance(race);dt=Math.max(0,Math.min(dt,.1));const before=race.elapsed;race.elapsed+=dt
  const accuracy=race.answers.length?race.correct/race.answers.length:0
  const cruise=allAnswered?12+42*accuracy:2
  race.speed=cruise+race.boost+(race.turboSeconds>0?40:0)
  const ready=!race.requiredQuestions||(allAnswered&&race.answers.length>=race.requiredQuestions)
- const cap=ready?FINISH_DISTANCE:Math.min(FINISH_DISTANCE-1,FINISH_DISTANCE*race.answers.length/race.requiredQuestions)
+ const cap=ready?finish:Math.min(finish-1,finish*race.answers.length/race.requiredQuestions)
  const old=race.distance;race.distance=Math.min(cap,old+race.speed*dt)
  race.boost=Math.max(0,race.boost-dt*3);race.turboSeconds=Math.max(0,race.turboSeconds-dt)
- for(const bot of race.bots){if(bot.finishTime!==null)continue;const d=bot.distance;bot.distance=Math.min(FINISH_DISTANCE,d+bot.speed*dt/Math.max(1,race.requiredQuestions/5));if(bot.distance>=FINISH_DISTANCE)bot.finishTime=before+(FINISH_DISTANCE-d)/(bot.speed/Math.max(1,race.requiredQuestions/5))}
- if(ready&&race.distance>=FINISH_DISTANCE){race.finishTime=before+(FINISH_DISTANCE-old)/race.speed;race.finished=true}
+ for(const bot of race.bots){if(bot.finishTime!==null)continue;const d=bot.distance;bot.distance=Math.min(finish,d+bot.speed*dt/Math.max(1,race.requiredQuestions/5));if(bot.distance>=finish)bot.finishTime=before+(finish-d)/(bot.speed/Math.max(1,race.requiredQuestions/5))}
+ if(ready&&race.distance>=finish){race.finishTime=before+(finish-old)/race.speed;race.finished=true}
  if(race.elapsed>=(race.maxSeconds??Math.max(180,race.requiredQuestions*45)))race.finished=true
 }
 export function racePosition(race){return 1+race.bots.filter(bot=>race.finishTime!==null?bot.finishTime!==null&&bot.finishTime<race.finishTime:bot.distance>race.distance).length}
