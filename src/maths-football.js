@@ -25,7 +25,7 @@ function updateSaveStatus(){
  const slot=overlay?.querySelector('[data-mf-save]');if(slot)slot.textContent=saveMessage()
  const history=overlay?.querySelector('[data-mf-history]');if(history)history.innerHTML=historyHtml()
 }
-function shell(body){overlay.innerHTML=`<div class="mf-shell"><header class="mf-header"><div><span>MEZZO MATHS</span><strong>FOOTBALL</strong></div><button type="button" data-mf-close>Back to Arena ✕</button></header><p class="mf-save" data-mf-save role="status">${esc(saveMessage())}</p>${body}</div>`}
+function shell(body){overlay.scrollTop=0;overlay.innerHTML=`<div class="mf-shell"><header class="mf-header"><div><span>MEZZO MATHS</span><strong>FOOTBALL</strong></div><button type="button" data-mf-close>Back to Arena ✕</button></header><p class="mf-save" data-mf-save role="status">${esc(saveMessage())}</p>${body}</div>`}
 function historyHtml(){const records=results.getRecords();return `<h2>Your recent matches</h2>${records.length?records.map(r=>`<article class="mf-history-row"><b>${esc(r.metadata.outcome)} · ${esc(r.metadata.goals)}–${esc(r.metadata.opponentGoals)}</b><span>${esc(r.class_level)} · ${esc(r.curriculum)} · ${esc(r.topic)}</span><small>${esc(r.score)}/${esc(r.total)} maths answers correct · ${esc(new Date(r.created_at).toLocaleDateString())}</small></article>`).join(''):'<p>Your completed class-question matches will appear here.</p>'}`}
 async function openFootball(){
  if(overlay)return
