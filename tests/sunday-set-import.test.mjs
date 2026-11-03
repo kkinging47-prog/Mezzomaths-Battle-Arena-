@@ -29,3 +29,17 @@ assert.deepEqual(validateSetImport([question,{...question,option_a_image_url:'ht
 assert.match(setImportErrorMessage({message:'duplicate key value violates unique constraint "bece_assigned_question_text_unique_idx"'}),/same wording, answer choices and images/)
 assert.equal(setImportErrorMessage({message:'Connection failed'}),'Connection failed')
 console.log('PASS distinct diagram/choice identities, normalized duplicates and friendly database conflict messages.')
+
+const fresh={...question,question_text:'What is 5 × 4?'}
+const existing={...question,sunday_set_id:'other-set'}
+const raw=[question,fresh,{...fresh}, {...question,question_text:' WHAT is 3 × 4?  '}]
+const deduped=validateSetImport(raw,{...options,capacity:1,existing:[existing],skipDuplicates:true})
+assert.deepEqual(deduped.errors,[]);assert.equal(deduped.rows.length,1);assert.equal(deduped.rows[0].question_text,fresh.question_text);assert.deepEqual(deduped.rowNumbers,[3]);assert.deepEqual(deduped.skipped.map(r=>r.line),[2,4,5]);assert.match(deduped.skipped[0].reason,/another Sunday set/)
+assert.equal(raw.length,4);assert.equal(existing.sunday_set_id,'other-set')
+assert.match(validateSetImport(raw,{...options,capacity:1,existing:[existing]}).errors.join(),/already assigned/)
+assert.deepEqual(validateSetImport([fresh,{...fresh,question_image_url:'https://example.org/unique.png'}],{...options,skipDuplicates:true}).errors,[])
+assert.match(validateSetImport([question,question],{...options,existing:[existing],skipDuplicates:true}).errors.join(),/All questions are duplicates/)
+assert.match(validateSetImport([fresh,{...fresh,question_text:'Invalid new question',correct_answer:'wrong'}],{...options,skipDuplicates:true}).errors.join(),/correct_answer/)
+assert.match(validateSetImport([question,fresh],{...options,capacity:0,existing:[existing],skipDuplicates:true}).errors.join(),/available places/)
+assert.deepEqual(validateSetImport([fresh,fresh],{...options,skipDuplicates:true}).rowNumbers,[2])
+console.log('PASS optional duplicate exclusion, source row mapping, capacity after removal, all-duplicate files, distinct diagrams, unchanged source and remaining validation errors.')

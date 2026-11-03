@@ -612,8 +612,10 @@ function setUploadHtml(set) {
     <p>Excel (.xlsx/.xls), CSV or JSON · ${Math.max(0,available)} places available. Questions are added to this set.</p>
     <div class="sunday-set-actions"><button type="button" class="btn btn-blue btn-small" data-download-sunday-set-template>Download Excel template</button><button type="button" class="btn btn-blue btn-small" data-choose-sunday-set-file ${importingSet?'disabled':''}>Choose File</button><input type="file" data-sunday-set-upload accept=".xlsx,.xls,.csv,.json" hidden><button type="button" class="btn btn-gold btn-small" data-confirm-sunday-set-import ${!unlocked||!pending||pending.reading||pending.errors.length||!pending.rows.length?'disabled':''}>${importingSet?'Uploading…':'Upload to Set '+esc(set.set_number)}</button></div>
     <p aria-live="polite" data-sunday-upload-file-name>${pending ? esc(pending.fileName)+(pending.reading?' · Reading file…':'') : 'No file chosen. Choose your file, review the preview, then click Upload to Set.'}</p>
+    ${pending?.sourceRows?`<label style="display:flex;gap:10px;align-items:center;margin:12px 0"><input type="checkbox" data-skip-sunday-duplicates ${pending.skipDuplicates?'checked':''} ${importingSet?'disabled':''}>Remove duplicates from this upload</label><p>Excludes repeated questions in this file and questions already assigned to Sunday sets. Existing questions are kept.</p>`:''}
     ${!unlocked&&!importingSet?'<p>Uploads require an unscheduled draft set with fewer than 40 questions.</p>':''}
-    ${pending && !pending.reading ? `<div role="status">${pending.importError?'<p role="alert">Import failed: '+esc(pending.importError)+'</p>':''}<p><strong>${esc(pending.fileName)}</strong> · ${pending.rows.length} questions · Target: Set ${esc(set.set_number)}</p>${pending.errors.length ? '<ul role="alert">'+pending.errors.slice(0,50).map(error=>'<li>'+esc(error)+'</li>').join('')+'</ul><p>Nothing has been imported. Correct the file and upload it again.</p>' : '<p>Validation passed. Review the questions below, then import.</p>'}
+    ${pending && !pending.reading ? `<div role="status">${pending.importError?'<p role="alert">Import failed: '+esc(pending.importError)+'</p>':''}<p><strong>${esc(pending.fileName)}</strong> · ${pending.rows.length} questions ready · ${pending.skipped?.length||0} duplicates excluded · Target: Set ${esc(set.set_number)}</p>${pending.errors.length ? '<ul role="alert">'+pending.errors.slice(0,50).map(error=>'<li>'+esc(error)+'</li>').join('')+'</ul><p>Nothing has been imported. Correct the file and upload it again.</p>' : '<p>Validation passed. Review the questions below, then import.</p>'}
+    ${pending.skipped?.length?'<details><summary>View '+pending.skipped.length+' excluded duplicate rows</summary><ul>'+pending.skipped.map(row=>'<li><b>Row '+row.line+':</b> '+esc(row.question_text)+' — '+esc(row.reason)+'</li>').join('')+'</ul></details>':''}
     ${pending.rows.length?'<div style="overflow:auto;max-height:320px"><table style="width:100%;text-align:left"><thead><tr><th>#</th><th>Question</th><th>Answer</th><th>Topic</th></tr></thead><tbody>'+pending.rows.map((row,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(row.question_text)+'</td><td>'+esc(row.correct_answer)+'</td><td>'+esc(row.topic_area)+'</td></tr>').join('')+'</tbody></table></div>':''}
     <div class="sunday-set-actions"><button type="button" class="btn btn-ghost btn-small" data-cancel-sunday-set-import ${importingSet?'disabled':''}>Cancel upload</button></div></div>` : ''}
   </section>`
@@ -633,9 +635,21 @@ async function previewSetImport(file) {
     else throw new Error('Choose an Excel, CSV or JSON file.')
     if(raw.length>1000) throw new Error('Too many rows. Upload only the questions needed for one 40-question set.')
     if(readId!==setImportReadId) return
+    const rowIds=raw.map(()=>crypto.randomUUID())
     const checked=validateSetImport(raw,{setId,capacity:40-setQuestions(setId).length,existing:questions})
-    pendingSetImport={setId,fileName:file.name,...checked,rows:checked.rows.map(row=>({...row,id:crypto.randomUUID()}))}
+    pendingSetImport={setId,fileName:file.name,sourceRows:raw,rowIds,skipDuplicates:false,...checked,rows:checked.rows.map((row,i)=>({...row,id:rowIds[checked.rowNumbers[i]-2]}))}
   } catch(error) {if(readId!==setImportReadId) return;pendingSetImport={setId,fileName:file.name,rows:[],errors:[error.message||'The file could not be read.']}}
+  renderAdminSections()
+}
+async function refreshDuplicatePreview(skipDuplicates){
+  const pending=pendingSetImport
+  if(importingSet||!pending?.sourceRows||pending.setId!==selectedSetId)return
+  const readId=++setImportReadId
+  pendingSetImport={...pending,reading:true,skipDuplicates};renderAdminSections()
+  await loadQuestions()
+  if(readId!==setImportReadId||pendingSetImport?.setId!==pending.setId)return
+  const checked=validateSetImport(pending.sourceRows,{setId:pending.setId,capacity:40-setQuestions(pending.setId).length,existing:questions,skipDuplicates})
+  pendingSetImport={...pending,...checked,reading:false,skipDuplicates,importError:'',rows:checked.rows.map((row,i)=>({...row,id:pending.rowIds[checked.rowNumbers[i]-2]}))}
   renderAdminSections()
 }
 async function confirmSetImport() {
@@ -668,7 +682,7 @@ async function confirmSetImport() {
       questions=[...questions.filter(row=>!payload.some(item=>item.id===row.id)),...result.data.map(normalise)]
       complete=true
     }
-    if(complete) {pendingSetImport=null;await loadQuestions();toast(pending.rows.length+' questions added to Set '+set.set_number+'. Review them before marking ready.','success')}
+    if(complete) {pendingSetImport=null;await loadQuestions();toast(pending.rows.length+' questions added to Set '+set.set_number+'. '+(pending.skipped?.length||0)+' duplicates excluded. Review the set before marking ready.','success')}
   } catch(error) {
     pendingSetImport={...pending,errors:[]}
     toast('Import failed: '+setImportErrorMessage(error),'error')
@@ -677,4 +691,5 @@ async function confirmSetImport() {
 }
 document.addEventListener('change',event=>{
   if(event.target?.matches?.('[data-sunday-set-upload]')) previewSetImport(event.target.files?.[0])
+  if(event.target?.matches?.('[data-skip-sunday-duplicates]')) refreshDuplicatePreview(event.target.checked)
 })
