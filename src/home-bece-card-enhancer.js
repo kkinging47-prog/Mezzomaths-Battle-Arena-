@@ -30,8 +30,10 @@ function installBeceHomeCard() {
     else grid.insertAdjacentHTML('beforeend', beceCardHtml())
     bece = grid.querySelector('.bece-home-card')
   }
-  if (bece && bot && bece.nextElementSibling !== bot) grid.insertBefore(bece, bot)
-  if (bot && bece && bot !== grid.lastElementChild) grid.appendChild(bot)
+  // The overview owns card placement once it has grouped the directory.
+  if (grid.classList.contains('overview-directory')) return
+  if (bece && bot && bot.parentElement === grid && bece.nextElementSibling !== bot) grid.insertBefore(bece, bot)
+  if (bot && bece && bot.parentElement === grid && bot !== grid.lastElementChild) grid.appendChild(bot)
 }
 
 function queueInstall() {
