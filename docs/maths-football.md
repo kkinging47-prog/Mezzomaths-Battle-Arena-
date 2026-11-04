@@ -1,27 +1,37 @@
-# Maths Football — penalty shootout
+# Maths Football — playable career
 
-Open Maths Football from Games & live battles on the homepage, or the Maths Football navigation tab. Maths Rally retains its own entry.
+Open Games & live battles → Maths Football at play.mezzomaths.org. This version replaces the penalty-only screen with a top-down attacking football game. Answer correctly to take control of the striker, dribble around defenders, aim and shoot. Questions and explanations pause the pitch clock. An incorrect answer consumes that chance, but always shows the correction.
 
-## Gameplay
+## Controls and simulation
 
-Class-question matches use five or ten unique multiple-choice questions from the selected class/curriculum/topic, including All topics. A correct answer earns a penalty shot. The player chooses left, centre or right while watching the moving keeper. Shooting into the keeper's current zone produces a save; another zone produces a goal. Wrong maths answers use the kick without a shot. A computer penalty follows each kick; its success rate and keeper movement depend on the chosen Training/Club/Challenge setting. The computer's outcomes are sampled once per match, independently of the student's answers.
+Move with arrows/WASD or hold the four touch arrows (simultaneous pointers support diagonal movement). Aim with the goal-target slider or tap the goal. Space/Shoot fires at the selected target; 1/2/3 shoot left/centre/right. Keys 1–4 select maths answers during questions. Escape or Pause stops player movement, defenders, ball and the attack clock. Leaving the tab/window pauses automatically and clears held controls. Sound is optional and initially off. Reduced-motion preference removes player gait, ball trails and celebration confetti without changing physics or outcomes.
 
-Each kick ends with the answer and explanation; Next kick advances. The final screen separates the football result from maths accuracy and reviews every answer, including correct answers whose shots were saved. A match can finish as a win, loss or draw after its prescribed number of kicks. There is no sudden-death question extension.
+Players accelerate into movement; the ball follows the dribble, then travels with velocity and drag after a shot. Defenders chase and tackle or block the ball. A keeper reacts with finite lateral speed. Outcomes include goal, saved, blocked, tackled, wide and time up. Two consecutive correct maths answers earn a faster run and stronger shot for that attack. Maths correctness is recorded independently of football outcomes.
 
-Keyboard: 1–4 choose answers, 1–3 aim penalties, Escape pauses. Buttons support touch and keyboard focus. Switching tabs pauses; goalkeeper, ball and active match time stop together. Reduced-motion preference simplifies shot rendering. Leaving or refreshing an unfinished match restarts it; only completed class-question matches are saved.
+## Five levels
 
-## Questions and account results
+| Level | Defenders | Attack time | Five-chance goal target |
+|---|---:|---:|---:|
+| Training Ground | 0 | 30s | 1 |
+| First Match | 1 | 28s | 2 |
+| Club Challenge | 2 | 26s | 2 |
+| Championship | 3 | 24s | 3 |
+| Mezzo Cup | 3, faster | 22s | 2 in each of three rounds |
 
-Signed-in matches reuse the existing authenticated question-bank service and its class/curriculum/active filters. No replacement curriculum questions are invented when a pool is missing or too small. Balanced mix is available, alongside the same within-match adaptive selection used for quick Rally practice. Authored diagrams and option diagrams are supported.
+Levels 1–4 allow 5 or 10 unique questions/chances. Goal targets scale with count; 60% maths accuracy is also required. Completing both targets unlocks the next level. Level 5 is a 15-question tournament comprising three five-chance rounds, each requiring at least 2 goals and 3 correct answers. Goals or accuracy in another round cannot compensate for a failed round. Qualifying in all rounds earns the trophy. There is no random computer score; the scoreboard shows goals against the stated target.
 
-Try training demo is a five-kick sample-arithmetic match that works without sign-in. It is clearly labelled and never creates an account result, including when a signed-in player tries it.
+Football level does not change class, curriculum or topic. Balanced and adaptive question selection reuse the existing active question bank and Rally adaptive selection. All topics includes unassigned questions. Insufficient banks produce a clear error rather than invented replacement questions. The five-question guest demo uses labelled sample arithmetic, always plays Training Ground, and never saves results or unlocks.
 
-Completed class-question matches save as `maths_football` rows in the existing `game_score_records` table. Its numeric score is maths answers correct; goals, opponent goals, outcome and full answer snapshots are in versioned metadata. Existing owner-insert and account/staff read policies apply. No schema, grants or official leaderboard/XP changes were added. These are practice records, not invigilated assessment results.
+## Account progress
 
-The result store uses per-account cached history and pending inserts. Stable UUIDs let retries resolve uncertain writes without duplicate records. A duplicate is acknowledged only after an owner-filtered read confirms that receipt. Account switches isolate both cached and in-flight results; second-device reads load the same completed match history. The UI displays save/offline status and provides a retry action. Storage failures ask the learner to keep the page open rather than promising an offline copy.
+Completed class matches use existing `game_score_records` rows, mode `maths_football`, with maths correct/total/percent in the numeric fields. Metadata version 1 adds level, qualification targets/results, three Cup round summaries where applicable, highest unlocked level, and complete answer snapshots with the shot outcome. Old penalty-shootout records remain readable. These are practice achievements; no official assessment or leaderboard changes are made.
 
-## Validation
+Existing per-account caching, pending inserts, stable UUID retries and ownership guards remain. Highest level is monotonic in the local cache and is carried into subsequent match receipts. Account sync additionally fetches the highest saved `metadata->unlockedLevel` separately from the latest ten matches, so old achievements survive a long recent history or stale-device replays. Switching accounts clears cached runtime state and in-flight responses cannot cross accounts. Existing table ownership policies apply; no schema, grants or policy changes.
 
-`node --test tests/maths-football-engine.test.mjs tests/maths-football-renderer.test.mjs tests/football-results-store.test.mjs tests/game-question-bank.test.mjs`
+Only completed class matches save. Early exit/reload restarts an unfinished match. Sound uses lightweight generated effects; graphics are canvas-drawn animated players and a stadium pitch, not a 3D simulator.
 
-Coverage includes five/ten-kick rules, repeated-answer/shot locks, goals and saves, wrong-answer misses, independent maths accuracy, computer kicks, finished-state immutability, invalid questions, desktop/mobile rendering and reduced motion. Save tests cover offline reload/retry, uncertain-write receipts, second-device restore and in-flight account switches. Bank tests check authentication, filters, All topics, duplicate prompts and errors. Existing Rally controller/progress/service tests and production build also pass.
+## Verification
+
+Run Node tests for `football-career`, `football-field-renderer`, `football-results-store`, `maths-football-engine`, `game-question-bank`, plus Rally assignment/adaptive/progress/service regressions, then `npm run build` and `git diff --check`.
+
+Career tests cover movement/bounds, unique match questions, finite physics, boost, tackles/blocks, keeper saves, goals/misses/timeout, full match transitions, Cup per-round qualification and a playable movement/shot route through every level. Renderer tests cover phone and desktop dimensions, all five levels, paused-question/action/result states and reduced motion. Store tests cover offline receipts, duplicate retries, cross-device recovery, progress outside recent history, monotonic carry-forward and account switches.

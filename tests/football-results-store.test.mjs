@@ -21,3 +21,12 @@ let release;insertGate=new Promise(resolve=>release=resolve);restored.save(summa
 restored.setOwner('user-a');await restored.sync();assert.equal(db.size,3);assert.equal(restored.getRecords().length,3)
 restored.setOwner(null);assert.equal(restored.getRecords().length,0);assert.equal(restored.getStatus(),'signed-out')
 console.log('PASS account-only football saves, offline reload/retry, duplicate receipts after uncertain writes, second-device restore and isolation during account switches.')
+// Progress survives history truncation, carries forward into later low-level games, and stays account-scoped.
+restored.setOwner('user-a');await restored.sync();restored.save({...summary,level:4,passed:true,unlockedLevel:5},config,'career-5');await restored.sync();assert.equal(restored.getUnlockedLevel(),5)
+restored.save({...summary,level:1,passed:false,unlockedLevel:1},config,'replay-1');await restored.sync();assert.equal(db.get('replay-1').metadata.unlockedLevel,5)
+const freshCareer=createFootballResultsStore({client,storage:{getItem(){return null},setItem(){}}});freshCareer.setOwner('user-a');await freshCareer.sync();assert.equal(freshCareer.getUnlockedLevel(),5);freshCareer.setOwner('user-b');assert.equal(freshCareer.getUnlockedLevel(),1)
+const oldWin={...db.get('career-5'),id:'old-win',created_at:'2020-01-01T00:00:00Z'}
+let queriedCareer=false
+const trimmedClient={from(){let columns;return {select(v){columns=v;return this},eq(){return this},order(){return this},limit(){return this},then(resolve){if(columns==='metadata')queriedCareer=true;return Promise.resolve({data:columns==='metadata'?[oldWin]:[{...db.get('replay-1'),metadata:{version:1,unlockedLevel:1}}],error:null}).then(resolve)}}}}
+const recovered=createFootballResultsStore({client:trimmedClient,storage:{getItem(){return null},setItem(){}}});recovered.setOwner('user-a');await recovered.sync();assert(queriedCareer);assert.equal(recovered.getUnlockedLevel(),5)
+console.log('PASS career unlock recovery outside recent history, monotonic carry-forward and account isolation.')
