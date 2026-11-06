@@ -188,7 +188,7 @@ function levelForTopicSelect(select) {
 }
 function syncWorkbookOptions() {
   document.querySelectorAll('select').forEach(select => {
-    if(select.closest('.rally-overlay, .mf-overlay')) return
+    if(select.closest('.rally-overlay, .mf-overlay, .arcade-overlay')) return
     if(['smartTopic','soloTopic','battleTopic'].includes(select.id))return
     const label = select.closest('label')?.textContent?.toLowerCase() || ''
     const isClass = select.name === 'class_level' || ['smartClass', 'soloClass', 'battleClass', 'adminLevel', 'manualLevel', 'aClass', 'bClass'].includes(select.id) || label.includes('class') || label.includes('level')
