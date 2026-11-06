@@ -1,0 +1,9 @@
+import assert from 'node:assert/strict'
+import {createFootballResultsStore} from '../src/football-results-store.js'
+const rows=[],cache=new Map(),storage={getItem:k=>cache.get(k)||null,setItem:(k,v)=>cache.set(k,v)};let offline=false
+const client={from(){const filters={};return {async insert(row){if(offline)return {error:{code:'NETWORK'}};rows.push(row);return {error:null}},select(){return this},eq(k,v){filters[k]=v;return this},order(){return this},limit(){return this},then(resolve){return Promise.resolve({data:rows.filter(r=>Object.entries(filters).every(([k,v])=>r[k]===v)),error:null}).then(resolve)}}}}
+const create=mode=>createFootballResultsStore({client,storage,mode,cachePrefix:'mezzo_'+mode+'_v1'})
+const store=create('puzzle_escape'),summary={correct:4,total:5,level:2,passed:true,escaped:true,roomsCleared:5,hintsUsed:1,unlockedLevel:3,answers:[{correct:false,outcome:'Room escaped'}]},config={class_level:'Grade 4',curriculum:'Cambridge',topic:'All topics'}
+assert.equal(store.save(summary,config,'guest'),false);store.setOwner('learner-a');offline=true;store.save(summary,config,'escape-1');await store.sync();assert.equal(store.getStatus(),'offline');const restored=create('puzzle_escape');restored.setOwner('learner-a');assert.equal(restored.getUnlockedLevel(),3);offline=false;await restored.sync();assert.equal(rows.length,1);assert.equal(rows[0].mode,'puzzle_escape');assert.equal(rows[0].metadata.roomsCleared,5);assert.equal(rows[0].metadata.answers[0].correct,false)
+const basketball=create('basketball_challenge');basketball.setOwner('learner-a');await basketball.sync();assert.equal(basketball.getUnlockedLevel(),1);assert.equal(basketball.getRecords().length,0);restored.setOwner('learner-b');await restored.sync();assert.equal(restored.getRecords().length,0);assert.equal(restored.getUnlockedLevel(),1)
+console.log('PASS puzzle-only receipt metadata, offline retry/reload, separate game unlocks, guest exclusion and account isolation')
