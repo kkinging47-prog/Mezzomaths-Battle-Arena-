@@ -1,8 +1,8 @@
 import {careerUnlocked} from './football-career.js'
-const MODE='maths_football'
-export function createFootballResultsStore({client,storage,onChange=()=>{}}){
+export function createFootballResultsStore({client,storage,onChange=()=>{},mode='maths_football',cachePrefix='mezzo_football_account_v1'}){
+ const MODE=mode
  let owner=null,epoch=0,records=[],pending=new Map(),flight=null,status='signed-out',cacheFailed=false,unlockedLevel=1
- const key=id=>`mezzo_football_account_v1:${id}`
+ const key=id=>`${cachePrefix}:${id}`
  const valid=row=>row?.user_id===owner&&row.mode===MODE&&typeof row.id==='string'&&row.metadata?.version===1
  function persist(){if(!owner)return;try{storage.setItem(key(owner),JSON.stringify({unlockedLevel,records,pending:[...pending.values()]}));cacheFailed=false}catch{cacheFailed=true}}
  function emit(){onChange()}
