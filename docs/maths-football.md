@@ -35,3 +35,19 @@ Only completed class matches save. Early exit/reload restarts an unfinished matc
 Run Node tests for `football-career`, `football-field-renderer`, `football-results-store`, `maths-football-engine`, `game-question-bank`, plus Rally assignment/adaptive/progress/service regressions, then `npm run build` and `git diff --check`.
 
 Career tests cover movement/bounds, unique match questions, finite physics, boost, tackles/blocks, keeper saves, goals/misses/timeout, full match transitions, Cup per-round qualification and a playable movement/shot route through every level. Renderer tests cover phone and desktop dimensions, all five levels, paused-question/action/result states and reduced motion. Store tests cover offline receipts, duplicate retries, cross-device recovery, progress outside recent history, monotonic carry-forward and account switches.
+
+## 3D stadium upgrade
+
+3D is now the default presentation. Three.js 0.180.0 is pinned and bundled in a lazy-loaded module; it is not fetched from a runtime CDN. Players are custom articulated 3D figures with jersey numbers, boots and run/kick/dive/celebration poses. No third-party character or audio assets are downloaded. The pitch includes a grass texture, markings, a framed net, stands, advertising boards, spectators and floodlight structures. WebGL2 adds lighting, soft shadows and instanced crowds.
+
+Follow-player and stadium cameras are available. Reduced motion fixes the stadium camera and removes gait/bob effects. Low/Medium/High graphics cap pixel density at 1/1.25/1.75 and use no/1024/2048 shadow maps. Low hides the crowd. A software perspective renderer uses the same scene/models when WebGL2 is unavailable; it clips triangles at the near camera plane, omits the crowd and GPU shadows and runs at approximately 22 frames/second maximum. Its visible status is “3D Lite”. Explicit 2D remains the lightest option. Context loss or a render failure switches safely to a fresh 2D canvas and pauses an active attack; no match data is recreated. Scenes, buffers, materials, textures, shadow maps and context listeners are disposed on close or screen changes.
+
+View/quality/camera preferences are device-wide presentation settings only. Changing them during a match pauses the clock, preserving questions, score, answers and progress. They contain no account information.
+
+Driven shots and chips use shared vertical ball velocity, gravity, bounce and spin. A defender blocks below 1.45m; the keeper reaches up to 2m; the crossbar is 2.44m. A ball crossing above the bar is recorded as `over`. Correctness is independent of this outcome. Both presentation modes use the same simulation and save records.
+
+Sound is off until opted in. Generated kick, whistle, crowd/goal and running effects have no network dependencies. Ambient crowd noise stops during questions, pause, tab blur and exit. Demo matches require no receipt UUID because they are never saved, which also permits training on HTTP development previews.
+
+Additional validation: `football-3d-models.test.mjs` and `football-software-3d.test.mjs` cover rig transforms, all animation poses/reduced motion, finite ball geometry, camera geometry, airborne drive/chip outcomes, preference recovery, software near-plane clipping and renderer disposal. GPU shading is a separate path from software rasterisation and requires a WebGL2-capable browser for visual verification.
+
+Browser QA: a complete 3D Lite training match scored three goals with 4/5 correct answers, exercised an intentional wrong answer and an over-bar chip, and kept the same match through camera/quality changes and 3D→2D→3D switching. The managed browser has WebGL disabled, so GPU-only shading, shadows and spectators were not visually verified there. Software perspective rendering was inspected before publishing; hardware rendering uses the same scene and actors.
