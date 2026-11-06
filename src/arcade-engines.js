@@ -1,12 +1,14 @@
+import {BASKET_LEVELS,createBasketballWorld,resetBasketballPossession,tickBasketball,basketballStats} from './basketball-engine.js'
 import {validGameQuestion} from './game-question-bank.js'
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)
-export const ARCADE_LEVELS={kart:['Rookie Grid','Coastal Cup','Forest Sprint','Night Circuit','Mezzo Grand Prix'],space:['Orbit Patrol','Asteroid Belt','Nebula Front','Deep Space','Mezzo Galaxy']}
+export const ARCADE_LEVELS={kart:['Rookie Grid','Coastal Cup','Forest Sprint','Night Circuit','Mezzo Grand Prix'],space:['Orbit Patrol','Asteroid Belt','Nebula Front','Deep Space','Mezzo Galaxy'],basketball:BASKET_LEVELS.map(l=>l.name)}
 export const KART_COURSES={coast:'Cape Coast Run',forest:'Forest Circuit',night:'Accra Night Run'}
 export function createArcadeGame(kind,questions,{level=1,course='coast'}={}){
- if(!['kart','space'].includes(kind)||questions?.length!==5||questions.some(q=>!validGameQuestion(q))||new Set(questions.map(q=>q.id)).size!==5||new Set(questions.map(q=>q.question_text.trim())).size!==5)throw Error('Choose five unique, complete questions for this game.')
+ if(!['kart','space','basketball'].includes(kind)||questions?.length!==5||questions.some(q=>!validGameQuestion(q))||new Set(questions.map(q=>q.id)).size!==5||new Set(questions.map(q=>q.question_text.trim())).size!==5)throw Error('Choose five unique, complete questions for this game.')
  level=clamp(Math.floor(Number(level)||1),1,5)
  const common={kind,questions:[...questions],level,round:0,phase:'question',answers:[],elapsed:0,finished:false,failed:false,passed:false,events:[]}
  if(kind==='kart')common.world={course:Object.hasOwn(KART_COURSES,course)?course:'coast',x:0,distance:0,speed:0,fuel:45,nitro:0,boost:0,health:100,hitCooldown:0,finishTime:null,collisions:0,pads:0,bots:[0,1,2].map((i)=>({name:['Kofi','Ama','Kojo'][i],x:[-.55,0,.55][i],distance:6+i*8,speed:24+level*1.8+i*1.8,finishTime:null})),obstacles:Array.from({length:9},(_,i)=>({id:i,distance:100+i*117,x:[-.6,.6,0,.6,-.6][i%5],hit:false})),pickups:Array.from({length:7},(_,i)=>({distance:155+i*147,x:[.55,-.55,0][i%3],taken:false}))}
+ else if(kind==='basketball')common.world=createBasketballWorld()
  else common.world={player:{x:.5,y:.83},health:100,shield:25,ammo:0,invulnerable:0,fireClock:0,spawnClock:0,shotCount:0,kills:0,waveTime:0,wave:0,enemies:[],bullets:[],enemyBullets:[],particles:[],boss:null,serial:0}
  return common
 }
@@ -15,6 +17,7 @@ export function answerArcade(game,selected){
  if(game.finished||game.phase!=='question'||!/^[ABCD]$/.test(selected))return null
  const entry=snapshot(game.questions[game.round],selected);game.answers.push(entry);const w=game.world
  if(game.kind==='kart'){w.fuel=clamp(w.fuel+(entry.correct?65:25),0,100);w.nitro=clamp(w.nitro+(entry.correct?35:0),0,100);if(entry.correct)w.health=clamp(w.health+12,0,100)}
+ else if(game.kind==='basketball')resetBasketballPossession(w,game.level,game.round,entry.correct)
  else{w.wave=game.round+1;w.waveTime=0;w.bullets=[];w.enemyBullets=[];w.fireClock=0;w.ammo=entry.correct?30:10;w.shield=clamp(w.shield+(entry.correct?30:8),0,75);w.player={x:.5,y:.83};w.invulnerable=1.2;const n=2+game.level+Math.floor(game.round/2);w.enemies=game.round===4?[]:Array.from({length:n},(_,i)=>({id:++w.serial,x:.13+(i%5)*.18,y:.14+Math.floor(i/5)*.10,origin:.13+(i%5)*.18,health:game.level>=4?2:1,fire:1.4+i*.48,age:0}));w.boss=game.round===4?{x:.5,y:.18,health:12+game.level*4,maxHealth:12+game.level*4,fire:1.2,age:0}:null}
  game.phase='playing';game.events=['power'];return entry
 }
@@ -55,6 +58,6 @@ function tickSpace(g,dt,input){
  if(w.health<=0||w.waveTime>=50){g.failed=true;finishSegment(g,w.health<=0?'Ship lost':'Wave time expired');return}
  if(!w.enemies.length&&(!w.boss||w.boss.health<=0))finishSegment(g,g.round===4?'Boss defeated':'Wave cleared')
 }
-export function tickArcade(g,seconds,input={}){if(g.finished||g.phase!=='playing')return false;const dt=clamp(Number(seconds)||0,0,.025);g.events=[];g.elapsed+=dt;g.kind==='kart'?tickKart(g,dt,input):tickSpace(g,dt,input);return g.phase==='feedback'}
-export function advanceArcade(g){if(g.finished||g.phase!=='feedback')return false;if(g.failed||g.round===4){g.finished=true;g.phase='finished';g.passed=!g.failed&&g.answers.filter(a=>a.correct).length>=3&&(g.kind==='space'||kartPosition(g.world)<=3);return true}g.round++;g.phase='question';return true}
-export function summariseArcade(g){const correct=g.answers.filter(a=>a.correct).length;return {kind:g.kind,level:g.level,correct,answered:g.answers.length,total:5,seconds:Math.round(g.elapsed),passed:g.passed,outcome:g.passed?'Level complete':'Try again',answers:g.answers.map(a=>({...a})),...(g.kind==='kart'?{position:kartPosition(g.world),distance:Math.round(g.world.distance),health:Math.round(g.world.health),collisions:g.world.collisions,course:g.world.course}:{kills:g.world.kills,health:Math.round(g.world.health),wavesCleared:g.failed?g.round:g.round+1,bossDefeated:!g.failed&&g.round===4})}}
+export function tickArcade(g,seconds,input={}){if(g.finished||g.phase!=='playing')return false;const dt=clamp(Number(seconds)||0,0,.025);g.events=[];g.elapsed+=dt;if(g.kind==='basketball'){const result=tickBasketball(g,dt,input);if(result)finishSegment(g,result)}else g.kind==='kart'?tickKart(g,dt,input):tickSpace(g,dt,input);return g.phase==='feedback'}
+export function advanceArcade(g){if(g.finished||g.phase!=='feedback')return false;if(g.failed||g.round===4){g.finished=true;g.phase='finished';g.passed=!g.failed&&g.answers.filter(a=>a.correct).length>=3&&(g.kind==='basketball'?g.world.points>=basketballStats(g).target:g.kind==='space'||kartPosition(g.world)<=3);return true}g.round++;g.phase='question';return true}
+export function summariseArcade(g){const correct=g.answers.filter(a=>a.correct).length;return {kind:g.kind,level:g.level,correct,answered:g.answers.length,total:5,seconds:Math.round(g.elapsed),passed:g.passed,outcome:g.passed?'Level complete':'Try again',answers:g.answers.map(a=>({...a})),...(g.kind==='basketball'?basketballStats(g):g.kind==='kart'?{position:kartPosition(g.world),distance:Math.round(g.world.distance),health:Math.round(g.world.health),collisions:g.world.collisions,course:g.world.course}:{kills:g.world.kills,health:Math.round(g.world.health),wavesCleared:g.failed?g.round:g.round+1,bossDefeated:!g.failed&&g.round===4})}}
