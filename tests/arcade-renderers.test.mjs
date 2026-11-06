@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import {drawKartRacing,drawSpaceDefender} from '../src/arcade-renderers.js'
+import {drawBasketballChallenge} from '../src/basketball-renderer.js'
 import {createArcadeGame,answerArcade,tickArcade} from '../src/arcade-engines.js'
 import {footballDemoQuestions} from '../src/maths-football-engine.js'
 let calls=0,depth=0
@@ -12,3 +13,5 @@ for(const width of [320,390,960])for(const kind of ['kart','space']){
 }
 assert.equal(depth,0);assert(calls>1000)
 console.log('PASS kart road/rivals/obstacles/pads and space enemies/boss rendering at phone/desktop sizes, all phases, reduced motion and finite canvas operations.')
+
+for(const width of [320,390,960]){const canvas={clientWidth:width,getContext:()=>ctx};drawBasketballChallenge(canvas,null);const g=createArcadeGame('basketball',footballDemoQuestions(),{level:5});drawBasketballChallenge(canvas,g);answerArcade(g,g.questions[0].correct_answer);tickArcade(g,.025,{x:1});drawBasketballChallenge(canvas,g,true);g.world.charging=true;drawBasketballChallenge(canvas,g);g.phase='feedback';drawBasketballChallenge(canvas,g);assert.equal(depth,0)}
