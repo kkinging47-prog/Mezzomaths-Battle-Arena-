@@ -1,5 +1,6 @@
 import {supabaseRows} from '../api/_bece-sunday-security.js'
 export async function expiredSundayResult(session,token){
+ if(!Number.isFinite(Number(session.expiresAt))||Date.now()>Number(session.expiresAt)+180*86400000)throw Error('Restore your candidate profile to view results.')
  if(session.preview||session.mode==='school_lab'||!session.candidateId||!session.weekStart)throw Error('Official Sunday session required.')
  const url=String(process.env.SUPABASE_URL||process.env.VITE_SUPABASE_URL||'').replace(/\/$/,''),key=String(process.env.SUPABASE_SERVICE_ROLE_KEY||'')
  if(!url||!key)throw Error('Results database is not configured.')
