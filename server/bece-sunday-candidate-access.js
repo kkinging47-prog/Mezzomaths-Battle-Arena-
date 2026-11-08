@@ -1,6 +1,7 @@
 import {sundaySchoolDirectory} from './sunday-school-directory.js'
 import {matchingSchool,validSchoolName} from '../src/school-names.js'
-import { signHistoryAccess } from './bece-sunday-history.js'
+import {sundayContactDetails} from '../src/sunday-contact-details.js'
+import { signHistoryAccess,verifyHistoryAccess } from './bece-sunday-history.js'
 import { supabaseRows } from '../api/_bece-sunday-security.js'
 export default async function handler(req,res) {
  if(req.method!=='POST') return res.status(405).json({error:'Method not allowed'})
@@ -10,9 +11,21 @@ export default async function handler(req,res) {
    res.setHeader('Cache-Control','public, max-age=60')
    return res.status(200).json({schools})
   }
+  if(req.body?.action==='update-contacts') {
+   let candidateId,contacts
+   try{candidateId=verifyHistoryAccess(req.body.history_token)}catch{return res.status(403).json({error:'Restore your candidate profile before updating contact details.'})}
+   try{contacts=sundayContactDetails(req.body)}catch(error){return res.status(400).json({error:error.message})}
+   const url=String(process.env.SUPABASE_URL||process.env.VITE_SUPABASE_URL||'').replace(/\/$/,''),key=String(process.env.SUPABASE_SERVICE_ROLE_KEY||'')
+   const previous=await supabaseRows('bece_sunday_trial_registrations?select=reminder_opt_in,reminder_consent_at&candidate_id=eq.'+encodeURIComponent(candidateId)+'&limit=1')
+   if(!previous.length)return res.status(404).json({error:'Candidate profile not found.'})
+   const response=await fetch(url+'/rest/v1/bece_sunday_trial_registrations?candidate_id=eq.'+encodeURIComponent(candidateId),{method:'PATCH',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({...contacts,reminder_consent_at:contacts.reminder_opt_in?(previous[0].reminder_consent_at||new Date().toISOString()):null})})
+   const rows=await response.json();if(!response.ok||rows.length!==1)throw Error('Contacts could not be saved.')
+   res.setHeader('Cache-Control','no-store');return res.status(200).json({...contacts})
+  }
   if (['register','restore-legacy'].includes(req.body?.action)) {
     const details=Object.fromEntries(['full_name','contact','school_name','location','region','class_level'].map(key=>[key,String(req.body[key]||'').trim()]))
-    if(details.full_name.length<3 || details.full_name.length>200 || details.contact.length<5 || details.contact.length>254 || Object.values(details).some(value=>value.length>254)) return res.status(400).json({error:'Enter your full name and original phone number or email.'})
+    if(req.body.action==='register'){try{Object.assign(details,sundayContactDetails(req.body));details.contact=details.phone_number}catch(error){return res.status(400).json({error:error.message})}}
+    if(details.full_name.length<3 || details.full_name.length>200 || details.contact.length<5 || details.contact.length>254 || Object.values(details).some(value=>typeof value==='string'&&value.length>254)) return res.status(400).json({error:'Enter your full name and original phone number or email.'})
     if(req.body.action==='register' && (!details.school_name || !details.location || !details.region)) return res.status(400).json({error:'Complete your school, town and region.'})
     if(req.body.action==='register') {
      if(!validSchoolName(details.school_name))return res.status(400).json({error:'Enter your school’s full name or select a registered school.'})
