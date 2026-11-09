@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { isCambridgeBattle, battleTopicFor, battleMatchKey } from './battle-question-policy.js'
 import './online-matchmaking.css'
 
 const CLIENT_KEY = 'mezzo_match_client_id'
@@ -17,11 +18,11 @@ function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(
 function profile() { return readJson('mezzo_profile', {}) || {} }
 function valueOf(id, fallback = '') { return document.getElementById(id)?.value || fallback }
 function matchKey() {
-  return [valueOf('battleClass', 'Grade 4'), valueOf('battleCurriculum', 'GES'), valueOf('battleTopic', 'Multiplication by 4 (2 Digits)')].join('|')
+  return battleMatchKey(valueOf('battleClass', 'Grade 4'), valueOf('battleCurriculum', 'GES'), valueOf('battleTopic', 'Multiplication by 4 (2 Digits)'))
 }
 function showOverlay() {
   closeOverlay()
-  document.body.insertAdjacentHTML('beforeend', `<div class="matchmaking-overlay" role="dialog" aria-modal="true"><section class="matchmaking-card"><div class="scanner-ring"><span>⚔️</span></div><h2>Scanning for Online Participant</h2><p>Looking for another learner practising the same class, curriculum and topic...</p><div class="scan-steps"><span class="active">Checking online queue</span><span>Matching topic</span><span>Preparing arena</span></div><small>If no live learner is found, you will automatically be paired with MathBot.</small></section></div>`)
+  document.body.insertAdjacentHTML('beforeend', `<div class="matchmaking-overlay" role="dialog" aria-modal="true"><section class="matchmaking-card"><div class="scanner-ring"><span>⚔️</span></div><h2>Scanning for Online Participant</h2><p>${isCambridgeBattle(valueOf('battleCurriculum', 'GES')) ? 'Looking for another Cambridge learner in the same grade...' : 'Looking for another learner practising the same class, curriculum and topic...'}</p><div class="scan-steps"><span class="active">Checking online queue</span><span>${isCambridgeBattle(valueOf('battleCurriculum', 'GES')) ? 'Matching grade' : 'Matching topic'}</span><span>Preparing arena</span></div><small>If no live learner is found, you will automatically be paired with MathBot.</small></section></div>`)
 }
 function closeOverlay() { document.querySelector('.matchmaking-overlay')?.remove() }
 function updateOverlay(message, ok = false) {
@@ -42,7 +43,7 @@ async function supabaseScan() {
     student_name: p.full_name || p.email || 'Online Student',
     class_level: valueOf('battleClass', 'Grade 4'),
     curriculum: valueOf('battleCurriculum', 'GES'),
-    topic: valueOf('battleTopic', 'Multiplication by 4 (2 Digits)'),
+    topic: battleTopicFor(valueOf('battleCurriculum', 'GES'), valueOf('battleTopic', 'Multiplication by 4 (2 Digits)')),
     status: 'waiting',
     updated_at: now,
     expires_at: expires
