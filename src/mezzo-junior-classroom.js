@@ -24,7 +24,7 @@ const shuffle=a=>[...a].sort(()=>Math.random()-.5)
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n))
 const juniorLevel=v=>/kindergarten|kg/i.test(v)?'Kindergarten':/grade\s*1/i.test(v)?'Grade 1':/grade\s*2/i.test(v)?'Grade 2':null
 function signedIn(){const p=profile();return Boolean(p.email||p.full_name||p.role)}
-function canChooseAll(){return ['teacher','admin'].includes(profile().role)}
+function canChooseAll(){return ['teacher','admin','mezzo_staff'].includes(profile().role)}
 function settings(){return {voice:true,music:0,effects:.6,mute:false,motion:true,speed:'normal',...read(K.settings,{})}}
 function setSettings(patch){save(K.settings,{...settings(),...patch})}
 function speak(text){const s=settings();if(s.mute||!s.voice||!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text).replace(/GH¢/g,'Ghana cedis'));u.lang='en-GH';u.rate=.85;u.volume=1;speechSynthesis.speak(u)}
