@@ -94,7 +94,7 @@ function editorHtml() {
         <div class="sunday-form-grid">
           <label><span>Year / Set</span><select name="year">${optionHtml(YEARS, q.year)}</select></label>
           <label><span>Question Type</span><select name="type">${optionHtml(TYPES, q.type)}</select></label>
-          <label><span>Topic</span><select name="topic">${optionHtml(TOPICS, q.topic)}</select></label>
+          <label><span>Topic</span><input name="topic" list="sunday-bece-question-editor-topics" value="${esc(q.topic)}" required><datalist id="sunday-bece-question-editor-topics">${optionHtml(TOPICS)}</datalist></label>
           <label><span>Difficulty</span><select name="difficulty">${optionHtml(['Easy', 'Medium', 'Hard'], q.difficulty)}</select></label>
           <label><span>Status</span><select name="status">${optionHtml(['Published', 'Draft', 'Archived'], q.status)}</select></label>
           <label><span>Correct Answer</span><select name="correct_answer">${optionHtml(['A', 'B', 'C', 'D'], q.correct_answer)}</select></label>
@@ -251,7 +251,7 @@ function payload() {
   return {
     year: f.year,
     type: f.type,
-    topic: f.topic,
+    topic: String(f.topic || '').trim() || 'BECE Exam Practice',
     curriculum_strand: f.curriculum_strand || f.topic,
     difficulty: f.difficulty,
     status: f.status,

@@ -166,7 +166,7 @@ function editorFormHtml() {
       <label><span>Year</span><select name="year">${optionHtml(YEARS, q.year)}</select></label>
       <label><span>Type</span><select name="type">${optionHtml(TYPES, q.type)}</select></label>
       <input type="hidden" name="sunday_set_id" value="${esc(selectedSetId)}">
-      <label><span>Topic</span><select name="topic">${optionHtml(TOPICS, q.topic)}</select></label>
+      <label><span>Topic</span><input name="topic" list="sunday-bece-editor-permissions-topics" value="${esc(q.topic)}" required><datalist id="sunday-bece-editor-permissions-topics">${optionHtml(TOPICS)}</datalist></label>
       <label><span>Topic Area / Strand</span><input name="topic_area" value="${esc(q.topic_area)}"></label>
       <label><span>Difficulty</span><select name="difficulty">${optionHtml(DIFFICULTY, q.difficulty)}</select></label>
       <label><span>Status</span><select name="status">${optionHtml(STATUS, q.status)}</select></label>
@@ -435,7 +435,7 @@ async function saveQuestion(event) {
       year: String(form.get('year') || '2027 Prep'),
       type: String(form.get('type') || 'pastStyle'),
       sunday_set_id: setId,
-      topic: String(form.get('topic') || 'BECE Exam Practice'),
+      topic: String(form.get('topic') || '').trim() || 'BECE Exam Practice',
       topic_area: String(form.get('topic_area') || form.get('topic') || 'BECE Exam Practice'),
       curriculum_strand: String(form.get('topic_area') || form.get('topic') || ''),
       difficulty: String(form.get('difficulty') || 'Easy'),
