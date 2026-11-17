@@ -1,3 +1,4 @@
+import { questionImageRequirement, questionImageStatus, withQuestionImageRequirement } from './sunday-question-images.js'
 import { renderVectorText, columnVector } from './vector-math.js'
 import './bece-school-reports.js'
 import * as XLSX from 'xlsx'
@@ -139,10 +140,27 @@ function suggestedSunday(set) {
   date.setUTCDate(date.getUTCDate() + (set.set_number - prior.set_number) * 7)
   return date.toISOString().slice(0,10)
 }
+function setImageChecklist(rows) {
+  const renderGroup = (key, title, empty) => {
+    const entries = rows.filter(row => row.images[key].length)
+    return `<div><strong>${title} (${entries.length})</strong><div class="sunday-set-image-links">${entries.length
+      ? entries.map(({q, number, images}) => `<button type="button" class="sunday-image-status ${key}" data-edit-sunday-question="${esc(q.id)}" aria-label="Edit question ${number}: ${title.toLowerCase()} for ${esc(images[key].join(', '))}">Q${number}${images[key][0]==='Question'&&images[key].length===1?'':' · '+esc(images[key].join(', '))}</button>`).join('')
+      : `<small>${empty}</small>`}</div></div>`
+  }
+  return `<section class="sunday-set-image-checklist" aria-label="Question image checklist"><h4>Question image checklist</h4>
+    ${renderGroup('missing', 'Needs image', 'No missing images flagged.')}
+    ${renderGroup('uploaded', 'Image uploaded', 'No images uploaded yet.')}
+  </section>`
+}
+function imageStatusBadges({missing, uploaded}) {
+  return `<div class="sunday-set-image-links">${missing.length?`<span class="sunday-image-status missing">Needs image: ${esc(missing.join(', '))}</span>`:''}${uploaded.length?`<span class="sunday-image-status uploaded">Image uploaded: ${esc(uploaded.join(', '))}</span>`:''}</div>`
+}
+
 function setManagerHtml() {
   const selected = selectedSet(), assigned = questions.filter(q => q.sunday_set_id).length
   const complete = sets.filter(s => setQuestions(s.id).length === 40).length
   const unassigned = questions.filter(q => !q.sunday_set_id)
+  const imageRows = setQuestions().map((q, i) => ({q, number: i + 1, images: questionImageStatus(q)}))
   return `<section class="sunday-set-manager" data-sunday-set-manager>${isAdmin ? '<p><button type="button" class="btn btn-blue" data-bece-school-reports>BECE Results & School Reports</button></p>' : ''}
     <header class="sunday-set-hero"><div><span>BECE QUESTION PROGRAMME</span><h2>Sunday question sets</h2><p>Forty unique questions per set. Choose the set and Sunday before the trial opens.</p></div>${isAdmin ? '<button type="button" class="btn btn-gold" data-create-sunday-set>Create next set</button>' : ''}</header>
     <div class="sunday-set-stats"><div><strong>${sets.length}</strong><span>Sets</span></div><div><strong>${complete}</strong><span>Complete</span></div><div><strong>${assigned}</strong><span>Assigned questions</span></div><div><strong>${unassigned.length}</strong><span>Unassigned</span></div></div>
@@ -151,7 +169,8 @@ function setManagerHtml() {
       ${isAdmin ? `<p class="sunday-set-guidance">Try the full set before scheduling it. AI suggestions require editor review; a disagreement with the stored answer is flagged, never changed automatically.</p><div class="sunday-ai-review" data-sunday-ai-review>${setQuestions().filter(q=>aiReviews.has(q.id)).map(q=>{const r=aiReviews.get(q.id);return `<article><b>Question ${setQuestions().indexOf(q)+1} · ${esc(r.topic_area)} · ${esc(r.confidence)} confidence</b><p>AI answer ${esc(r.answer)} · Stored answer ${esc(q.correct_answer)} ${r.answer!==q.correct_answer?'⚠️ Check this answer before release':''}</p><p>${esc(r.explanation)}</p>${selected.status==='draft'?`<button type="button" class="btn btn-blue btn-small" data-apply-sunday-ai="${esc(q.id)}">Apply topic & explanation</button>`:'<small>Return this set to draft to edit.</small>'}</article>`}).join('')}</div>` : ''}
       ${isAdmin ? `<form class="sunday-set-schedule" data-sunday-set-schedule><label>Choose a Sunday<input type="date" name="scheduled_sunday" value="${esc(suggestedSunday(selected))}" required></label><button type="submit" class="btn btn-primary btn-small" ${setQuestions().length!==40?'disabled':''}>Schedule this set</button>${selected.scheduled_sunday ? '<button type="button" class="btn btn-ghost btn-small" data-unschedule-sunday-set>Remove date</button>' : ''}<small>Scheduling requires 40 complete published questions. Dates must be Sundays.</small></form>` : ''}
       ${setUploadHtml(selected)}
-      <div class="sunday-set-question-list">${setQuestions().map((q,i)=>`<article><b>${i+1}</b><div><strong>${esc(q.topic)}</strong><p>${esc(q.question_text).slice(0,160)}</p><small>${esc(q.status)} · Answer ${esc(q.correct_answer)}</small></div><button type="button" class="btn btn-blue btn-small" data-edit-sunday-question="${esc(q.id)}">Edit</button>${selected.status==='draft'&&isAdmin?`<button type="button" class="btn btn-ghost btn-small" data-remove-from-sunday-set="${esc(q.id)}">Remove</button>`:''}</article>`).join('') || '<p>Add questions to build this set.</p>'}</div>
+      ${imageRows.length ? setImageChecklist(imageRows) : ''}
+      <div class="sunday-set-question-list">${imageRows.map(({q, number, images})=>`<article><b>${number}</b><div><strong>${esc(q.topic)}</strong><p>${esc(q.question_text).slice(0,160)}</p><small>${esc(q.status)} · Answer ${esc(q.correct_answer)}</small>${imageStatusBadges(images)}</div><button type="button" class="btn btn-blue btn-small" data-edit-sunday-question="${esc(q.id)}">Edit</button>${selected.status==='draft'&&isAdmin?`<button type="button" class="btn btn-ghost btn-small" data-remove-from-sunday-set="${esc(q.id)}">Remove</button>`:''}</article>`).join('') || '<p>Add questions to build this set.</p>'}</div>
       ${isAdmin && selected.status==='draft' && unassigned.length && setQuestions().length<40 ? `<details class="sunday-unassigned"><summary>Add from unassigned questions (${unassigned.length})</summary><button type="button" class="btn btn-gold btn-small" data-fill-sunday-set>Fill available places</button><div>${unassigned.slice(0,100).map(q=>`<article><span>${esc(q.question_text).slice(0,130)}</span><button type="button" class="btn btn-blue btn-small" data-add-to-sunday-set="${esc(q.id)}">Add to Set ${selected.set_number}</button></article>`).join('')}</div></details>` : ''}
     </div>` : '<p class="sunday-editor-lock">Select a set to view and edit its questions.</p>'}
   </section>`
@@ -179,6 +198,7 @@ function editorFormHtml() {
       <label><span>Correct Answer</span><select name="correct_answer">${optionHtml(['A','B','C','D'], q.correct_answer)}</select></label>
       <label><span>Source Page / Paper</span><input name="source_page" value="${esc(q.source_page)}" placeholder="e.g. 2024 Paper 1 Q12"></label>
       <label class="full"><span>Explanation / Solution</span><textarea name="explanation" data-sunday-math-field="true">${esc(q.explanation)}</textarea><div class="vector-field-preview" data-vector-preview="explanation">${renderVectorText(q.explanation)}</div></label>
+      <label><span>Question image requirement</span><select name="question_image_requirement"><option value="required" ${questionImageRequirement(q)==='required'?'selected':''}>Image required</option><option value="optional" ${questionImageRequirement(q)==='optional'?'selected':''}>Image optional</option></select></label>
       <label><span>Question Image URL</span><input name="question_image_url" value="${esc(q.question_image_url)}" placeholder="Paste image URL or upload below"></label>
       <label><span>Upload Question Image</span><input type="file" name="question_image_file" accept="image/*,.svg"></label>
       <label><span>Option A Image URL</span><input name="option_a_image_url" value="${esc(q.option_a_image_url)}"></label>
@@ -455,7 +475,7 @@ async function saveQuestion(event) {
       source_name: 'Sunday BECE Special',
       source_page: String(form.get('source_page') || ''),
       math_format: 'unicode',
-      editor_notes: String(form.get('editor_notes') || ''),
+      editor_notes: withQuestionImageRequirement(form.get('editor_notes'), form.get('question_image_requirement')),
       updated_at: new Date().toISOString()
     }
     let result
@@ -583,7 +603,19 @@ document.addEventListener('click', async event => {
   if (removeId) { event.preventDefault(); await moveQuestion(removeId, null); return }
   if (event.target.closest('[data-new-sunday-question]')) { event.preventDefault(); selectedId = ''; renderAdminSections(); document.querySelector('.sunday-set-editor-details').open = true; return }
   const editId = event.target.closest('[data-edit-sunday-question]')?.dataset?.editSundayQuestion
-  if (editId) { event.preventDefault(); selectedId = editId; renderAdminSections(); return }
+  if (editId) {
+    event.preventDefault()
+    selectedId = editId
+    renderAdminSections()
+    requestAnimationFrame(() => {
+      const editor = document.querySelector('.sunday-set-editor-details')
+      if (!editor) return
+      editor.open = true
+      editor.querySelector('summary')?.focus({ preventScroll: true })
+      editor.scrollIntoView({ block: 'start' })
+    })
+    return
+  }
   if (event.target.closest('[data-archive-sunday-question]')) { event.preventDefault(); await archiveQuestion(); return }
 }, true)
 
@@ -602,6 +634,21 @@ window.addEventListener('mezzoProfileUpdated', () => { checked = false; mountedA
 new MutationObserver(scheduleBoot).observe(document.documentElement, { childList: true, subtree: true })
 setTimeout(boot, 1800)
 
+function importRowEditor(row, line) {
+  const fields = [
+    ['question_text', 'Question'],
+    ['option_a', 'Option A'], ['option_b', 'Option B'],
+    ['option_c', 'Option C'], ['option_d', 'Option D'],
+    ['explanation', 'Worked explanation']
+  ]
+  return `<details><summary>Edit row ${line}</summary>
+    <form data-edit-sunday-import-row="${line}" style="display:grid;gap:10px;padding:10px 0">
+      ${fields.map(([name, label]) => `<label>${label}<textarea name="${name}" rows="2" style="display:block;width:100%"${name==='explanation'?'':' required'}>${esc(row[name])}</textarea></label>`).join('')}
+      <label>Correct answer <select name="correct_answer" required><option value="">Choose A–D</option>${['A','B','C','D'].map(letter=>`<option ${letter===row.correct_answer?'selected':''}>${letter}</option>`).join('')}</select></label>
+      <button type="submit" class="btn btn-blue btn-small">Save question to preview</button>
+    </form></details>`
+}
+
 function setUploadHtml(set) {
   if (!canEdit) return ''
   const available=40-setQuestions(set.id).length
@@ -614,9 +661,9 @@ function setUploadHtml(set) {
     <p aria-live="polite" data-sunday-upload-file-name>${pending ? esc(pending.fileName)+(pending.reading?' · Reading file…':'') : 'No file chosen. Choose your file, review the preview, then click Upload to Set.'}</p>
     ${pending?.sourceRows?`<label style="display:flex;gap:10px;align-items:center;margin:12px 0"><input type="checkbox" data-skip-sunday-duplicates ${pending.skipDuplicates?'checked':''} ${importingSet?'disabled':''}>Remove duplicates from this upload</label><p>Excludes repeated questions in this file and questions already assigned to Sunday sets. Existing questions are kept.</p>`:''}
     ${!unlocked&&!importingSet?'<p>Uploads require an unscheduled draft set with fewer than 40 questions.</p>':''}
-    ${pending && !pending.reading ? `<div role="status">${pending.importError?'<p role="alert">Import failed: '+esc(pending.importError)+'</p>':''}<p><strong>${esc(pending.fileName)}</strong> · ${pending.rows.length} questions ready · ${pending.skipped?.length||0} duplicates excluded · Target: Set ${esc(set.set_number)}</p>${pending.errors.length ? '<ul role="alert">'+pending.errors.slice(0,50).map(error=>'<li>'+esc(error)+'</li>').join('')+'</ul><p>Nothing has been imported. Correct the file and upload it again.</p>' : '<p>Validation passed. Review the questions below, then import.</p>'}
+    ${pending && !pending.reading ? `<div role="status">${pending.importError?'<p role="alert">Import failed: '+esc(pending.importError)+'</p>':''}<p><strong>${esc(pending.fileName)}</strong> · ${pending.rows.length} questions in preview · ${pending.skipped?.length||0} duplicates excluded · Target: Set ${esc(set.set_number)}</p>${pending.errors.length ? '<ul role="alert">'+pending.errors.slice(0,50).map(error=>'<li>'+esc(error)+'</li>').join('')+'</ul><p>Nothing has been imported. Use Edit row below to correct a question or enter its answer key, then save it to the preview.</p>' : '<p>Validation passed. Review the questions below, then import.</p>'}
     ${pending.skipped?.length?'<details><summary>View '+pending.skipped.length+' excluded duplicate rows</summary><ul>'+pending.skipped.map(row=>'<li><b>Row '+row.line+':</b> '+esc(row.question_text)+' — '+esc(row.reason)+'</li>').join('')+'</ul></details>':''}
-    ${pending.rows.length?'<div style="overflow:auto;max-height:320px"><table style="width:100%;text-align:left"><thead><tr><th>#</th><th>Question</th><th>Answer</th><th>Topic</th></tr></thead><tbody>'+pending.rows.map((row,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(row.question_text)+'</td><td>'+esc(row.correct_answer)+'</td><td>'+esc(row.topic_area)+'</td></tr>').join('')+'</tbody></table></div>':''}
+    ${pending.rows.length?'<div style="overflow:auto;max-height:320px"><table style="width:100%;text-align:left"><thead><tr><th>File row</th><th>Question</th><th>Answer</th><th>Topic</th><th>Edit</th></tr></thead><tbody>'+pending.rows.map((row,i)=>'<tr><td>'+pending.rowNumbers[i]+'</td><td>'+esc(row.question_text)+'</td><td>'+esc(row.correct_answer||'Missing')+'</td><td>'+esc(row.topic_area)+'</td><td>'+importRowEditor(row,pending.rowNumbers[i])+'</td></tr>').join('')+'</tbody></table></div>':''}
     <div class="sunday-set-actions"><button type="button" class="btn btn-ghost btn-small" data-cancel-sunday-set-import ${importingSet?'disabled':''}>Cancel upload</button></div></div>` : ''}
   </section>`
 }
@@ -692,4 +739,24 @@ async function confirmSetImport() {
 document.addEventListener('change',event=>{
   if(event.target?.matches?.('[data-sunday-set-upload]')) previewSetImport(event.target.files?.[0])
   if(event.target?.matches?.('[data-skip-sunday-duplicates]')) refreshDuplicatePreview(event.target.checked)
+})
+
+document.addEventListener('submit', event=>{
+  const form=event.target
+  if(!form?.matches?.('[data-edit-sunday-import-row]'))return
+  event.preventDefault()
+  const pending=pendingSetImport, set=selectedSet()
+  if(!canEdit||importingSet||!pending?.sourceRows||pending.reading||set?.id!==pending.setId)return
+  const line=Number(form.dataset.editSundayImportRow)
+  if(!pending.rowNumbers.includes(line))return
+  const index=line-2
+  const values=new FormData(form)
+  const edits=Object.fromEntries(['question_text','option_a','option_b','option_c','option_d','correct_answer','explanation'].map(name=>[name,String(values.get(name)??'').trim()]))
+  const sourceRows=pending.sourceRows.map((row,i)=>i===index
+    ? {...Object.fromEntries(Object.entries(row).filter(([name])=>!Object.hasOwn(edits,name.trim().toLowerCase().replace(/[\s-]+/g,'_')))),...edits}
+    : row)
+  const checked=validateSetImport(sourceRows,{setId:set.id,capacity:40-setQuestions(set.id).length,existing:questions,skipDuplicates:pending.skipDuplicates})
+  pendingSetImport={...pending,sourceRows,...checked,importError:'',rows:checked.rows.map((row,i)=>({...row,id:pending.rowIds[checked.rowNumbers[i]-2]}))}
+  renderAdminSections()
+  toast('Row '+line+' saved to the upload preview.','success')
 })
