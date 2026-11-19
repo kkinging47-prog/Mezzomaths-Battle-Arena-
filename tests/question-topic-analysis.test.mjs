@@ -29,3 +29,9 @@ mode='error';const bad=await classifyTopics([{question_text:'What is half of ten
 delete process.env.OPENAI_API_KEY;const missing=await classifyTopics([{question_text:'A new question'}]);assert(missing.notice.includes('not configured'));assert.equal(missing.analyses[0].topic,null)
 const totals=topicTotals([{correct:true,topic_analysis:one.analyses[0]},{correct:false,topic_analysis:one.analyses[0]},{correct:false,topic:'Mezzo workbook'}]);assert.deepEqual(totals.topics,{'Linear equations':{total:2,correct:1}});assert.equal(totals.pending,1)
 console.log('PASS content-only AI inputs, source-independent cache, changed-content invalidation, accepted taxonomy, confidence exclusion, incomplete/failed AI, no fabricated fallback, and unchanged student answers. Provider calls mocked.')
+const labelFallback=await enrichTopicAnswers([{question_text:'A new ratio item',topic:'Ratio',correct:false},{question_text:'A generic diagram item',topic:'BECE Exam Practice',correct:true}],{generate:false})
+assert.equal(labelFallback.answers[0].topic,'Ratio and proportion');assert.equal(labelFallback.answers[0].topic_analysis.source,'question_label');assert.equal(labelFallback.answers[0].correct,false)
+assert.equal(classifiedTopic(labelFallback.answers[1].topic_analysis),null)
+const rejectedLabel=await classifyTopics([{question_text:'Find the value shown by an unavailable diagram.',topic:'Area'}],{generate:false})
+assert.equal(classifiedTopic(rejectedLabel.analyses[0]),null) // Explicit low-confidence review is never replaced by a label.
+console.log('PASS recognised mathematical label fallback, source labels excluded, and explicit low-confidence reviews preserved')
