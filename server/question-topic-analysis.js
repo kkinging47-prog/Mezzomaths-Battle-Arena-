@@ -1,5 +1,5 @@
 import crypto from 'node:crypto'
-import {TOPIC_VERSION,TOPICS,TOPIC_STRANDS,questionContent,topicContentKey,classifiedTopic} from '../src/question-topics.js'
+import {TOPIC_VERSION,TOPICS,TOPIC_STRANDS,questionContent,topicContentKey,classifiedTopic,questionLabelAnalysis} from '../src/question-topics.js'
 const pending=()=>({version:TOPIC_VERSION,topic:null,strand:null,skill:'',confidence:'low',status:'pending'})
 export const topicFingerprint=q=>crypto.createHash('sha256').update(topicContentKey(q)).digest('hex')
 export const topicAIConfigured=()=>Boolean(String(process.env.OPENAI_API_KEY||'').trim())
@@ -17,7 +17,7 @@ export async function classifyTopics(questions,{actor='internal',limit=400,maxNe
    for(let offset=0;offset<missing.length;offset+=40){const groups=[missing.slice(offset,offset+20),missing.slice(offset+20,offset+40)].filter(g=>g.length);const results=await Promise.allSettled(groups.map(g=>classifyBatch(g)));for(let i=0;i<results.length;i++){const result=results[i];if(result.status==='rejected'){notice=result.reason.message;continue}for(const a of result.value)found.set(a.fingerprint,{...a,status:classifiedTopic(a)?'classified':'needs_review'})}}
   }
  }catch(error){notice=error.name==='TimeoutError'?'AI topic analysis timed out. Retry to continue.':error.message}
- return {analyses:keyed.map(x=>found.get(x.key)||pending()),notice}
+ return {analyses:keyed.map(x=>found.get(x.key)||questionLabelAnalysis(x.question)||pending()),notice}
 }
 async function classifyBatch(batch){
  const content=[{type:'input_text',text:JSON.stringify(batch.map((x,i)=>({id:String(i),...questionContent(x.question)})))}]
