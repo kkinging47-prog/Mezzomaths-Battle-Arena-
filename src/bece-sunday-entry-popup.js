@@ -112,6 +112,7 @@ function refreshCountdown() {
 }
 
 function shouldShow() {
+  if (location.pathname === '/bece-solutions' || document.getElementById('bece-video-library')) return false
   if (sessionStorage.getItem(POPUP_KEY)) return false
   if (document.querySelector('[data-bece-sunday-entry-popup]')) return false
   if (document.querySelector('.bece-sunday-page, .rally-overlay, .mf-overlay, .arcade-overlay')) return false
