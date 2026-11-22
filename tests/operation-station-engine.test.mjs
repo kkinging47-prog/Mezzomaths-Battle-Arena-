@@ -1,0 +1,3 @@
+import assert from 'node:assert/strict';import{legalMoves,reduce,missions,solve}from '../src/operation-station-engine.js';
+assert.equal(solve([2,'+',3,'×',4]),14);assert.equal(solve([24,'÷',6,'×',2]),8);assert.equal(solve([10,'−',3,'×',2]),4);assert.equal(solve(['(',2,'+',3,')','×',4]),20);assert.deepEqual(legalMoves([2,'+',3,'×',4]),[3]);assert.deepEqual(reduce(['(',2,'+',3,')','×',4],2),[5,'×',4]);
+for(let stage=1;stage<=5;stage++)for(let run=0;run<100;run++)for(const t of missions(stage)){assert(Number.isInteger(solve(t)));let x=t;while(x.length>1){const i=legalMoves(x)[0];assert(Number.isInteger(i));x=reduce(x,i)}}console.log('Operation Station: precedence, brackets and 2,500 generated machines passed');

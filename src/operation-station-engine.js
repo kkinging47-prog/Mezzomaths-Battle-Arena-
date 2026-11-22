@@ -1,0 +1,6 @@
+export const STAGES=['Add and subtract','Multiply and divide','Priority junction','Bracket workshop','Master circuit'];
+export function legalMoves(t){let depth=0,max=0;const depths=t.map(x=>{if(x==='('){depth++;max=Math.max(max,depth);return -1}if(x===')'){depth--;return -1}return depth});const candidates=t.map((x,i)=>({x,i})).filter(({x,i})=>['+','−','×','÷'].includes(x)&&depths[i]===max);const priority=candidates.filter(({x})=>x==='×'||x==='÷');return (priority.length?priority:candidates).slice(0,1).map(x=>x.i)}
+export function calculate(a,op,b){if(op==='+')return a+b;if(op==='−')return a-b;if(op==='×')return a*b;if(op==='÷'&&b!==0)return a/b;throw Error('Invalid operation')}
+export function reduce(t,i){const n=[...t];n.splice(i-1,3,calculate(t[i-1],t[i],t[i+1]));for(let k=n.length-3;k>=0;k--)if(n[k]==='('&&typeof n[k+1]==='number'&&n[k+2]===')')n.splice(k,3,n[k+1]);return n}
+export function missions(stage,random=Math.random){return Array.from({length:5},(_,j)=>{const a=2+Math.floor(random()*7),b=2+Math.floor(random()*6),c=2+Math.floor(random()*5);if(stage===1)return[a+b,'−',b,'+',c];if(stage===2)return[a*b,'÷',b,'×',c];if(stage===3)return[a,'+',b,'×',c,'−',a];if(stage===4)return['(',a,'+',b,')','×',c];return[a,'+', '(',b,'+',c,')','×',2,'−',a]})}
+export function solve(t){let x=[...t];while(x.length>1)x=reduce(x,legalMoves(x)[0]);return x[0]}
