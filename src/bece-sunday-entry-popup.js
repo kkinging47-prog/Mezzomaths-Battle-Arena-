@@ -112,7 +112,7 @@ function refreshCountdown() {
 }
 
 function shouldShow() {
-  if (location.hash === '#time-transit' || location.hash === '#balance-workshop' || location.hash === '#place-value-balloon' || location.hash === '#fraction-harbour' || location.hash === '#shape-builders' || location.hash === '#juice-factory' || location.hash === '#coordinate-quest' || document.querySelector('.cq-overlay, .jf-overlay') || location.hash === '#market-town' || document.querySelector('.mt-overlay') || location.hash === '#river-rally' || document.querySelector('.rr-overlay') || location.pathname === '/bece-solutions' || document.getElementById('bece-video-library')) return false
+  if (location.hash === '#data-park' || location.hash === '#time-transit' || location.hash === '#balance-workshop' || location.hash === '#place-value-balloon' || location.hash === '#fraction-harbour' || location.hash === '#shape-builders' || location.hash === '#juice-factory' || location.hash === '#coordinate-quest' || document.querySelector('.cq-overlay, .jf-overlay') || location.hash === '#market-town' || document.querySelector('.mt-overlay') || location.hash === '#river-rally' || document.querySelector('.rr-overlay') || location.pathname === '/bece-solutions' || document.getElementById('bece-video-library')) return false
   if (sessionStorage.getItem(POPUP_KEY)) return false
   if (document.querySelector('[data-bece-sunday-entry-popup]')) return false
   if (document.querySelector('.bece-sunday-page, .rally-overlay, .mf-overlay, .arcade-overlay')) return false
